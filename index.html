@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>フィッシングRushシミュレーター</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; background: #f0f8ff; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .roulette-container { display: flex; justify-content: center; gap: 50px; margin-bottom: 20px; }
+        .roulette { position: relative; width: 200px; height: 200px; }
+        canvas { border: 3px solid #333; border-radius: 50%; }
+        .arrow {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 30px;
+            color: red;
+            z-index: 10;
+        }
+        .results { display: flex; justify-content: center; gap: 50px; margin: 10px 0; font-weight: bold; }
+        button { padding: 10px 20px; font-size: 18px; margin: 10px; cursor: pointer; }
+        table { margin: 20px auto; border-collapse: collapse; width: 90%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background: #ddd; }
+        .history-red { color: red; font-weight: bold; }
+        .recent-games { margin-top: 30px; }
+        .current-medals { font-size: 20px; font-weight: bold; margin: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>フィッシングRushシミュレーター</h1>
+
+        <div class="roulette-container">
+            <div class="roulette">
+                <div class="arrow">↓</div> <!-- そのまま「Down Arrow」 -->
+                <canvas id="roulette10" width="200" height="200"></canvas>
+            </div>
+            <div class="roulette">
+                <div class="arrow">↓</div> <!-- そのまま「Down Arrow」 -->
+                <canvas id="roulette6" width="200" height="200"></canvas>
+            </div>
+        </div>
+
+        <button id="startBtn">ルーレット開始</button>
+        <div class="results">
+            <div>10マス結果: <span id="result10">-</span></div>
+            <div>6マス結果: <span id="result6">-</span></div>
+        </div>
+        <div class="current-medals">
+            合計獲得: <span id="totalMedals">0</span>枚 | 
+            ボーナス: <span id="bonus">0</span>
+        </div>
+
+        <h2>現在のゲーム履歴</h2>
+        <table id="gameHistory">
+            <thead>
+                <tr>
+                    <th>ターン</th>
+                    <th>10マス</th>
+                    <th>6マス</th>
+                    <th>ボーナス</th>
+                    <th>獲得枚数</th>
+                    <th>合計獲得枚数</th>
+                    <th>備考</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="recent-games">
+            <h2>直近30ゲーム結果</h2>
+            <table id="recentResults">
+                <thead>
+                    <tr>
+                        <th>ゲーム</th>
+                        <th>ボーナス</th>
+                        <th>合計獲得枚数</th>
+                        <th>リトライ時点の合計獲得枚数</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const canvas10 = document.getElementById('roulette10');
+        const ctx10 = canvas10.getContext('2d');
+        const canvas6 = document.getElementById('roulette6');
+        const ctx6 = canvas6.getContext('2d');
+
+        const RADIUS = 90;
+        const CENTER_X = 100;
+        const CENTER_Y = 100;
+
+        const slots10 = ['釣り', '釣り', '釣り', '釣り', '釣り', '釣り', '釣り+', '逃げ', '逃げ', '逃げ'];
+        const slots6 = ['サメ', 'タコ', 'エビ', 'タイ', 'ヒトデ', 'カニ'];
+        const medalValues = { 'タコ': 30, 'エビ': 20, 'タイ': 70, 'ヒトデ': 10, 'カニ': 50 };
+
+        const color10 = { '釣り': '#ffff99', '釣り+': '#ff999 neuen', '逃げ': '#99ccff' };
+        const color6 = { 'サメ': '#ff6666', 'タコ': '#66cc66', 'エビ': '#99ccff', 'タイ': '#ffff99', 'ヒトデ': '#6699ff', 'カニ': '#ccff99' };
+
+        let currentMedals = 0, totalMedals = 0, bonus = 0, turn = 0, isSpinning = false, gameActive = false;
+        let retryValue = -1, canRetry = true;
+        let sharkStreak = 0, escapeStreak = 0, zeroMedalTurns = 0, bjpActive = true;
+        let recentGames = [];
+        let lastResult10 = '', lastResult6 = ''; // 終了時用
+
+        const startBtn = document.getElementById('startBtn');
+        const result10El = document.getElementById('result10');
+        const result6El = document.getElementById('result6');
+        const totalMedalsEl = document.getElementById('totalMedals');
+        const bonusEl = document.getElementById('bonus');
+        const historyBody = document.querySelector('#gameHistory tbody');
+        const recentBody = document.querySelector('#recentResults tbody');
+
+        drawRoulette(ctx10, slots10, 10, color10);
+        drawRoulette(ctx6, slots6, 6, color6);
+
+        function drawRoulette(ctx, slots, count, colorMap) {
+            const angleStep = 2 * Math.PI / count;
+            slots.forEach((text, i) => {
+                const startAngle = i * angleStep - Math.PI / 2;
+                const endAngle = startAngle + angleStep;
+
+                ctx.beginPath();
+                ctx.moveTo(CENTER_X, CENTER_Y);
+                ctx.arc(CENTER_X, CENTER_Y, RADIUS, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = colorMap[text] || '#eee';
+                ctx.fill();
+                ctx.stroke();
+
+                const textAngle = startAngle + angleStep / 2;
+                const x = CENTER_X + RADIUS * 0.7 * Math.cos(textAngle);
+                const y = CENTER_Y + RADIUS * 0.7 * Math.sin(textAngle);
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(textAngle + Math.PI / 2);
+                ctx.font = count === 10 ? '12px Arial' : '14px Arial';
+                ctx.fillStyle = '#000';
+                ctx.textAlign = 'center';
+                ctx.fillText(text, 0, 0);
+                ctx.restore();
+            });
+        }
+
+        function spinRoulette(canvas, ctx, slots, count, targetIndex, colorMap, callback) {
+            let rotation = 0;
+            const minSpins = 2 * 2 * Math.PI;
+            const angleStep = 2 * Math.PI / count;
+            const targetAngle = targetIndex * angleStep + angleStep / 2;
+            const totalRotation = minSpins + (2 * Math.PI - targetAngle);
+
+            const spinDuration = 2000 + Math.random() * 1000;
+            const startTime = performance.now();
+
+            function animate(time) {
+                const elapsed = time - startTime;
+                const progress = Math.min(elapsed / spinDuration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                rotation = easeOut * totalRotation;
+
+                ctx.save();
+                ctx.translate(CENTER_X, CENTER_Y);
+                ctx.rotate(rotation);
+                ctx.translate(-CENTER_X, -CENTER_Y);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawRoulette(ctx, slots, count, colorMap);
+                ctx.restore();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    callback();
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function playTurn() {
+            if (!gameActive || isSpinning) return;
+            isSpinning = true;
+            turn++;
+            zeroMedalTurns = totalMedals === 0 ? zeroMedalTurns + 1 : 0;
+
+            let force10 = null, force6 = null;
+            if (escapeStreak >= 6) {
+                force10 = ['釣り', '釣り+'][Math.floor(Math.random() * 2)];
+                const nonShark = ['タコ', 'エビ', 'タイ', 'ヒトデ', 'カニ'];
+                force6 = nonShark[Math.floor(Math.random() * nonShark.length)];
+                escapeStreak = 0;
+            } else if (zeroMedalTurns === 10) {
+                force10 = '釣り';
+                const nonShark = ['タコ', 'エビ', 'タイ', 'ヒトデ', 'カニ'];
+                force6 = nonShark[Math.floor(Math.random() * nonShark.length)];
+            }
+
+            const idx10 = force10 ? slots10.indexOf(force10) : Math.floor(Math.random() * 10);
+            const idx6 = force6 ? slots6.indexOf(force6) : Math.floor(Math.random() * 6);
+            const result10 = slots10[idx10];
+            const result6 = slots6[idx6];
+
+            lastResult10 = result10;
+            lastResult6 = result6;
+
+            let stopped = 0;
+            spinRoulette(canvas10, ctx10, slots10, 10, idx10, color10, () => {
+                stopped++;
+                if (stopped === 2) processResult(result10, result6);
+            });
+            spinRoulette(canvas6, ctx6, slots6, 6, idx6, color6, () => {
+                stopped++;
+                if (stopped === 2) processResult(result10, result6);
+            });
+        }
+
+        function processResult(r10, r6) {
+            result10El.textContent = r10;
+            result6El.textContent = r6;
+
+            let gain = 0, note = '';
+            const isShark = r6 === 'サメ';
+            const isFishing = r10 === '釣り' || r10 === '釣り+';
+            const isEscape = r10 === '逃げ';
+
+            if (isEscape) { escapeStreak++; bjpActive = false; } else { escapeStreak = 0; }
+
+            if (isShark && isEscape) { bonus += 1; note = 'サメ+逃げ'; sharkStreak = 0; }
+            else if (isEscape) { bonus += 1; sharkStreak = 0; }
+            else if (isFishing && !isShark) {
+                if (r10 === '釣り+') bonus += 5;
+                gain = (medalValues[r6] || 0) + bonus;
+                totalMedals += gain;
+                sharkStreak = 0;
+            }
+            else if (isShark && isFishing) {
+                sharkStreak++;
+                if (bjpActive && totalMedals === 0 && sharkStreak >= 3) {
+                    gain = 1000; totalMedals += gain; note = 'BJP発動！1000枚獲得';
+                    updateDisplay(gain, note, r10, r6, isShark);
+                    endGame(); isSpinning = false; return;
+                }
+                if (totalMedals === 0) { note = 'サメ（0枚なのでセーフ）'; sharkStreak++; }
+                else if (retryValue >= 0 && totalMedals <= retryValue) { note = 'サメだけどゲームオーバー回避'; sharkStreak = 0; }
+                else if (canRetry) { canRetry = false; bonus += 3; retryValue = totalMedals; note = 'ゲームオーバー → リトライ'; sharkStreak = 0; }
+                else { note = 'ゲームオーバー'; updateDisplay(gain, note, r10, r6, isShark); endGame(); isSpinning = false; return; }
+            }
+            else if (isShark) { sharkStreak++; }
+
+            if (totalMedals >= 9999) { updateDisplay(gain, note, r10, r6, isShark); endGame(); isSpinning = false; return; }
+
+            updateDisplay(gain, note, r10, r6, isShark);
+            isSpinning = false;
+            if (gameActive) setTimeout(playTurn, 800);
+        }
+
+        function updateDisplay(gain, note, r10, r6, isRed) {
+            currentMedals += gain;
+            totalMedals += gain;
+
+            totalMedalsEl.textContent = totalMedals;
+            bonusEl.textContent = bonus;
+
+            const row = document.createElement('tr');
+            if (isRed) row.classList.add('history-red');
+            row.innerHTML = `
+                <td>${turn}</td>
+                <td>${r10}</td>
+                <td>${r6}</td>
+                <td>${bonus}</td>
+                <td>${gain}</td>
+                <td>${totalMedals}</td>
+                <td>${note}</td>
+            `;
+            historyBody.insertBefore(row, historyBody.firstChild);
+        }
+
+        function endGame() {
+            gameActive = false;
+            startBtn.textContent = 'ルーレット開始';
+
+            // ゲームオーバー時の最終行を追加（すでに processResult で追加済みなので不要）
+            // → ただし、リトライ発動時も含めて最終行が表示されるように
+
+            recentGames.unshift({ bonus, total: totalMedals, retry: canRetry ? -1 : retryValue });
+            if (recentGames.length > 30) recentGames.pop();
+            updateRecentGames();
+        }
+
+        function updateRecentGames() {
+            recentBody.innerHTML = '';
+            recentGames.forEach((g, i) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>ゲーム${i+1}</td><td>${g.bonus}</td><td>${g.total}</td><td>${g.retry >= 0 ? g.retry : '-'}</td>`;
+                recentBody.appendChild(row);
+            });
+        }
+
+        function resetGame() {
+            turn = 0;
+            currentMedals = 0;
+            totalMedals = 0;
+            bonus = 0;
+            sharkStreak = 0;
+            escapeStreak = 0;
+            zeroMedalTurns = 0;
+            bjpActive = true;
+            canRetry = true;
+            retryValue = -1;
+
+            totalMedalsEl.textContent = 0;
+            bonusEl.textContent = 0;
+            result10El.textContent = '-';
+            result6El.textContent = '-';
+        }
+
+        startBtn.addEventListener('click', () => {
+            if (isSpinning) return;
+            if (!gameActive) {
+                if (turn > 0) { historyBody.innerHTML = ''; resetGame(); }
+                gameActive = true; startBtn.textContent = 'ゲーム中...'; playTurn();
+            }
+        });
+
+        drawRoulette(ctx10, slots10, 10, color10);
+        drawRoulette(ctx6, slots6, 6, color6);
+        resetGame();
+    </script>
+</body>
+</html>

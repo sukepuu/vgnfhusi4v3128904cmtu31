@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>フィッシングRushシミュレーター</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 20px; background: #f0f8ff; }
@@ -34,11 +35,11 @@
 
         <div class="roulette-container">
             <div class="roulette">
-                <div class="arrow">↓</div> <!-- そのまま「Down Arrow」 -->
+                <div class="arrow">↓</div>
                 <canvas id="roulette10" width="200" height="200"></canvas>
             </div>
             <div class="roulette">
-                <div class="arrow">↓</div> <!-- そのまま「Down Arrow」 -->
+                <div class="arrow">↓</div>
                 <canvas id="roulette6" width="200" height="200"></canvas>
             </div>
         </div>
@@ -99,14 +100,33 @@
         const slots6 = ['サメ', 'タコ', 'エビ', 'タイ', 'ヒトデ', 'カニ'];
         const medalValues = { 'タコ': 30, 'エビ': 20, 'タイ': 70, 'ヒトデ': 10, 'カニ': 50 };
 
-        const color10 = { '釣り': '#ffff99', '釣り+': '#ff999 neuen', '逃げ': '#99ccff' };
-        const color6 = { 'サメ': '#ff6666', 'タコ': '#66cc66', 'エビ': '#99ccff', 'タイ': '#ffff99', 'ヒトデ': '#6699ff', 'カニ': '#ccff99' };
+        // 色定義（釣り+ を サメと同じ赤に！）
+        const color10 = {
+            '釣り': '#ffff99',   // 黄色
+            '釣り+': '#ff6666',  // サメと同じ赤色！
+            '逃げ': '#99ccff'    // 水色
+        };
+        const color6 = {
+            'サメ': '#ff6666',   // 赤色（釣り+ と統一）
+            'タコ': '#66cc66',   // 緑色
+            'エビ': '#99ccff',   // 水色
+            'タイ': '#ffff99',   // 黄色
+            'ヒトデ': '#6699ff', // 青色
+            'カニ': '#ccff99'    // 黄緑色
+        };
 
-        let currentMedals = 0, totalMedals = 0, bonus = 0, turn = 0, isSpinning = false, gameActive = false;
-        let retryValue = -1, canRetry = true;
-        let sharkStreak = 0, escapeStreak = 0, zeroMedalTurns = 0, bjpActive = true;
+        let totalMedals = 0;
+        let bonus = 0;
+        let turn = 0;
+        let isSpinning = false;
+        let gameActive = false;
+        let retryValue = -1;
+        let canRetry = true;
+        let sharkStreak = 0;
+        let escapeStreak = 0;
+        let zeroMedalTurns = 0;
+        let bjpActive = true;
         let recentGames = [];
-        let lastResult10 = '', lastResult6 = ''; // 終了時用
 
         const startBtn = document.getElementById('startBtn');
         const result10El = document.getElementById('result10');
@@ -120,7 +140,7 @@
         drawRoulette(ctx6, slots6, 6, color6);
 
         function drawRoulette(ctx, slots, count, colorMap) {
-            const angleStep = 2 * Math.PI / count;
+            const angleStep = (2 * Math.PI) / count;
             slots.forEach((text, i) => {
                 const startAngle = i * angleStep - Math.PI / 2;
                 const endAngle = startAngle + angleStep;
@@ -134,8 +154,9 @@
                 ctx.stroke();
 
                 const textAngle = startAngle + angleStep / 2;
-                const x = CENTER_X + RADIUS * 0.7 * Math.cos(textAngle);
-                const y = CENTER_Y + RADIUS * 0.7 * Math.sin(textAngle);
+                const textRadius = RADIUS * 0.7;
+                const x = CENTER_X + textRadius * Math.cos(textAngle);
+                const y = CENTER_Y + textRadius * Math.sin(textAngle);
 
                 ctx.save();
                 ctx.translate(x, y);
@@ -151,8 +172,8 @@
         function spinRoulette(canvas, ctx, slots, count, targetIndex, colorMap, callback) {
             let rotation = 0;
             const minSpins = 2 * 2 * Math.PI;
-            const angleStep = 2 * Math.PI / count;
-            const targetAngle = targetIndex * angleStep + angleStep / 2;
+            const angleStep = (2 * Math.PI) / count;
+            const targetAngle = (targetIndex * angleStep) + (angleStep / 2);
             const totalRotation = minSpins + (2 * Math.PI - targetAngle);
 
             const spinDuration = 2000 + Math.random() * 1000;
@@ -162,6 +183,7 @@
                 const elapsed = time - startTime;
                 const progress = Math.min(elapsed / spinDuration, 1);
                 const easeOut = 1 - Math.pow(1 - progress, 3);
+
                 rotation = easeOut * totalRotation;
 
                 ctx.save();
@@ -187,13 +209,15 @@
             turn++;
             zeroMedalTurns = totalMedals === 0 ? zeroMedalTurns + 1 : 0;
 
-            let force10 = null, force6 = null;
+            let force10 = null;
+            let force6 = null;
             if (escapeStreak >= 6) {
                 force10 = ['釣り', '釣り+'][Math.floor(Math.random() * 2)];
                 const nonShark = ['タコ', 'エビ', 'タイ', 'ヒトデ', 'カニ'];
                 force6 = nonShark[Math.floor(Math.random() * nonShark.length)];
                 escapeStreak = 0;
-            } else if (zeroMedalTurns === 10) {
+            }
+            else if (zeroMedalTurns === 10) {
                 force10 = '釣り';
                 const nonShark = ['タコ', 'エビ', 'タイ', 'ヒトデ', 'カニ'];
                 force6 = nonShark[Math.floor(Math.random() * nonShark.length)];
@@ -203,9 +227,6 @@
             const idx6 = force6 ? slots6.indexOf(force6) : Math.floor(Math.random() * 6);
             const result10 = slots10[idx10];
             const result6 = slots6[idx6];
-
-            lastResult10 = result10;
-            lastResult6 = result6;
 
             let stopped = 0;
             spinRoulette(canvas10, ctx10, slots10, 10, idx10, color10, () => {
@@ -222,51 +243,116 @@
             result10El.textContent = r10;
             result6El.textContent = r6;
 
-            let gain = 0, note = '';
+            let gain = 0;
+            let note = '';
             const isShark = r6 === 'サメ';
-            const isFishing = r10 === '釣り' || r10 === '釣り+';
+            const isFishing = r10 === '釣り';
+            const isFishingPlus = r10 === '釣り+';
             const isEscape = r10 === '逃げ';
 
-            if (isEscape) { escapeStreak++; bjpActive = false; } else { escapeStreak = 0; }
+            if (isEscape) {
+                escapeStreak++;
+                bjpActive = false;
+            } else {
+                escapeStreak = 0;
+            }
 
-            if (isShark && isEscape) { bonus += 1; note = 'サメ+逃げ'; sharkStreak = 0; }
-            else if (isEscape) { bonus += 1; sharkStreak = 0; }
-            else if (isFishing && !isShark) {
-                if (r10 === '釣り+') bonus += 5;
-                gain = (medalValues[r6] || 0) + bonus;
-                totalMedals += gain;
+            if (isShark && isEscape) {
+                bonus += 1;
+                note = 'サメ+逃げ';
                 sharkStreak = 0;
             }
+            else if (isEscape) {
+                bonus += 1;
+                sharkStreak = 0;
+            }
+            else if ((isFishing || isFishingPlus) && !isShark) {
+                if (isFishingPlus) bonus += 5;
+                gain = (medalValues[r6] || 0) + bonus;
+                sharkStreak = 0;
+            }
+            // 新仕様1：サメ＋釣り+
+            else if (isShark && isFishingPlus) {
+                bonus += 5;
+                note = 'サメ＋釣り+（ボーナス+5）';
+                sharkStreak++;
+                if (totalMedals === 0) {
+                    note += '（0枚なのでセーフ）';
+                } else if (retryValue >= 0 && totalMedals <= retryValue) {
+                    note += '（リトライ保護中）';
+                } else if (canRetry) {
+                    canRetry = false;
+                    bonus += 3;
+                    retryValue = totalMedals;
+                    note += ' → リトライ';
+                } else {
+                    note += ' → ゲームオーバー';
+                    updateDisplay(0, note, r10, r6, isShark);
+                    endGame();
+                    isSpinning = false;
+                    return;
+                }
+            }
+            // サメ＋釣り（通常）
             else if (isShark && isFishing) {
                 sharkStreak++;
                 if (bjpActive && totalMedals === 0 && sharkStreak >= 3) {
-                    gain = 1000; totalMedals += gain; note = 'BJP発動！1000枚獲得';
+                    gain = 1000;
+                    note = 'BJP発動！1000枚獲得';
                     updateDisplay(gain, note, r10, r6, isShark);
-                    endGame(); isSpinning = false; return;
+                    endGame();
+                    isSpinning = false;
+                    return;
                 }
-                if (totalMedals === 0) { note = 'サメ（0枚なのでセーフ）'; sharkStreak++; }
-                else if (retryValue >= 0 && totalMedals <= retryValue) { note = 'サメだけどゲームオーバー回避'; sharkStreak = 0; }
-                else if (canRetry) { canRetry = false; bonus += 3; retryValue = totalMedals; note = 'ゲームオーバー → リトライ'; sharkStreak = 0; }
-                else { note = 'ゲームオーバー'; updateDisplay(gain, note, r10, r6, isShark); endGame(); isSpinning = false; return; }
+                if (totalMedals === 0) {
+                    note = 'サメ（0枚なのでセーフ）';
+                    sharkStreak++;
+                }
+                else if (retryValue >= 0 && totalMedals <= retryValue) {
+                    note = 'サメだけどゲームオーバー回避';
+                    sharkStreak = 0;
+                }
+                else if (canRetry) {
+                    canRetry = false;
+                    bonus += 3;
+                    retryValue = totalMedals;
+                    note = 'ゲームオーバー → リトライ';
+                    sharkStreak = 0;
+                }
+                else {
+                    note = 'ゲームオーバー';
+                    updateDisplay(0, note, r10, r6, isShark);
+                    endGame();
+                    isSpinning = false;
+                    return;
+                }
             }
-            else if (isShark) { sharkStreak++; }
+            else if (isShark) {
+                sharkStreak++;
+            }
 
-            if (totalMedals >= 9999) { updateDisplay(gain, note, r10, r6, isShark); endGame(); isSpinning = false; return; }
+            if (totalMedals >= 9999) {
+                updateDisplay(gain, note, r10, r6, isShark);
+                endGame();
+                isSpinning = false;
+                return;
+            }
 
             updateDisplay(gain, note, r10, r6, isShark);
             isSpinning = false;
-            if (gameActive) setTimeout(playTurn, 800);
+            if (gameActive) {
+                setTimeout(playTurn, 800);
+            }
         }
 
         function updateDisplay(gain, note, r10, r6, isRed) {
-            currentMedals += gain;
             totalMedals += gain;
 
             totalMedalsEl.textContent = totalMedals;
             bonusEl.textContent = bonus;
 
             const row = document.createElement('tr');
-            if (isRed) row.classList.add('history-red');
+            if (r6 === 'サメ') row.classList.add('history-red');
             row.innerHTML = `
                 <td>${turn}</td>
                 <td>${r10}</td>
@@ -280,12 +366,25 @@
         }
 
         function endGame() {
+            // 新仕様2：終了時ボーナス（1回だけ加算）
+            const endBonus = 30 + bonus;
+            totalMedals += endBonus;
+
+            // 履歴に直接追加（updateDisplay を使わない！）
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>終了</td>
+                <td>-</td>
+                <td>-</td>
+                <td>${bonus}</td>
+                <td>${endBonus}</td>
+                <td>${totalMedals}</td>
+                <td>ゲーム終了ボーナス</td>
+            `;
+            historyBody.insertBefore(row, historyBody.firstChild);
+
             gameActive = false;
             startBtn.textContent = 'ルーレット開始';
-
-            // ゲームオーバー時の最終行を追加（すでに processResult で追加済みなので不要）
-            // → ただし、リトライ発動時も含めて最終行が表示されるように
-
             recentGames.unshift({ bonus, total: totalMedals, retry: canRetry ? -1 : retryValue });
             if (recentGames.length > 30) recentGames.pop();
             updateRecentGames();
@@ -302,7 +401,6 @@
 
         function resetGame() {
             turn = 0;
-            currentMedals = 0;
             totalMedals = 0;
             bonus = 0;
             sharkStreak = 0;
@@ -321,8 +419,13 @@
         startBtn.addEventListener('click', () => {
             if (isSpinning) return;
             if (!gameActive) {
-                if (turn > 0) { historyBody.innerHTML = ''; resetGame(); }
-                gameActive = true; startBtn.textContent = 'ゲーム中...'; playTurn();
+                if (turn > 0) {
+                    historyBody.innerHTML = '';
+                    resetGame();
+                }
+                gameActive = true;
+                startBtn.textContent = 'ゲーム中...';
+                playTurn();
             }
         });
 

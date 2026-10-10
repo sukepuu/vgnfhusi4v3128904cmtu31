@@ -21,6 +21,7 @@ const MAP_RECT := Rect2(-700, -780, 1400, 840)
 const MAX_ENEMIES := 260
 const MAX_SOLDIERS := 5
 const MAX_GUARDS := 3
+const MAX_BUILDERS := 3
 const MAX_PETS := 4
 ## 近くの敵を素早く探すための空間グリッドのマス目サイズ
 const GRID_CELL := 64.0
@@ -236,6 +237,8 @@ func add_guard() -> void:
 
 
 func add_builder() -> void:
+	if builders.size() >= MAX_BUILDERS:
+		return
 	var b := BuilderScript.new()
 	b.game = self
 	b.index = builders.size()

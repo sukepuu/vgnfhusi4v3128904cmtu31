@@ -23,7 +23,8 @@ const LIST := [
 	{"id": "soldier_hp", "cat": "soldier", "name": "鍛錬", "desc": "遊撃兵の最大HP +25、全員HP全回復", "max": 4},
 	{"id": "speed", "cat": "soldier", "name": "俊足", "desc": "遊撃兵の移動速度 +12%", "max": 3},
 	# ---- 築城部隊
-	{"id": "builder", "cat": "builder", "name": "築城部隊", "desc": "城の上側180度を囲むように、30秒ごとに壁を1枚建てる（壁は10ダメージ分防ぐ）", "max": 1, "weight": 2.0},
+	{"id": "builder", "cat": "builder", "name": "築城部隊", "desc": "城の上側180度を囲むように、30秒ごとに壁を1枚建てる（壁は10ダメージ分防ぐ）",
+		"desc_up": "築城部隊の作業員が1人増える（最大3人、それぞれ別の場所に壁を建てる）", "max": 3, "weight": 2.0},
 	{"id": "build_speed", "cat": "builder", "name": "突貫工事", "desc": "壁の建築時間 -20%", "max": 4, "req": "builder"},
 	{"id": "wall_hp", "cat": "builder", "name": "石壁強化", "desc": "壁の耐久力 +10（建っている壁にも反映）", "max": 5, "req": "builder"},
 	{"id": "wall_width", "cat": "builder", "name": "大きな壁", "desc": "これから建てる壁の幅 +4度（少ない枚数で囲める）", "max": 3, "req": "builder"},

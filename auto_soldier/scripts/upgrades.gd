@@ -2,6 +2,7 @@ extends RefCounted
 ## レベルアップ時の強化一覧。ここに追加すれば3択の候補に出るようになる。
 ##   cat     : "soldier"（遊撃部隊）/ "builder"（築城部隊）/ "guard"（迎撃部隊）/ "castle"（城）
 ##   req     : この強化を取得済みでないと候補に出ない
+##   req_any : このどれかを取得済みでないと候補に出ない
 ##   max     : 取得できる上限レベル
 ##   weight  : 候補に出やすさ（省略時 1.0）
 ##   desc_up : 2回目以降に表示する説明（省略時は desc）
@@ -35,23 +36,26 @@ const LIST := [
 	{"id": "guard_speed", "cat": "guard", "name": "機動訓練", "desc": "迎撃部隊の移動速度 +15%", "max": 3, "req": "guard"},
 	{"id": "spear_reach", "cat": "guard", "name": "長槍", "desc": "槍のリーチ +25", "max": 4, "req": "guard"},
 	{"id": "spear_dmg", "cat": "guard", "name": "槍術", "desc": "槍の攻撃力 +35%", "max": 5, "req": "guard"},
+	# ---- 重装部隊
+	{"id": "heavy", "cat": "heavy", "name": "重装部隊", "desc": "足は遅いが耐久力と攻撃力が高い重装兵が加わる。壁の中央の前に陣取り、近づく敵を斬撃で迎え撃つ", "max": 1, "weight": 1.5},
 	# ---- 城
 	{"id": "tower", "cat": "castle", "name": "矢倉", "desc": "城に矢倉が建ち、近づく敵を自動で射る",
 		"desc_up": "矢倉をもう1基追加、全矢倉の威力 +15%", "max": 4, "weight": 1.5},
 	{"id": "cannon", "cat": "castle", "name": "大砲", "desc": "敵が密集した場所へ砲弾を撃ち込む（範囲攻撃）",
-		"desc_up": "大砲の間隔 -20%、威力 +30%", "max": 4, "weight": 1.3},
+		"desc_up": "大砲をもう1門追加（最大3門）", "max": 3, "weight": 1.3},
 	{"id": "catapult", "cat": "castle", "name": "投石器", "desc": "大砲より広い範囲に岩を落とす（発射間隔は長い）",
-		"desc_up": "投石器の間隔 -20%、威力 +30%", "max": 4},
+		"desc_up": "投石器をもう1台追加（最大3台）", "max": 3},
+	{"id": "artillery", "cat": "castle", "name": "砲術", "desc": "大砲と投石器の威力 +30%、発射間隔 -10%", "max": 4, "req_any": ["cannon", "catapult"]},
 	{"id": "frost", "cat": "castle", "name": "氷結の結界", "desc": "城のまわりの敵の動きを遅くする",
 		"desc_up": "結界の範囲が広がり、さらに遅くなる", "max": 3},
 	{"id": "wall", "cat": "castle", "name": "城壁補強", "desc": "城の最大HP +100、城のHP全回復", "max": 5},
 	{"id": "repair", "cat": "castle", "name": "修理工", "desc": "城のHPが毎秒2回復する", "max": 3},
 ]
 
-const CAT_LABEL := {"soldier": "遊撃", "builder": "築城", "guard": "迎撃", "castle": "城"}
+const CAT_LABEL := {"soldier": "遊撃", "builder": "築城", "guard": "迎撃", "heavy": "重装", "castle": "城"}
 const CAT_COLOR := {
 	"soldier": Color(0.6, 0.85, 1.0), "builder": Color(1.0, 0.88, 0.45),
-	"guard": Color(0.6, 1.0, 0.65), "castle": Color(1.0, 0.7, 0.45)}
+	"guard": Color(0.6, 1.0, 0.65), "heavy": Color(0.85, 0.75, 1.0), "castle": Color(1.0, 0.7, 0.45)}
 
 
 ## まだ上限に達していない強化から、出やすさに応じてランダムに n 個選ぶ
@@ -65,6 +69,13 @@ static func roll(levels: Dictionary, n: int, game: Node2D) -> Array:
 		# 部隊がいないと出ない強化
 		if u.has("req") and levels.get(u["req"], 0) <= 0:
 			continue
+		if u.has("req_any"):
+			var ok := false
+			for r in u["req_any"]:
+				if levels.get(r, 0) > 0:
+					ok = true
+			if not ok:
+				continue
 		available.append(u)
 	var result: Array = []
 	while result.size() < n and not available.is_empty():
@@ -147,18 +158,19 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.guard_stats.spear_damage *= 1.35
 		"catapult":
 			castle.catapult_level = new_level
-			if new_level > 1:
-				castle.catapult_interval *= 0.8
-				castle.catapult_damage *= 1.3
+		"artillery":
+			castle.cannon_damage *= 1.3
+			castle.catapult_damage *= 1.3
+			castle.cannon_interval *= 0.9
+			castle.catapult_interval *= 0.9
+		"heavy":
+			game.add_heavy()
 		"tower":
 			castle.tower_count = new_level
 			if new_level > 1:
 				castle.tower_damage *= 1.15
 		"cannon":
 			castle.cannon_level = new_level
-			if new_level > 1:
-				castle.cannon_interval *= 0.8
-				castle.cannon_damage *= 1.3
 		"frost":
 			castle.frost_radius = 220.0 + 60.0 * new_level
 			castle.frost_slow = 0.25 + 0.1 * new_level

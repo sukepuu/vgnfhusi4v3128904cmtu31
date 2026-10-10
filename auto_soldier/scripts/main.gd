@@ -6,6 +6,7 @@ const SoldierStats := preload("res://scripts/soldier_stats.gd")
 const GuardScript := preload("res://scripts/guard.gd")
 const GuardStats := preload("res://scripts/guard_stats.gd")
 const BuilderScript := preload("res://scripts/builder.gd")
+const HeavyScript := preload("res://scripts/heavy.gd")
 const WallsScript := preload("res://scripts/walls.gd")
 const CastleScript := preload("res://scripts/castle.gd")
 const EnemyScript := preload("res://scripts/enemy.gd")
@@ -42,6 +43,8 @@ var guard_stats := GuardStats.new()
 var guards: Array = []
 ## 築城部隊
 var builders: Array = []
+## 重装部隊（最大1体）
+var heavy: Node2D = null
 var pets: Array = []
 ## 毎フレーム更新する敵リスト（各スクリプトから参照）
 var enemies_cache: Array = []
@@ -193,9 +196,12 @@ func nearest_enemy(pos: Vector2, max_dist: float) -> Node2D:
 	return best
 
 
-## 敵に狙われる味方（遊撃部隊＋迎撃部隊）。築城部隊は狙われない
+## 敵に狙われる味方（遊撃部隊＋迎撃部隊＋重装部隊）。築城部隊は狙われない
 func allies() -> Array:
-	return soldiers + guards
+	var list: Array = soldiers + guards
+	if heavy != null:
+		list.append(heavy)
+	return list
 
 
 ## 生きている味方のうち pos に一番近いもの
@@ -234,6 +240,15 @@ func add_guard() -> void:
 	g.position = castle.gate_position()
 	world.add_child(g)
 	guards.append(g)
+
+
+func add_heavy() -> void:
+	if heavy != null:
+		return
+	heavy = HeavyScript.new()
+	heavy.game = self
+	heavy.position = castle.gate_position()
+	world.add_child(heavy)
 
 
 func add_builder() -> void:

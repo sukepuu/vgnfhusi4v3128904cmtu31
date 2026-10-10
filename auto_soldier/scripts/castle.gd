@@ -21,22 +21,25 @@ var tower_range := 520.0
 var _tower_cds: Array = [0.0, 0.3, 0.6, 0.15]
 var _tower_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
 
-# --- 大砲（範囲攻撃）
+# --- 大砲（範囲攻撃）。強化を取るたびに1門ずつ増える（最大3門）
+const MAX_GUNS := 3
 var cannon_level := 0
 var cannon_interval := 4.0
 var cannon_damage := 40.0
 var cannon_radius := 90.0
 var cannon_range := 650.0
-var _cannon_cd := 1.0
-var _cannon_aim := Vector2.UP
+var _cannon_cds: Array = [1.0, 2.3, 3.6]
+var _cannon_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP]
 
-# --- 投石器（大砲より範囲が広いが、発射間隔が長い）
+# --- 投石器（大砲より範囲が広いが、発射間隔が長い）。最大3台
 var catapult_level := 0
 var catapult_interval := 9.0
 var catapult_damage := 60.0
 var catapult_radius := 150.0
-var _catapult_cd := 2.0
-var _catapult_swing := 0.0
+var _catapult_cds: Array = [2.0, 5.0, 8.0]
+var _catapult_swings: Array = [0.0, 0.0, 0.0]
+## 直前に撃ち込んだ場所（同じ場所に重ねて撃たないように）
+var _recent_shots: Array = []
 
 # --- 氷結の結界（近くの敵を遅くする）
 var frost_radius := 0.0
@@ -128,60 +131,66 @@ func _update_towers(delta: float) -> void:
 
 
 func _update_cannon(delta: float) -> void:
-	if cannon_level <= 0:
-		return
-	_cannon_cd -= delta
-	if _cannon_cd > 0.0:
-		return
-	var best := _densest_enemy(cannon_range, cannon_radius)
-	if best == null:
-		return
-	var from := global_position + Vector2(0, -HALF.y - 30.0)
-	_cannon_aim = (best.global_position - from).normalized()
-	var s := ShellScript.new()
-	s.game = game
-	s.start = from
-	s.target = best.global_position
-	s.damage = cannon_damage
-	s.blast_radius = cannon_radius
-	s.position = from
-	game.effects.add_child(s)
-	_cannon_cd = cannon_interval
+	for i in mini(cannon_level, MAX_GUNS):
+		_cannon_cds[i] -= delta
+		if _cannon_cds[i] > 0.0:
+			continue
+		var best := _densest_enemy(cannon_range, cannon_radius)
+		if best == null:
+			continue
+		var from := global_position + _cannon_local_pos(i)
+		_cannon_aims[i] = (best.global_position - from).normalized()
+		_fire_shell(from, best.global_position, cannon_damage, cannon_radius, false)
+		_cannon_cds[i] = cannon_interval
 
 
 func _update_catapult(delta: float) -> void:
-	_catapult_swing -= delta
-	if catapult_level <= 0:
-		return
-	_catapult_cd -= delta
-	if _catapult_cd > 0.0:
-		return
-	var best := _densest_enemy(2000.0, catapult_radius)
-	if best == null:
-		return
-	var from := global_position + _catapult_local_pos() + Vector2(0, -20)
+	for i in mini(catapult_level, MAX_GUNS):
+		_catapult_swings[i] -= delta
+		_catapult_cds[i] -= delta
+		if _catapult_cds[i] > 0.0:
+			continue
+		var best := _densest_enemy(2000.0, catapult_radius)
+		if best == null:
+			continue
+		var from := global_position + _catapult_local_pos(i) + Vector2(0, -20)
+		_fire_shell(from, best.global_position, catapult_damage, catapult_radius, true)
+		_catapult_cds[i] = catapult_interval
+		_catapult_swings[i] = 0.4
+
+
+func _fire_shell(from: Vector2, to: Vector2, dmg: float, area: float, boulder: bool) -> void:
 	var s := ShellScript.new()
 	s.game = game
 	s.start = from
-	s.target = best.global_position
-	s.damage = catapult_damage
-	s.blast_radius = catapult_radius
-	s.boulder = true
-	s.flight_time = 1.3
+	s.target = to
+	s.damage = dmg
+	s.blast_radius = area
+	s.boulder = boulder
+	if boulder:
+		s.flight_time = 1.3
 	s.position = from
 	game.effects.add_child(s)
-	_catapult_cd = catapult_interval
-	_catapult_swing = 0.4
+	_recent_shots.append({"pos": to, "area": area, "until": _t + s.flight_time + 0.3})
 
 
 ## 敵が一番密集している場所にいる敵（射程内）
 func _densest_enemy(max_range: float, area: float) -> Node2D:
+	_recent_shots = _recent_shots.filter(func(r: Dictionary) -> bool: return r["until"] > _t)
 	var best: Node2D = null
 	var best_score := 0
 	for e in game.enemies_cache:
 		if not is_instance_valid(e) or e.dead:
 			continue
 		if global_position.distance_to(e.global_position) > max_range:
+			continue
+		# まだ着弾していない砲弾の範囲内は狙わない
+		var covered := false
+		for r in _recent_shots:
+			if e.global_position.distance_to(r["pos"]) < r["area"] * 0.8:
+				covered = true
+				break
+		if covered:
 			continue
 		var n: int = game.enemies_near(e.global_position, area).size()
 		if n > best_score:
@@ -190,8 +199,18 @@ func _densest_enemy(max_range: float, area: float) -> Node2D:
 	return best
 
 
-func _catapult_local_pos() -> Vector2:
-	return Vector2(-HALF.x * 0.55, -HALF.y * 0.2)
+func _cannon_local_pos(i: int) -> Vector2:
+	match i:
+		0: return Vector2(0, -HALF.y - 30.0)
+		1: return Vector2(-72, -HALF.y - 26.0)
+		_: return Vector2(72, -HALF.y - 26.0)
+
+
+func _catapult_local_pos(i: int) -> Vector2:
+	match i:
+		0: return Vector2(-HALF.x * 0.55, -HALF.y * 0.2)
+		1: return Vector2(HALF.x * 0.55, -HALF.y * 0.2)
+		_: return Vector2(0, -HALF.y * 0.55)
 
 
 # ---------------------------------------------------------------- 描画
@@ -233,22 +252,24 @@ func _draw() -> void:
 		draw_line(p, p + aim * 18.0, Color(0.25, 0.15, 0.08), 4.0)
 
 	# 大砲
-	if cannon_level > 0:
-		var cp := Vector2(0, -HALF.y - 30.0)
+	for i in mini(cannon_level, MAX_GUNS):
+		var cp := _cannon_local_pos(i)
+		var aim: Vector2 = _cannon_aims[i]
 		draw_circle(cp, 14.0, Color(0.25, 0.25, 0.28))
-		draw_line(cp, cp + _cannon_aim * 26.0, Color(0.15, 0.15, 0.18), 10.0)
+		draw_line(cp, cp + aim * 26.0, Color(0.15, 0.15, 0.18), 10.0)
 
 	# 投石器
-	if catapult_level > 0:
-		var p := _catapult_local_pos()
+	for i in mini(catapult_level, MAX_GUNS):
+		var p := _catapult_local_pos(i)
 		var wood := Color(0.5, 0.35, 0.2)
 		draw_rect(Rect2(p + Vector2(-16, 4), Vector2(32, 8)), wood)
 		draw_line(p + Vector2(-10, 6), p + Vector2(0, -8), wood, 3.0)
 		draw_line(p + Vector2(10, 6), p + Vector2(0, -8), wood, 3.0)
-		var arm_ang := -2.2 if _catapult_swing > 0.0 else -0.5
+		var swinging: bool = _catapult_swings[i] > 0.0
+		var arm_ang := -2.2 if swinging else -0.5
 		var arm_end := p + Vector2(0, -8) + Vector2.from_angle(arm_ang) * 26.0
 		draw_line(p + Vector2(0, -8), arm_end, Color(0.4, 0.28, 0.15), 4.0)
-		if _catapult_swing <= 0.0:
+		if not swinging:
 			draw_circle(arm_end, 6.0, Color(0.45, 0.42, 0.4))
 
 	# HPバー（城の下）

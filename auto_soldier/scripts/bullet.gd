@@ -25,9 +25,16 @@ func _process(delta: float) -> void:
 		queue_free()
 		return
 	if from_enemy:
-		for s in game.soldiers:
+		for s in game.allies():
 			if not s.dead and global_position.distance_to(s.global_position) < radius + s.radius:
-				s.take_damage(damage)
+				# 弾が飛んできた方向を渡す（迎撃部隊の盾の判定用）
+				s.take_damage(damage, global_position - velocity.normalized() * 30.0)
+				queue_free()
+				return
+		var wi: int = game.walls.hit_test(global_position, radius)
+		if wi >= 0:
+			damage = game.walls.absorb(wi, damage)
+			if damage <= 0.0:
 				queue_free()
 				return
 		if game.castle.distance_to_point(global_position) < radius:

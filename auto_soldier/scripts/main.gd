@@ -3,6 +3,10 @@ extends Node2D
 
 const SoldierScript := preload("res://scripts/soldier.gd")
 const SoldierStats := preload("res://scripts/soldier_stats.gd")
+const GuardScript := preload("res://scripts/guard.gd")
+const GuardStats := preload("res://scripts/guard_stats.gd")
+const BuilderScript := preload("res://scripts/builder.gd")
+const WallsScript := preload("res://scripts/walls.gd")
 const CastleScript := preload("res://scripts/castle.gd")
 const EnemyScript := preload("res://scripts/enemy.gd")
 const PetScript := preload("res://scripts/pet.gd")
@@ -16,6 +20,7 @@ const Upgrades := preload("res://scripts/upgrades.gd")
 const MAP_RECT := Rect2(-700, -780, 1400, 840)
 const MAX_ENEMIES := 260
 const MAX_SOLDIERS := 5
+const MAX_GUARDS := 3
 const MAX_PETS := 4
 ## 近くの敵を素早く探すための空間グリッドのマス目サイズ
 const GRID_CELL := 64.0
@@ -24,12 +29,18 @@ var world: Node2D
 var effects: Node2D
 var camera: Camera2D
 var castle: Node2D
+var walls: Node2D
 var hud: CanvasLayer
 var level_up_ui: CanvasLayer
 
 ## 兵士全員で共有するステータス（強化はここに入る）
 var stats := SoldierStats.new()
 var soldiers: Array = []
+## 迎撃部隊（盾＋槍）
+var guard_stats := GuardStats.new()
+var guards: Array = []
+## 築城部隊
+var builders: Array = []
 var pets: Array = []
 ## 毎フレーム更新する敵リスト（各スクリプトから参照）
 var enemies_cache: Array = []
@@ -62,6 +73,11 @@ func _ready() -> void:
 	castle.game = self
 	castle.position = Vector2(MAP_RECT.get_center().x, MAP_RECT.end.y - 70.0)
 	world.add_child(castle)
+
+	walls = WallsScript.new()
+	walls.game = self
+	walls.position = castle.position
+	world.add_child(walls)
 
 	# 最初は兵士2人でスタート
 	add_soldier()
@@ -176,11 +192,16 @@ func nearest_enemy(pos: Vector2, max_dist: float) -> Node2D:
 	return best
 
 
-## 生きている兵士のうち pos に一番近いもの
-func nearest_soldier(pos: Vector2, max_dist: float) -> Node2D:
+## 敵に狙われる味方（遊撃部隊＋迎撃部隊）。築城部隊は狙われない
+func allies() -> Array:
+	return soldiers + guards
+
+
+## 生きている味方のうち pos に一番近いもの
+func nearest_ally(pos: Vector2, max_dist: float) -> Node2D:
 	var best: Node2D = null
 	var best_d := max_dist
-	for s in soldiers:
+	for s in allies():
 		if s.dead:
 			continue
 		var d: float = pos.distance_to(s.global_position)
@@ -203,6 +224,26 @@ func add_soldier() -> void:
 	soldiers.append(s)
 
 
+func add_guard() -> void:
+	if guards.size() >= MAX_GUARDS:
+		return
+	var g := GuardScript.new()
+	g.game = self
+	g.index = guards.size()
+	g.position = castle.gate_position()
+	world.add_child(g)
+	guards.append(g)
+
+
+func add_builder() -> void:
+	var b := BuilderScript.new()
+	b.game = self
+	b.index = builders.size()
+	b.position = castle.gate_position()
+	world.add_child(b)
+	builders.append(b)
+
+
 func add_pet() -> void:
 	if pets.size() >= MAX_PETS:
 		return
@@ -218,7 +259,7 @@ func add_pet() -> void:
 
 func _update_spawning(delta: float) -> void:
 	# 時間とともに出現ペースが上がる
-	var rate := minf(0.8 + elapsed * 0.02, 11.0)
+	var rate := minf(0.8 + elapsed * 0.018, 11.0)
 	_spawn_acc += rate * delta
 	while _spawn_acc >= 1.0:
 		_spawn_acc -= 1.0
@@ -241,6 +282,8 @@ func _pick_kind() -> String:
 		pool.append(["runner", 4.0])
 	if elapsed > 80.0:
 		pool.append(["brute", 1.0 + elapsed / 120.0])
+	if elapsed > 75.0:
+		pool.append(["hunter", 1.0 + elapsed / 200.0])
 	var total := 0.0
 	for entry in pool:
 		total += entry[1]

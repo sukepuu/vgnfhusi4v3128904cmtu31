@@ -1,6 +1,6 @@
 extends Node2D
 ## 守るべき城。HPが0になったらゲームオーバー。
-## 強化で迎撃システム（矢倉・大砲・氷結の結界）が増えていく。
+## 強化で迎撃システム（矢倉・大砲・投石器・氷結の結界）が増えていく。
 
 const BulletScript := preload("res://scripts/bullet.gd")
 const ShellScript := preload("res://scripts/shell.gd")
@@ -9,8 +9,8 @@ const ShellScript := preload("res://scripts/shell.gd")
 const HALF := Vector2(95, 45)
 
 var game: Node2D
-var max_hp := 500.0
-var hp := 500.0
+var max_hp := 600.0
+var hp := 600.0
 var regen := 0.0
 
 # --- 矢倉（自動で矢を撃つ）
@@ -30,6 +30,14 @@ var cannon_range := 650.0
 var _cannon_cd := 1.0
 var _cannon_aim := Vector2.UP
 
+# --- 投石器（大砲より範囲が広いが、発射間隔が長い）
+var catapult_level := 0
+var catapult_interval := 9.0
+var catapult_damage := 60.0
+var catapult_radius := 150.0
+var _catapult_cd := 2.0
+var _catapult_swing := 0.0
+
 # --- 氷結の結界（近くの敵を遅くする）
 var frost_radius := 0.0
 var frost_slow := 0.0
@@ -45,6 +53,7 @@ func _process(delta: float) -> void:
 		hp = minf(max_hp, hp + regen * delta)
 	_update_towers(delta)
 	_update_cannon(delta)
+	_update_catapult(delta)
 	queue_redraw()
 
 
@@ -124,18 +133,7 @@ func _update_cannon(delta: float) -> void:
 	_cannon_cd -= delta
 	if _cannon_cd > 0.0:
 		return
-	# 敵が一番密集している場所を狙う
-	var best: Node2D = null
-	var best_score := 0
-	for e in game.enemies_cache:
-		if not is_instance_valid(e) or e.dead:
-			continue
-		if global_position.distance_to(e.global_position) > cannon_range:
-			continue
-		var n: int = game.enemies_near(e.global_position, cannon_radius).size()
-		if n > best_score:
-			best_score = n
-			best = e
+	var best := _densest_enemy(cannon_range, cannon_radius)
 	if best == null:
 		return
 	var from := global_position + Vector2(0, -HALF.y - 30.0)
@@ -149,6 +147,51 @@ func _update_cannon(delta: float) -> void:
 	s.position = from
 	game.effects.add_child(s)
 	_cannon_cd = cannon_interval
+
+
+func _update_catapult(delta: float) -> void:
+	_catapult_swing -= delta
+	if catapult_level <= 0:
+		return
+	_catapult_cd -= delta
+	if _catapult_cd > 0.0:
+		return
+	var best := _densest_enemy(2000.0, catapult_radius)
+	if best == null:
+		return
+	var from := global_position + _catapult_local_pos() + Vector2(0, -20)
+	var s := ShellScript.new()
+	s.game = game
+	s.start = from
+	s.target = best.global_position
+	s.damage = catapult_damage
+	s.blast_radius = catapult_radius
+	s.boulder = true
+	s.flight_time = 1.3
+	s.position = from
+	game.effects.add_child(s)
+	_catapult_cd = catapult_interval
+	_catapult_swing = 0.4
+
+
+## 敵が一番密集している場所にいる敵（射程内）
+func _densest_enemy(max_range: float, area: float) -> Node2D:
+	var best: Node2D = null
+	var best_score := 0
+	for e in game.enemies_cache:
+		if not is_instance_valid(e) or e.dead:
+			continue
+		if global_position.distance_to(e.global_position) > max_range:
+			continue
+		var n: int = game.enemies_near(e.global_position, area).size()
+		if n > best_score:
+			best_score = n
+			best = e
+	return best
+
+
+func _catapult_local_pos() -> Vector2:
+	return Vector2(-HALF.x * 0.55, -HALF.y * 0.2)
 
 
 # ---------------------------------------------------------------- 描画
@@ -194,6 +237,19 @@ func _draw() -> void:
 		var cp := Vector2(0, -HALF.y - 30.0)
 		draw_circle(cp, 14.0, Color(0.25, 0.25, 0.28))
 		draw_line(cp, cp + _cannon_aim * 26.0, Color(0.15, 0.15, 0.18), 10.0)
+
+	# 投石器
+	if catapult_level > 0:
+		var p := _catapult_local_pos()
+		var wood := Color(0.5, 0.35, 0.2)
+		draw_rect(Rect2(p + Vector2(-16, 4), Vector2(32, 8)), wood)
+		draw_line(p + Vector2(-10, 6), p + Vector2(0, -8), wood, 3.0)
+		draw_line(p + Vector2(10, 6), p + Vector2(0, -8), wood, 3.0)
+		var arm_ang := -2.2 if _catapult_swing > 0.0 else -0.5
+		var arm_end := p + Vector2(0, -8) + Vector2.from_angle(arm_ang) * 26.0
+		draw_line(p + Vector2(0, -8), arm_end, Color(0.4, 0.28, 0.15), 4.0)
+		if _catapult_swing <= 0.0:
+			draw_circle(arm_end, 6.0, Color(0.45, 0.42, 0.4))
 
 	# HPバー（城の下）
 	var w := HALF.x * 2.0

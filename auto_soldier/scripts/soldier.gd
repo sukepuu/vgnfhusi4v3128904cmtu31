@@ -316,7 +316,7 @@ func _update_dash(delta: float) -> void:
 
 # ---------------------------------------------------------------- 被ダメージ・復活
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 	if dead or _invuln > 0.0:
 		return
 	hp -= amount

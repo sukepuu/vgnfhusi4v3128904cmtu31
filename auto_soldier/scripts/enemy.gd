@@ -2,6 +2,8 @@ extends Node2D
 ## 敵。城を目指して進んでくる。
 ## 近接型（grunt / runner / brute）は城に触れると消滅して城にダメージ、近くの兵士には体当たり。
 ## 遠距離型（archer）は近くの兵士か城を狙って弾を撃つ。
+## 刺客（hunter）は城を無視して兵士（遊撃部隊・迎撃部隊）だけを狙う。壁もすり抜ける。
+## 壁に触れると、城へ与えるはずのダメージを壁が受け止める。受け止めきれなければ残りのダメージで進み続ける。
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
@@ -17,6 +19,7 @@ var radius := 14.0
 var xp_value := 1
 var color := Color(0.9, 0.3, 0.3)
 var ranged := false
+var hunter := false
 var dead := false
 
 var knock := Vector2.ZERO
@@ -42,8 +45,12 @@ func setup(k: String, hp_mult: float) -> void:
 			color = Color(0.7, 0.4, 0.95)
 			ranged = true
 		"brute":
-			max_hp = 130.0; speed = 35.0; damage = 18.0; castle_damage = 35.0; radius = 26.0; xp_value = 6
+			max_hp = 130.0; speed = 35.0; damage = 18.0; castle_damage = 25.0; radius = 26.0; xp_value = 6
 			color = Color(0.55, 0.15, 0.2)
+		"hunter":
+			max_hp = 35.0; speed = 92.0; damage = 12.0; castle_damage = 0.0; radius = 13.0; xp_value = 3
+			color = Color(0.2, 0.65, 0.6)
+			hunter = true
 	max_hp *= hp_mult
 	hp = max_hp
 	speed *= randf_range(0.9, 1.1)
@@ -61,8 +68,13 @@ func _process(delta: float) -> void:
 	var move := Vector2.ZERO
 	# 基本は城へ。近くに兵士がいればそちらを狙う
 	var aggro := 300.0 if ranged else 110.0
-	var soldier: Node2D = game.nearest_soldier(global_position, aggro)
+	if hunter:
+		aggro = INF
+	var soldier: Node2D = game.nearest_ally(global_position, aggro)
 	var target_pos: Vector2 = soldier.global_position if soldier != null else castle.closest_point(global_position)
+	if hunter and soldier == null:
+		# 狙える兵士がいなければ城の前で待ち伏せ
+		target_pos = castle.gate_position() + Vector2(0, -280.0)
 	var to: Vector2 = target_pos - global_position
 	var d := to.length()
 	var dir := to / maxf(d, 0.001)
@@ -80,15 +92,19 @@ func _process(delta: float) -> void:
 			# 城への弾は少し弱い
 			_shoot(dir, damage if soldier != null else damage * 0.5)
 			_shoot_cd = randf_range(2.2, 3.0)
+	elif hunter and soldier == null and d < 20.0:
+		move = Vector2.ZERO
 	else:
 		move = dir
 	# 兵士への体当たり
-	var touching: Node2D = game.nearest_soldier(global_position, radius + 16.0)
+	var touching: Node2D = game.nearest_ally(global_position, radius + 16.0)
 	if touching != null and _contact_cd <= 0.0:
-		touching.take_damage(damage)
+		touching.take_damage(damage, global_position)
 		_contact_cd = 0.6
+	if not hunter and not _check_wall():
+		return
 	# 城に触れたら消滅して城にダメージ（経験値は入らない）
-	if castle.distance_to_point(global_position) < radius:
+	if not hunter and castle.distance_to_point(global_position) < radius:
 		castle.take_damage(castle_damage)
 		dead = true
 		remove_from_group("enemies")
@@ -102,6 +118,21 @@ func _process(delta: float) -> void:
 	_separate()
 	position = game.clamp_to_map(position, radius)
 	queue_redraw()
+
+
+## 壁に触れたら、城へのダメージを壁が受け止める。完全に止められたら消滅して false
+func _check_wall() -> bool:
+	var wi: int = game.walls.hit_test(global_position, radius)
+	if wi < 0:
+		return true
+	castle_damage = game.walls.absorb(wi, castle_damage)
+	if castle_damage > 0.0:
+		return true
+	dead = true
+	remove_from_group("enemies")
+	game.spawn_burst(global_position, color, radius)
+	queue_free()
+	return false
 
 
 ## 敵同士が重なりすぎないように押し出す
@@ -166,6 +197,14 @@ func _draw() -> void:
 			for s in [-1.0, 1.0]:
 				var base: Vector2 = _facing * radius * 0.6 + side * radius * 0.6 * s
 				draw_line(base, base + _facing * 12.0 + side * 6.0 * s, Color(0.9, 0.85, 0.7), 4.0)
+		"hunter":
+			# とがった刺客
+			var f := _facing
+			var o := _facing.orthogonal()
+			draw_colored_polygon(PackedVector2Array([
+				f * radius * 1.5, o * radius, -f * radius * 0.8, -o * radius]), c)
+			draw_line(o * radius * 0.9, o * radius * 0.9 + f * 14.0, Color(0.85, 0.9, 0.95), 2.0)
+			draw_line(-o * radius * 0.9, -o * radius * 0.9 + f * 14.0, Color(0.85, 0.9, 0.95), 2.0)
 		_:
 			draw_circle(Vector2.ZERO, radius, c)
 	# 目

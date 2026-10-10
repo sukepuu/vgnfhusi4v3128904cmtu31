@@ -1,0 +1,140 @@
+extends Node2D
+## 城を中心とした半円状（城の上側180度）の壁。築城部隊が1枚ずつ建てる。
+## 壁は受けたダメージを耐久力のぶんだけ受け止め、受け止めきれなかった分は通り抜ける。
+## 角度はGodotの向き（右=0、y軸が下向き）なので、上半分は PI〜TAU になる。
+
+const RADIUS := 215.0
+const THICKNESS := 14.0
+const ARC_START := PI
+const ARC_END := TAU
+const TOP := PI * 1.5
+
+var game: Node2D
+
+# --- 築城部隊のステータス（強化で変わる）
+var build_time := 30.0
+var wall_max_hp := 10.0
+var wall_width := deg_to_rad(12.0)
+
+## 建っている壁。{"a0": 開始角, "a1": 終了角, "hp": 耐久, "max": 最大耐久, "flash": 被弾演出}
+var walls: Array = []
+
+
+func _process(delta: float) -> void:
+	for w in walls:
+		w["flash"] = maxf(0.0, w["flash"] - delta)
+	queue_redraw()
+
+
+func point_at(angle: float, r: float = RADIUS) -> Vector2:
+	return global_position + Vector2.from_angle(angle) * r
+
+
+## 位置 p（半径 r）が壁に触れていれば壁の番号を返す。触れていなければ -1
+func hit_test(p: Vector2, r: float) -> int:
+	if walls.is_empty():
+		return -1
+	var rel := p - global_position
+	var d := rel.length()
+	if absf(d - RADIUS) > THICKNESS / 2.0 + r:
+		return -1
+	var a := rel.angle()
+	if a < 0.0:
+		a += TAU
+	var da := r / RADIUS
+	for i in walls.size():
+		if a >= walls[i]["a0"] - da and a <= walls[i]["a1"] + da:
+			return i
+	return -1
+
+
+## 壁 i でダメージを受け止める。受け止めきれなかった残りを返す（0なら完全に防いだ）
+func absorb(i: int, dmg: float) -> float:
+	var w: Dictionary = walls[i]
+	var taken := minf(w["hp"], dmg)
+	w["hp"] -= taken
+	w["flash"] = 0.15
+	if w["hp"] <= 0.0:
+		var mid: float = (w["a0"] + w["a1"]) / 2.0
+		game.spawn_burst(point_at(mid), Color(0.7, 0.65, 0.55), 20.0)
+		walls.remove_at(i)
+	return dmg - taken
+
+
+func add_wall(seg: Vector2) -> void:
+	walls.append({"a0": seg.x, "a1": seg.y, "hp": wall_max_hp, "max": wall_max_hp, "flash": 0.0})
+
+
+## 耐久力アップ（建っている壁にも反映）
+func add_wall_hp(amount: float) -> void:
+	wall_max_hp += amount
+	for w in walls:
+		w["max"] += amount
+		w["hp"] += amount
+
+
+## 次に壁を建てる場所（Vector2(開始角, 終了角)）を返す。全部埋まっていれば null。
+## reserved = ほかの築城部隊が建設中の場所。上（敵が多く来る方向）から順に埋めていく。
+func find_build_spot(reserved: Array) -> Variant:
+	var segs: Array = []
+	for w in walls:
+		segs.append(Vector2(w["a0"], w["a1"]))
+	segs.append_array(reserved)
+	segs.sort_custom(func(x: Vector2, y: Vector2) -> bool: return x.x < y.x)
+	var gaps: Array = []
+	var cur := ARC_START
+	for s in segs:
+		if s.x > cur + 0.01:
+			gaps.append(Vector2(cur, s.x))
+		cur = maxf(cur, s.y)
+	if cur < ARC_END - 0.01:
+		gaps.append(Vector2(cur, ARC_END))
+	if gaps.is_empty():
+		return null
+	# 真上に一番近いすき間を選ぶ
+	var best: Vector2 = gaps[0]
+	var best_d := INF
+	for g in gaps:
+		var dist := 0.0 if (TOP >= g.x and TOP <= g.y) else minf(absf(TOP - g.x), absf(TOP - g.y))
+		if dist < best_d:
+			best_d = dist
+			best = g
+	var w := wall_width
+	var center: float
+	if best.y - best.x <= w:
+		center = (best.x + best.y) / 2.0
+	else:
+		center = clampf(TOP, best.x + w / 2.0, best.y - w / 2.0)
+	var a0 := center - w / 2.0
+	var a1 := center + w / 2.0
+	# 半円の端からはみ出さないように
+	if a0 < ARC_START:
+		a1 += ARC_START - a0
+		a0 = ARC_START
+	if a1 > ARC_END:
+		a0 -= a1 - ARC_END
+		a1 = ARC_END
+	return Vector2(a0, a1)
+
+
+func _draw() -> void:
+	# 築城部隊がいれば、壁を建てる予定の線をうっすら表示
+	if not game.builders.is_empty():
+		draw_arc(Vector2.ZERO, RADIUS, ARC_START, ARC_END, 64, Color(0.8, 0.75, 0.6, 0.12), THICKNESS)
+	# 建設中の壁
+	for b in game.builders:
+		if b.state == "building":
+			draw_arc(Vector2.ZERO, RADIUS, b.plan.x, b.plan.y, 12, Color(0.8, 0.75, 0.6, 0.3), THICKNESS)
+			var a_end: float = lerpf(b.plan.x, b.plan.y, b.progress)
+			draw_arc(Vector2.ZERO, RADIUS, b.plan.x, a_end, 12, Color(0.75, 0.68, 0.55, 0.8), THICKNESS * 0.5)
+	# 建っている壁
+	for w in walls:
+		var ratio: float = w["hp"] / w["max"]
+		var col := Color(0.42, 0.38, 0.34).lerp(Color(0.72, 0.68, 0.6), ratio)
+		if w["flash"] > 0.0:
+			col = Color(1, 0.9, 0.8)
+		var steps := maxi(4, int((w["a1"] - w["a0"]) / 0.03))
+		draw_arc(Vector2.ZERO, RADIUS, w["a0"], w["a1"], steps, Color(0.25, 0.22, 0.2), THICKNESS + 4.0)
+		draw_arc(Vector2.ZERO, RADIUS, w["a0"] + 0.004, w["a1"] - 0.004, steps, col, THICKNESS)
+		# 耐久力の目盛り
+		draw_arc(Vector2.ZERO, RADIUS + THICKNESS / 2.0 + 3.0, w["a0"], lerpf(w["a0"], w["a1"], ratio), steps, Color(1.0, 0.85, 0.4, 0.8), 2.0)

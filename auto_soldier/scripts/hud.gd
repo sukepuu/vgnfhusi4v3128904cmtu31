@@ -69,10 +69,10 @@ func _ready() -> void:
 	_soldier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	root.add_child(_soldier_label)
 
-	_skills_label = _make_label(15)
+	_skills_label = _make_label(13)
 	_skills_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_skills_label.offset_left = 16
-	_skills_label.offset_top = -260
+	_skills_label.offset_top = -560
 	_skills_label.offset_right = 400
 	_skills_label.offset_bottom = -16
 	_skills_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
@@ -111,11 +111,13 @@ func refresh() -> void:
 	_hp_bar.max_value = castle.max_hp
 	_hp_bar.value = castle.hp
 	_hp_label.text = "城 HP %d / %d" % [ceili(castle.hp), int(castle.max_hp)]
-	var alive := 0
-	for s in game.soldiers:
-		if not s.dead:
-			alive += 1
-	_soldier_label.text = "兵士 %d / %d" % [alive, game.soldiers.size()]
+	var lines_r := PackedStringArray()
+	lines_r.append("遊撃 %d / %d" % [_alive(game.soldiers), game.soldiers.size()])
+	if not game.guards.is_empty():
+		lines_r.append("迎撃 %d / %d" % [_alive(game.guards), game.guards.size()])
+	if not game.builders.is_empty():
+		lines_r.append("壁 %d枚" % game.walls.walls.size())
+	_soldier_label.text = "\n".join(lines_r)
 	var t := int(game.elapsed)
 	_time_label.text = "%02d:%02d" % [t / 60, t % 60]
 	_kill_label.text = "撃破 %d" % game.kills
@@ -125,6 +127,14 @@ func refresh() -> void:
 		if lv > 0:
 			lines.append("【%s】%s  Lv%d" % [Upgrades.CAT_LABEL[u["cat"]], u["name"], lv])
 	_skills_label.text = "\n".join(lines)
+
+
+func _alive(units: Array) -> int:
+	var n := 0
+	for u in units:
+		if not u.dead:
+			n += 1
+	return n
 
 
 # ---------------------------------------------------------------- ゲームオーバー

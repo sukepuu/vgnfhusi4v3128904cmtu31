@@ -1,6 +1,6 @@
 extends Node2D
 ## 遊撃部隊の兵士。移動も攻撃もすべて自動。
-## 城に近い（危ない）敵を優先して倒しに行き、兵士同士はなるべく別の敵を狙う。
+## 常に自分から一番近い敵を倒しに行く。
 ## 射撃 = 点の攻撃（遠くの単体）、剣 = 面の攻撃（近くの扇形範囲）
 ## ステータスは game.stats を全員で共有している。
 
@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 	hp = minf(st.max_hp, hp + 1.5 * delta)
 	if _retarget_cd <= 0.0 or not _target_valid():
 		target = _choose_target()
-		_retarget_cd = 0.4
+		_retarget_cd = 0.2
 
 	if _dash_time > 0.0:
 		_update_dash(delta)
@@ -96,26 +96,9 @@ func _target_valid() -> bool:
 	return target != null and is_instance_valid(target) and not target.dead
 
 
-## 城に近い敵ほど優先。自分から近いほど優先。ほかの兵士が狙っている敵は避ける。
+## 常に自分から一番近い敵を狙う
 func _choose_target() -> Node2D:
-	var best: Node2D = null
-	var best_score := INF
-	var castle_pos: Vector2 = game.castle.global_position
-	for e in game.enemies_cache:
-		if not is_instance_valid(e) or e.dead:
-			continue
-		var to_castle: float = e.global_position.distance_to(castle_pos)
-		var score: float = to_castle + global_position.distance_to(e.global_position) * 0.6
-		# 城を撃てる距離にいる弓兵は最優先
-		if e.ranged and to_castle < 480.0:
-			score -= 250.0
-		for s in game.soldiers:
-			if s != self and not s.dead and s.target == e:
-				score += 300.0
-		if score < best_score:
-			best_score = score
-			best = e
-	return best
+	return game.nearest_enemy(global_position, INF)
 
 
 # ---------------------------------------------------------------- 自動移動AI

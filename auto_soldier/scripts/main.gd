@@ -1,7 +1,9 @@
 extends Node2D
-## ゲーム全体の管理：マップ、敵の出現、経験値・レベルアップ、UI
+## ゲーム全体の管理：フィールド、城、兵士、敵の出現、経験値・レベルアップ、UI
 
 const SoldierScript := preload("res://scripts/soldier.gd")
+const SoldierStats := preload("res://scripts/soldier_stats.gd")
+const CastleScript := preload("res://scripts/castle.gd")
 const EnemyScript := preload("res://scripts/enemy.gd")
 const PetScript := preload("res://scripts/pet.gd")
 const HudScript := preload("res://scripts/hud.gd")
@@ -10,22 +12,27 @@ const DamageTextScript := preload("res://scripts/damage_text.gd")
 const BurstScript := preload("res://scripts/burst_effect.gd")
 const Upgrades := preload("res://scripts/upgrades.gd")
 
-## マップの範囲（原点中心）
-const MAP_RECT := Rect2(-1600, -1600, 3200, 3200)
-const MAX_ENEMIES := 240
+## フィールドの範囲。城は一番下の中央に置く
+const MAP_RECT := Rect2(-700, -780, 1400, 840)
+const MAX_ENEMIES := 260
+const MAX_SOLDIERS := 5
 const MAX_PETS := 4
 ## 近くの敵を素早く探すための空間グリッドのマス目サイズ
 const GRID_CELL := 64.0
 
-var soldier: Node2D
 var world: Node2D
 var effects: Node2D
+var camera: Camera2D
+var castle: Node2D
 var hud: CanvasLayer
 var level_up_ui: CanvasLayer
 
+## 兵士全員で共有するステータス（強化はここに入る）
+var stats := SoldierStats.new()
+var soldiers: Array = []
+var pets: Array = []
 ## 毎フレーム更新する敵リスト（各スクリプトから参照）
 var enemies_cache: Array = []
-var pets: Array = []
 var _grid := {}
 
 var level := 1
@@ -38,7 +45,7 @@ var pending_levelups := 0
 var game_over := false
 
 var _spawn_acc := 0.0
-var _next_wave := 60.0
+var _next_wave := 50.0
 
 
 func _ready() -> void:
@@ -51,19 +58,20 @@ func _ready() -> void:
 	effects.z_index = 10
 	add_child(effects)
 
-	soldier = SoldierScript.new()
-	soldier.game = self
-	world.add_child(soldier)
-	soldier.died.connect(_on_soldier_died)
+	castle = CastleScript.new()
+	castle.game = self
+	castle.position = Vector2(MAP_RECT.get_center().x, MAP_RECT.end.y - 70.0)
+	world.add_child(castle)
 
-	var cam := Camera2D.new()
-	cam.position_smoothing_enabled = true
-	cam.position_smoothing_speed = 6.0
-	cam.limit_left = int(MAP_RECT.position.x) - 200
-	cam.limit_top = int(MAP_RECT.position.y) - 200
-	cam.limit_right = int(MAP_RECT.end.x) + 200
-	cam.limit_bottom = int(MAP_RECT.end.y) + 200
-	soldier.add_child(cam)
+	# 最初は兵士2人でスタート
+	add_soldier()
+	add_soldier()
+
+	camera = Camera2D.new()
+	camera.position = MAP_RECT.get_center()
+	add_child(camera)
+	_fit_camera()
+	get_viewport().size_changed.connect(_fit_camera)
 
 	hud = HudScript.new()
 	hud.game = self
@@ -76,6 +84,16 @@ func _ready() -> void:
 	queue_redraw()
 
 
+## フィールド全体が画面に収まるようにズームする
+func _fit_camera() -> void:
+	var vp := get_viewport().get_visible_rect().size
+	var need := MAP_RECT.size + Vector2(60, 140)
+	var z := minf(vp.x / need.x, vp.y / need.y)
+	camera.zoom = Vector2(z, z)
+	# HUDのぶん少し上に余白をとる
+	camera.position = MAP_RECT.get_center() + Vector2(0, -30)
+
+
 func _process(delta: float) -> void:
 	enemies_cache = get_tree().get_nodes_in_group("enemies")
 	_rebuild_grid()
@@ -86,29 +104,30 @@ func _process(delta: float) -> void:
 	hud.refresh()
 
 
-# ---------------------------------------------------------------- マップ
+# ---------------------------------------------------------------- フィールド
 
 func _draw() -> void:
-	var margin := 2000.0
-	draw_rect(MAP_RECT.grow(margin), Color(0.05, 0.06, 0.05))
+	draw_rect(MAP_RECT.grow(3000), Color(0.05, 0.06, 0.05))
 	draw_rect(MAP_RECT, Color(0.16, 0.24, 0.15))
-	var step := 100.0
 	var grid_col := Color(1, 1, 1, 0.05)
 	var x := MAP_RECT.position.x
 	while x <= MAP_RECT.end.x:
 		draw_line(Vector2(x, MAP_RECT.position.y), Vector2(x, MAP_RECT.end.y), grid_col, 1.0)
-		x += step
+		x += 100.0
 	var y := MAP_RECT.position.y
 	while y <= MAP_RECT.end.y:
 		draw_line(Vector2(MAP_RECT.position.x, y), Vector2(MAP_RECT.end.x, y), grid_col, 1.0)
-		y += step
+		y += 100.0
 	# 草っぽい模様
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 12345
-	for i in 500:
+	for i in 220:
 		var p := Vector2(rng.randf_range(MAP_RECT.position.x, MAP_RECT.end.x), rng.randf_range(MAP_RECT.position.y, MAP_RECT.end.y))
 		draw_circle(p, rng.randf_range(3.0, 9.0), Color(0.2, 0.32, 0.18, 0.6))
-	draw_rect(MAP_RECT, Color(0.55, 0.45, 0.3), false, 8.0)
+	# 城へ続く道
+	var road_top := Vector2(0, MAP_RECT.position.y)
+	draw_line(road_top, Vector2(0, MAP_RECT.end.y), Color(0.42, 0.36, 0.25, 0.35), 70.0)
+	draw_rect(MAP_RECT, Color(0.55, 0.45, 0.3), false, 6.0)
 
 
 func clamp_to_map(p: Vector2, r: float) -> Vector2:
@@ -136,39 +155,89 @@ func enemies_near(pos: Vector2, r: float) -> Array:
 	var x1 := floori((pos.x + r) / GRID_CELL)
 	var y0 := floori((pos.y - r) / GRID_CELL)
 	var y1 := floori((pos.y + r) / GRID_CELL)
-	for x in range(x0, x1 + 1):
-		for y in range(y0, y1 + 1):
-			var key := Vector2i(x, y)
+	for gx in range(x0, x1 + 1):
+		for gy in range(y0, y1 + 1):
+			var key := Vector2i(gx, gy)
 			if _grid.has(key):
 				result.append_array(_grid[key])
 	return result
+
+
+func nearest_enemy(pos: Vector2, max_dist: float) -> Node2D:
+	var best: Node2D = null
+	var best_d := max_dist
+	for e in enemies_cache:
+		if not is_instance_valid(e) or e.dead:
+			continue
+		var d: float = pos.distance_to(e.global_position) - e.radius
+		if d < best_d:
+			best_d = d
+			best = e
+	return best
+
+
+## 生きている兵士のうち pos に一番近いもの
+func nearest_soldier(pos: Vector2, max_dist: float) -> Node2D:
+	var best: Node2D = null
+	var best_d := max_dist
+	for s in soldiers:
+		if s.dead:
+			continue
+		var d: float = pos.distance_to(s.global_position)
+		if d < best_d:
+			best_d = d
+			best = s
+	return best
+
+
+# ---------------------------------------------------------------- 兵士・ペット
+
+func add_soldier() -> void:
+	if soldiers.size() >= MAX_SOLDIERS:
+		return
+	var s := SoldierScript.new()
+	s.game = self
+	s.index = soldiers.size()
+	s.position = castle.gate_position() + Vector2(randf_range(-40, 40), -20)
+	world.add_child(s)
+	soldiers.append(s)
+
+
+func add_pet() -> void:
+	if pets.size() >= MAX_PETS:
+		return
+	var p := PetScript.new()
+	p.game = self
+	p.index = pets.size()
+	p.position = castle.gate_position()
+	world.add_child(p)
+	pets.append(p)
 
 
 # ---------------------------------------------------------------- 敵の出現
 
 func _update_spawning(delta: float) -> void:
 	# 時間とともに出現ペースが上がる
-	var rate := minf(1.0 + elapsed * 0.025, 8.0)
+	var rate := minf(0.8 + elapsed * 0.02, 11.0)
 	_spawn_acc += rate * delta
 	while _spawn_acc >= 1.0:
 		_spawn_acc -= 1.0
 		if enemies_cache.size() < MAX_ENEMIES:
 			_spawn_enemy(_pick_kind(), _random_spawn_pos())
-	# 定期的に包囲ウェーブ
+	# 定期的に横一列の大群
 	if elapsed >= _next_wave:
 		_next_wave += 50.0
-		var count := 10 + int(elapsed / 20.0)
+		var count := 8 + int(elapsed / 25.0)
 		for i in count:
-			var ang := TAU * i / count
-			var pos := clamp_to_map(soldier.global_position + Vector2.from_angle(ang) * 650.0, 20.0)
-			_spawn_enemy("grunt", pos)
+			var px := lerpf(MAP_RECT.position.x + 60.0, MAP_RECT.end.x - 60.0, (i + 0.5) / count)
+			_spawn_enemy("grunt", Vector2(px, MAP_RECT.position.y + 20.0 + randf() * 40.0))
 
 
 func _pick_kind() -> String:
 	var pool := [["grunt", 10.0]]
-	if elapsed > 20.0:
-		pool.append(["archer", 3.0 + elapsed / 60.0])
-	if elapsed > 40.0:
+	if elapsed > 25.0:
+		pool.append(["archer", 2.0 + elapsed / 90.0])
+	if elapsed > 45.0:
 		pool.append(["runner", 4.0])
 	if elapsed > 80.0:
 		pool.append(["brute", 1.0 + elapsed / 120.0])
@@ -183,20 +252,22 @@ func _pick_kind() -> String:
 	return "grunt"
 
 
+## 上端か、左右の上半分から出てくる
 func _random_spawn_pos() -> Vector2:
-	var pos := Vector2.ZERO
-	for i in 8:
-		pos = soldier.global_position + Vector2.from_angle(randf() * TAU) * randf_range(720.0, 900.0)
-		pos = clamp_to_map(pos, 20.0)
-		if pos.distance_to(soldier.global_position) > 500.0:
-			return pos
-	return pos
+	var m := 20.0
+	var side := randf()
+	if side < 0.6:
+		return Vector2(randf_range(MAP_RECT.position.x + m, MAP_RECT.end.x - m), MAP_RECT.position.y + m)
+	var y := randf_range(MAP_RECT.position.y + m, MAP_RECT.get_center().y)
+	if side < 0.8:
+		return Vector2(MAP_RECT.position.x + m, y)
+	return Vector2(MAP_RECT.end.x - m, y)
 
 
 func _spawn_enemy(kind: String, pos: Vector2) -> void:
 	var e := EnemyScript.new()
 	e.game = self
-	e.setup(kind, 1.0 + elapsed / 90.0)
+	e.setup(kind, 1.0 + elapsed / 75.0 + pow(elapsed / 170.0, 2.0))
 	e.position = pos
 	world.add_child(e)
 
@@ -214,18 +285,18 @@ func add_xp(amount: int) -> void:
 	while xp >= xp_to_next:
 		xp -= xp_to_next
 		level += 1
-		xp_to_next = 4 + level * 3
+		xp_to_next = 4 + level * 3 + level * level / 8
 		pending_levelups += 1
 	if pending_levelups > 0 and not level_up_ui.visible and not game_over:
 		_open_level_up()
 
 
 func _open_level_up() -> void:
-	var choices := Upgrades.roll(upgrade_levels, 3)
+	var choices := Upgrades.roll(upgrade_levels, 3, self)
 	if choices.is_empty():
-		# 全部取りきったら回復だけ
+		# 全部取りきったら城を回復
 		pending_levelups = 0
-		soldier.hp = soldier.max_hp
+		castle.hp = castle.max_hp
 		return
 	hud.refresh()
 	get_tree().paused = true
@@ -242,17 +313,6 @@ func _on_upgrade_chosen(id: String) -> void:
 		_open_level_up()
 	else:
 		get_tree().paused = false
-
-
-func add_pet() -> void:
-	if pets.size() >= MAX_PETS:
-		return
-	var p := PetScript.new()
-	p.game = self
-	p.index = pets.size()
-	p.position = soldier.position
-	world.add_child(p)
-	pets.append(p)
 
 
 # ---------------------------------------------------------------- 演出
@@ -277,7 +337,9 @@ func spawn_burst(pos: Vector2, col: Color, r: float) -> void:
 
 # ---------------------------------------------------------------- ゲームオーバー
 
-func _on_soldier_died() -> void:
+func on_castle_destroyed() -> void:
+	if game_over:
+		return
 	game_over = true
 	level_up_ui.hide()
 	get_tree().paused = true

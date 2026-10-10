@@ -1,5 +1,7 @@
 extends Node2D
-## 敵。近接型（grunt / runner / brute）と遠距離型（archer）
+## 敵。城を目指して進んでくる。
+## 近接型（grunt / runner / brute）は城に触れると消滅して城にダメージ、近くの兵士には体当たり。
+## 遠距離型（archer）は近くの兵士か城を狙って弾を撃つ。
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
@@ -9,6 +11,8 @@ var max_hp := 20.0
 var hp := 20.0
 var speed := 95.0
 var damage := 8.0
+## 城に触れたときに城へ与えるダメージ
+var castle_damage := 8.0
 var radius := 14.0
 var xp_value := 1
 var color := Color(0.9, 0.3, 0.3)
@@ -21,23 +25,24 @@ var _shoot_cd := 1.5
 var _contact_cd := 0.0
 var _flash := 0.0
 var _strafe_sign := 1.0
+var speed_mult := 1.0
 
 
 func setup(k: String, hp_mult: float) -> void:
 	kind = k
 	match k:
 		"grunt":
-			max_hp = 20.0; speed = 95.0; damage = 6.0; radius = 14.0; xp_value = 1
+			max_hp = 20.0; speed = 55.0; damage = 6.0; castle_damage = 6.0; radius = 14.0; xp_value = 1
 			color = Color(0.9, 0.3, 0.3)
 		"runner":
-			max_hp = 12.0; speed = 165.0; damage = 6.0; radius = 11.0; xp_value = 1
+			max_hp = 12.0; speed = 105.0; damage = 6.0; castle_damage = 6.0; radius = 11.0; xp_value = 1
 			color = Color(1.0, 0.6, 0.2)
 		"archer":
-			max_hp = 18.0; speed = 85.0; damage = 10.0; radius = 14.0; xp_value = 2
+			max_hp = 18.0; speed = 50.0; damage = 5.0; castle_damage = 6.0; radius = 14.0; xp_value = 2
 			color = Color(0.7, 0.4, 0.95)
 			ranged = true
 		"brute":
-			max_hp = 130.0; speed = 55.0; damage = 20.0; radius = 26.0; xp_value = 6
+			max_hp = 130.0; speed = 35.0; damage = 18.0; castle_damage = 35.0; radius = 26.0; xp_value = 6
 			color = Color(0.55, 0.15, 0.2)
 	max_hp *= hp_mult
 	hp = max_hp
@@ -52,32 +57,47 @@ func _process(delta: float) -> void:
 		return
 	_flash -= delta
 	_contact_cd -= delta
-	var soldier: Node2D = game.soldier
+	var castle: Node2D = game.castle
 	var move := Vector2.ZERO
-	if not soldier.dead:
-		var to: Vector2 = soldier.global_position - global_position
-		var d := to.length()
-		var dir := to / maxf(d, 0.001)
-		_facing = dir
-		if ranged:
-			if d > 330.0:
-				move = dir
-			elif d < 220.0:
-				move = -dir
-			else:
-				move = dir.orthogonal() * _strafe_sign * 0.6
-			_shoot_cd -= delta
-			if _shoot_cd <= 0.0 and d < 500.0:
-				_shoot(dir)
-				_shoot_cd = randf_range(2.0, 2.8)
-		else:
+	# 基本は城へ。近くに兵士がいればそちらを狙う
+	var aggro := 300.0 if ranged else 110.0
+	var soldier: Node2D = game.nearest_soldier(global_position, aggro)
+	var target_pos: Vector2 = soldier.global_position if soldier != null else castle.closest_point(global_position)
+	var to: Vector2 = target_pos - global_position
+	var d := to.length()
+	var dir := to / maxf(d, 0.001)
+	_facing = dir
+	if ranged:
+		if d > 300.0:
 			move = dir
-		# 接触ダメージ
-		if d < radius + soldier.radius and _contact_cd <= 0.0:
-			soldier.take_damage(damage)
-			_contact_cd = 0.6
+		elif d < 200.0 and soldier != null:
+			# 兵士からは距離をとる（城を狙っているときは下がらない）
+			move = -dir
+		else:
+			move = dir.orthogonal() * _strafe_sign * 0.5
+		_shoot_cd -= delta
+		if _shoot_cd <= 0.0 and d < 420.0:
+			# 城への弾は少し弱い
+			_shoot(dir, damage if soldier != null else damage * 0.5)
+			_shoot_cd = randf_range(2.2, 3.0)
+	else:
+		move = dir
+	# 兵士への体当たり
+	var touching: Node2D = game.nearest_soldier(global_position, radius + 16.0)
+	if touching != null and _contact_cd <= 0.0:
+		touching.take_damage(damage)
+		_contact_cd = 0.6
+	# 城に触れたら消滅して城にダメージ（経験値は入らない）
+	if castle.distance_to_point(global_position) < radius:
+		castle.take_damage(castle_damage)
+		dead = true
+		remove_from_group("enemies")
+		game.spawn_burst(global_position, color, radius)
+		queue_free()
+		return
 
-	position += (move * speed + knock) * delta
+	speed_mult = castle.slow_factor_at(global_position)
+	position += (move * speed * speed_mult + knock) * delta
 	knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
 	_separate()
 	position = game.clamp_to_map(position, radius)
@@ -99,12 +119,12 @@ func _separate() -> void:
 	position += push * 0.5
 
 
-func _shoot(dir: Vector2) -> void:
+func _shoot(dir: Vector2, dmg: float) -> void:
 	var b := BulletScript.new()
 	b.game = game
 	b.from_enemy = true
 	b.velocity = dir * 260.0
-	b.damage = damage
+	b.damage = dmg
 	b.radius = 7.0
 	b.color = Color(0.85, 0.45, 1.0)
 	b.life = 3.0
@@ -152,6 +172,9 @@ func _draw() -> void:
 	var side2 := _facing.orthogonal()
 	for s in [-1.0, 1.0]:
 		draw_circle(_facing * radius * 0.45 + side2 * radius * 0.3 * s, radius * 0.15, Color(0.1, 0.05, 0.05))
+	# 氷結の結界で遅くなっている
+	if speed_mult < 1.0:
+		draw_arc(Vector2.ZERO, radius + 3.0, 0.0, TAU, 20, Color(0.6, 0.9, 1.0, 0.8), 2.0)
 	# HPバー
 	if hp < max_hp:
 		var w := radius * 2.0

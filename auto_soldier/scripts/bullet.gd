@@ -25,9 +25,13 @@ func _process(delta: float) -> void:
 		queue_free()
 		return
 	if from_enemy:
-		var s: Node2D = game.soldier
-		if not s.dead and global_position.distance_to(s.global_position) < radius + s.radius:
-			s.take_damage(damage)
+		for s in game.soldiers:
+			if not s.dead and global_position.distance_to(s.global_position) < radius + s.radius:
+				s.take_damage(damage)
+				queue_free()
+				return
+		if game.castle.distance_to_point(global_position) < radius:
+			game.castle.take_damage(damage)
 			queue_free()
 		return
 	for e in game.enemies_near(position, radius + 26.0):

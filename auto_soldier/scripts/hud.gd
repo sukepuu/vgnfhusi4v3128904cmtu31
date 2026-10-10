@@ -1,5 +1,5 @@
 extends CanvasLayer
-## 画面上の表示（HP・経験値・時間・撃破数）とゲームオーバー画面
+## 画面上の表示（城のHP・経験値・時間・撃破数・兵士数）とゲームオーバー画面
 
 const Upgrades := preload("res://scripts/upgrades.gd")
 
@@ -11,6 +11,7 @@ var _level_label: Label
 var _hp_label: Label
 var _time_label: Label
 var _kill_label: Label
+var _soldier_label: Label
 var _skills_label: Label
 var _game_over: Control
 var _result_label: Label
@@ -35,10 +36,10 @@ func _ready() -> void:
 	_level_label.position = Vector2(16, 20)
 	root.add_child(_level_label)
 
-	# HPバー
-	_hp_bar = _make_bar(Color(0.3, 0.85, 0.35))
+	# 城のHPバー
+	_hp_bar = _make_bar(Color(1.0, 0.6, 0.2))
 	_hp_bar.position = Vector2(16, 56)
-	_hp_bar.size = Vector2(260, 18)
+	_hp_bar.size = Vector2(300, 20)
 	root.add_child(_hp_bar)
 	_hp_label = _make_label(14)
 	_hp_label.position = Vector2(22, 56)
@@ -59,6 +60,14 @@ func _ready() -> void:
 	_kill_label.offset_top = 22
 	_kill_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	root.add_child(_kill_label)
+
+	_soldier_label = _make_label(20)
+	_soldier_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_soldier_label.offset_left = -220
+	_soldier_label.offset_right = -16
+	_soldier_label.offset_top = 52
+	_soldier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	root.add_child(_soldier_label)
 
 	_skills_label = _make_label(15)
 	_skills_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
@@ -95,13 +104,18 @@ func _make_label(font_size: int) -> Label:
 
 
 func refresh() -> void:
-	var s: Node2D = game.soldier
+	var castle: Node2D = game.castle
 	_xp_bar.max_value = game.xp_to_next
 	_xp_bar.value = game.xp
 	_level_label.text = "Lv %d" % game.level
-	_hp_bar.max_value = s.max_hp
-	_hp_bar.value = s.hp
-	_hp_label.text = "HP %d / %d" % [ceili(s.hp), int(s.max_hp)]
+	_hp_bar.max_value = castle.max_hp
+	_hp_bar.value = castle.hp
+	_hp_label.text = "城 HP %d / %d" % [ceili(castle.hp), int(castle.max_hp)]
+	var alive := 0
+	for s in game.soldiers:
+		if not s.dead:
+			alive += 1
+	_soldier_label.text = "兵士 %d / %d" % [alive, game.soldiers.size()]
 	var t := int(game.elapsed)
 	_time_label.text = "%02d:%02d" % [t / 60, t % 60]
 	_kill_label.text = "撃破 %d" % game.kills
@@ -109,7 +123,7 @@ func refresh() -> void:
 	for u in Upgrades.LIST:
 		var lv: int = game.upgrade_levels.get(u["id"], 0)
 		if lv > 0:
-			lines.append("%s  Lv%d" % [u["name"], lv])
+			lines.append("【%s】%s  Lv%d" % [Upgrades.CAT_LABEL[u["cat"]], u["name"], lv])
 	_skills_label.text = "\n".join(lines)
 
 
@@ -155,7 +169,7 @@ func _build_game_over() -> void:
 func show_game_over() -> void:
 	refresh()
 	var t := int(game.elapsed)
-	_result_label.text = "生存時間 %02d:%02d\nレベル %d\n撃破数 %d" % [t / 60, t % 60, game.level, game.kills]
+	_result_label.text = "城が落とされた…\n\n防衛時間 %02d:%02d\nレベル %d\n撃破数 %d" % [t / 60, t % 60, game.level, game.kills]
 	_game_over.visible = true
 
 

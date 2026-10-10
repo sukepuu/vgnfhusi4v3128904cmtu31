@@ -53,7 +53,10 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int) -> void
 		btn.custom_minimum_size = Vector2(520, 84)
 		btn.add_theme_font_size_override("font_size", 20)
 		var lv_text := "NEW!" if cur == 0 else "Lv %d → %d" % [cur, cur + 1]
-		btn.text = "[%d] %s  (%s)\n%s" % [i + 1, u["name"], lv_text, Upgrades.describe(u, cur)]
+		btn.text = "[%d] 【%s】%s  (%s)\n%s" % [i + 1, Upgrades.CAT_LABEL[u["cat"]], u["name"], lv_text, Upgrades.describe(u, cur)]
+		var col: Color = Upgrades.CAT_COLOR[u["cat"]]
+		btn.add_theme_color_override("font_color", col)
+		btn.add_theme_color_override("font_hover_color", col.lightened(0.4))
 		btn.pressed.connect(_pick.bind(u["id"]))
 		_box.add_child(btn)
 		_ids.append(u["id"])

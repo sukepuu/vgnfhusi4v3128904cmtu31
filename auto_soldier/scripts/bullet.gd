@@ -18,6 +18,9 @@ var explode_radius := 0.0
 var explode_ratio := 0.0
 ## true なら剣気の衝撃波（三日月形に描く）
 var wave := false
+## 炸裂大矢：最初に当たった敵の場所で大爆発（0なら無し）
+var first_blast_radius := 0.0
+var first_blast_damage := 0.0
 
 var _hit := {}
 
@@ -55,6 +58,9 @@ func _process(delta: float) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < radius + e.radius:
 			e.take_damage(damage, velocity.normalized() * 120.0, src)
+			if first_blast_radius > 0.0:
+				game.explode(global_position, first_blast_radius, first_blast_damage, src, Color(1.0, 0.5, 0.2), 0.0, 300.0)
+				first_blast_radius = 0.0
 			if explode_radius > 0.0:
 				game.explode(global_position, explode_radius, damage * explode_ratio, src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
 			_hit[e] = true

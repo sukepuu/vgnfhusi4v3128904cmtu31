@@ -24,6 +24,8 @@ var turret_level := 0
 var repair_level := 0
 ## 爆裂壁（防ぐたびにその場で爆発）
 var explode_on_block := false
+## 黄金の壁（防ぐたびに経験値）
+var golden := false
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
@@ -96,6 +98,8 @@ func absorb(i: int, pos: Vector2 = Vector2.INF) -> void:
 		game.explode(pos, 75.0, 40.0 * (1.0 + game.elapsed / 180.0), w["src"], Color(0.9, 0.75, 0.5))
 	w["hp"] -= 1.0
 	w["flash"] = 0.15
+	if golden:
+		game.add_xp(1)
 	if not w["src"].is_empty():
 		w["src"]["wall_blocks"] += 1
 	if w["hp"] <= 0.0:
@@ -104,7 +108,16 @@ func absorb(i: int, pos: Vector2 = Vector2.INF) -> void:
 		walls.remove_at(i)
 
 
-## 壁 i をまるごと壊す（ボス用）
+## 壁 i の耐久を n 減らす（ボス用）
+func damage_wall(i: int, n: float) -> void:
+	var w: Dictionary = walls[i]
+	w["hp"] -= n
+	w["flash"] = 0.2
+	if w["hp"] <= 0.0:
+		destroy(i)
+
+
+## 壁 i をまるごと壊す
 func destroy(i: int) -> void:
 	var mid: float = (walls[i]["a0"] + walls[i]["a1"]) / 2.0
 	game.spawn_burst(point_at(mid), Color(0.7, 0.65, 0.55), 30.0)

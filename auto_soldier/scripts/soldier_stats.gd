@@ -31,3 +31,5 @@ var burst_level := 0
 var volley_level := 0
 ## 剣気（斬撃と一緒に衝撃波が飛ぶ）
 var sword_wave := false
+## 影分身（横に分身が現れて一緒に撃つ）
+var shadow := false

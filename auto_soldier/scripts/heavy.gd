@@ -41,6 +41,9 @@ var extra_slashes := 0
 var quake_level := 0
 ## 吸命の剣：斬撃で与えたダメージのこの割合だけ回復
 var lifesteal := 0.0
+## 一刀両断：4秒ごとにHPの多い敵へ大ダメージの一撃
+var execute := false
+var _exec_cd := 2.0
 var _pending_slashes := 0
 var _followup_cd := 0.0
 var _quake_cd := 3.0
@@ -65,6 +68,7 @@ func _process(delta: float) -> void:
 	_slash_cd -= delta
 	_followup_cd -= delta
 	_quake_cd -= delta
+	_exec_cd -= delta
 	_hurt_flash -= delta
 	_invuln -= delta
 	_retarget_cd -= delta
@@ -100,6 +104,20 @@ func _process(delta: float) -> void:
 		# 連続斬り：追加の斬撃
 		_pending_slashes = _pending_slashes - 1 if _try_slash() else 0
 		_followup_cd = 0.18
+	if execute and _exec_cd <= 0.0:
+		var big := _toughest_enemy(220.0)
+		if big != null:
+			_exec_cd = 4.0
+			var d := (big.global_position - global_position).normalized()
+			facing = d
+			big.take_damage(slash_damage * 6.0, d * 200.0, record)
+			var fx := SlashScript.new()
+			fx.radius = 60.0
+			fx.arc = 0.6
+			fx.rotation = d.angle()
+			fx.position = big.global_position - d * 30.0
+			game.effects.add_child(fx)
+			game.spawn_burst(big.global_position, Color(1.0, 0.9, 0.6), 20.0)
 	if quake_level > 0 and _quake_cd <= 0.0 and game.nearest_enemy(global_position, 140.0) != null:
 		_quake()
 		_quake_cd = 5.0
@@ -155,6 +173,19 @@ func _try_slash() -> bool:
 	fx.position = global_position
 	game.effects.add_child(fx)
 	return true
+
+
+## 近くで一番HPの多い敵
+func _toughest_enemy(max_dist: float) -> Node2D:
+	var best: Node2D = null
+	var best_hp := 0.0
+	for e in game.enemies_near(global_position, max_dist):
+		if not is_instance_valid(e) or e.dead:
+			continue
+		if global_position.distance_to(e.global_position) < max_dist and e.hp > best_hp:
+			best_hp = e.hp
+			best = e
+	return best
 
 
 ## 地割れ：周りの敵に大ダメージ＋気絶

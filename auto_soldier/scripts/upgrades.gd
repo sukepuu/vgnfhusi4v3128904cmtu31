@@ -67,49 +67,59 @@ const LIST := [
 	{"id": "repair", "cat": "castle", "name": "修理工", "desc": "城のHPが毎秒2回復する", "max": 3},
 ]
 
-## Lv7ごとに出る特別強化。部隊・設備の種類ごとに3つずつ。どれも1回取れば完成（レベルなし）。
+## Lv7ごとに出る特別強化。部隊・設備の種類ごとに4つずつ。どれも1回取れば完成（レベルなし）。
 ## req = この強化（部隊・設備）を持っていないと出ない（なければ誰でも）
 const SPECIAL := [
 	# ---- 遊撃部隊
 	{"id": "sp_burst", "cat": "soldier", "special": true, "name": "炸裂弾", "desc": "遊撃兵の弾が当たると小爆発する（威力55%）", "max": 1},
 	{"id": "sp_volley", "cat": "soldier", "special": true, "name": "一斉射撃", "desc": "6秒ごとに全方位へ18発の弾をばらまく", "max": 1},
 	{"id": "sp_sword_wave", "cat": "soldier", "special": true, "name": "剣気", "desc": "斬撃と一緒に、敵を貫く三日月形の衝撃波が飛ぶ", "max": 1},
+	{"id": "sp_shadow", "cat": "soldier", "special": true, "name": "影分身", "desc": "遊撃兵の横に半透明の分身が現れ、一緒に弾を撃つ（威力50%）", "max": 1},
 	# ---- 迎撃部隊
 	{"id": "sp_bash", "cat": "guard", "special": true, "name": "盾撃", "desc": "盾で攻撃を防ぐたびに、周りの敵へ衝撃波（槍の1.3倍の威力）", "max": 1, "req": "guard"},
 	{"id": "sp_trident", "cat": "guard", "special": true, "name": "三叉槍", "desc": "槍の突きが3方向に出る", "max": 1, "req": "guard"},
 	{"id": "sp_taunt", "cat": "guard", "special": true, "name": "挑発", "desc": "近くの敵が城より迎撃兵を狙うようになる（正面から来れば盾で無効）", "max": 1, "req": "guard"},
+	{"id": "sp_whirl_spear", "cat": "guard", "special": true, "name": "大旋風槍", "desc": "6秒ごとに槍を振り回し、周りの敵へ槍の3倍の大ダメージ", "max": 1, "req": "guard"},
 	# ---- 重装部隊
 	{"id": "sp_multi_slash", "cat": "heavy", "special": true, "name": "連続斬り", "desc": "斬撃が3回連続で出る", "max": 1, "req": "heavy"},
 	{"id": "sp_quake", "cat": "heavy", "special": true, "name": "地割れ", "desc": "5秒ごとに地面を叩き、周りの敵に大ダメージ＋3.5秒気絶", "max": 1, "req": "heavy"},
 	{"id": "sp_lifesteal", "cat": "heavy", "special": true, "name": "吸命の剣", "desc": "斬撃で与えたダメージの10%ぶんHPが回復する", "max": 1, "req": "heavy"},
+	{"id": "sp_execute", "cat": "heavy", "special": true, "name": "一刀両断", "desc": "4秒ごとに、近くで一番HPの多い敵へ斬撃6倍の一撃", "max": 1, "req": "heavy"},
 	# ---- 築城部隊
 	{"id": "sp_wall_turret", "cat": "builder", "special": true, "name": "砲台壁", "desc": "壁から近くの敵へ弾が発射されるようになる", "max": 1, "req": "builder"},
 	{"id": "sp_wall_repair", "cat": "builder", "special": true, "name": "自己修復", "desc": "壁が3秒ごとに1発分ずつ回復する", "max": 1, "req": "builder"},
 	{"id": "sp_wall_blast", "cat": "builder", "special": true, "name": "爆裂壁", "desc": "壁が攻撃を防ぐたびに、その場で爆発して周りの敵にダメージ", "max": 1, "req": "builder"},
+	{"id": "sp_golden_wall", "cat": "builder", "special": true, "name": "黄金の壁", "desc": "壁が攻撃を防ぐたびに経験値が1入る", "max": 1, "req": "builder"},
 	# ---- 工兵部隊
 	{"id": "sp_cluster", "cat": "engineer", "special": true, "name": "子爆弾", "desc": "爆弾が爆発すると、周りに小爆弾が6個散らばって爆発する", "max": 1, "req": "engineer"},
 	{"id": "sp_poison", "cat": "engineer", "special": true, "name": "毒沼", "desc": "作動した落とし穴の跡が9秒間、毒の沼になる", "max": 1, "req": "engineer"},
 	{"id": "sp_double_plant", "cat": "engineer", "special": true, "name": "二重設置", "desc": "1回で爆弾と落とし穴を両方仕掛ける（罠の上限も30個に）", "max": 1, "req": "engineer"},
+	{"id": "sp_ap_mine", "cat": "engineer", "special": true, "name": "徹甲地雷", "desc": "爆弾の真上近くにいる敵1体に、追加で爆弾4倍のダメージ", "max": 1, "req": "engineer"},
 	# ---- 矢倉
 	{"id": "sp_tower_multi", "cat": "castle", "special": true, "name": "矢倉・連射", "desc": "矢倉が一度に3本の矢を放つ", "max": 1, "req": "tower"},
 	{"id": "sp_tower_ap", "cat": "castle", "special": true, "name": "矢倉・徹甲矢", "desc": "矢倉の矢が敵を3体貫通し、威力 +60%", "max": 1, "req": "tower"},
 	{"id": "sp_tower_crit", "cat": "castle", "special": true, "name": "矢倉・会心の一矢", "desc": "矢倉の矢が25%の確率でダメージ3倍、射程 +40%", "max": 1, "req": "tower"},
+	{"id": "sp_arrow_rain", "cat": "castle", "special": true, "name": "矢倉・火矢の雨", "desc": "7秒ごとに、矢倉1基につき1か所、敵が密集した所へ矢の雨が降る（範囲大ダメージ）", "max": 1, "req": "tower"},
 	# ---- 大砲
 	{"id": "sp_scatter", "cat": "castle", "special": true, "name": "大砲・散弾砲", "desc": "砲弾が分裂して、着弾地点の周りにも4発落ちる", "max": 1, "req": "cannon"},
 	{"id": "sp_incendiary", "cat": "castle", "special": true, "name": "大砲・焼夷弾", "desc": "着弾地点が6秒間燃え続ける", "max": 1, "req": "cannon"},
 	{"id": "sp_rapid_cannon", "cat": "castle", "special": true, "name": "大砲・速射砲", "desc": "大砲の発射間隔 -40%", "max": 1, "req": "cannon"},
+	{"id": "sp_ap_shell", "cat": "castle", "special": true, "name": "大砲・徹甲榴弾", "desc": "6秒ごとに、大砲1門につき1発、一番HPの多い敵へ8倍ダメージの直射弾", "max": 1, "req": "cannon"},
 	# ---- 投石器
 	{"id": "sp_big_rock", "cat": "castle", "special": true, "name": "投石器・大岩", "desc": "岩の範囲 +40%・威力 +80%", "max": 1, "req": "catapult"},
 	{"id": "sp_split_rock", "cat": "castle", "special": true, "name": "投石器・分裂岩", "desc": "着弾した岩が砕けて、周りに6個の岩が落ちる", "max": 1, "req": "catapult"},
 	{"id": "sp_rock_rain", "cat": "castle", "special": true, "name": "投石器・岩雨", "desc": "撃つたびに、ランダムな敵2体の頭上にも岩が落ちる", "max": 1, "req": "catapult"},
+	{"id": "sp_direct_hit", "cat": "castle", "special": true, "name": "投石器・巨岩直撃", "desc": "着弾地点の真ん中にいる敵1体に、追加で4倍ダメージ", "max": 1, "req": "catapult"},
 	# ---- バリスタ
 	{"id": "sp_ballista_multi", "cat": "castle", "special": true, "name": "バリスタ・連装", "desc": "バリスタが一度に3発撃つ", "max": 1, "req": "ballista"},
 	{"id": "sp_ballista_blast", "cat": "castle", "special": true, "name": "バリスタ・爆裂ボルト", "desc": "貫いた敵ごとに小爆発が起きる（威力45%）", "max": 1, "req": "ballista"},
 	{"id": "sp_big_bolt", "cat": "castle", "special": true, "name": "バリスタ・大型弩", "desc": "矢が大きくなって当たり判定が広がり、威力 +50%", "max": 1, "req": "ballista"},
+	{"id": "sp_blast_bolt", "cat": "castle", "special": true, "name": "バリスタ・炸裂大矢", "desc": "矢が最初に当たった敵の場所で大爆発（威力150%の範囲攻撃）", "max": 1, "req": "ballista"},
 	# ---- 氷結の結界
 	{"id": "sp_freeze", "cat": "castle", "special": true, "name": "結界・絶対零度", "desc": "8秒ごとに結界内の敵すべてを3.5秒間凍らせる", "max": 1, "req": "frost"},
 	{"id": "sp_icicle", "cat": "castle", "special": true, "name": "結界・氷柱", "desc": "1.5秒ごとに結界内の敵2体へ氷柱が降る", "max": 1, "req": "frost"},
 	{"id": "sp_blizzard", "cat": "castle", "special": true, "name": "結界・吹雪", "desc": "結界の中の敵にずっとダメージを与え続ける", "max": 1, "req": "frost"},
+	{"id": "sp_ice_lance", "cat": "castle", "special": true, "name": "結界・氷槍", "desc": "3秒ごとに、結界内で一番HPの多い敵へ大ダメージの氷の槍", "max": 1, "req": "frost"},
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "builder": "築城", "guard": "迎撃", "heavy": "重装", "engineer": "工兵", "castle": "城"}
@@ -338,6 +348,26 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.icicle_level = 2
 		"sp_blizzard":
 			castle.blizzard = true
+		"sp_shadow":
+			st.shadow = true
+		"sp_whirl_spear":
+			game.guard_stats.whirl = true
+		"sp_execute":
+			game.heavy.execute = true
+		"sp_golden_wall":
+			game.walls.golden = true
+		"sp_ap_mine":
+			game.engineer_stats.ap_mine = true
+		"sp_arrow_rain":
+			castle.arrow_rain = true
+		"sp_ap_shell":
+			castle.ap_shell = true
+		"sp_direct_hit":
+			castle.direct_hit = true
+		"sp_blast_bolt":
+			castle.blast_bolt = true
+		"sp_ice_lance":
+			castle.ice_lance = true
 		"tower":
 			castle.tower_count = new_level
 			if new_level > 1:

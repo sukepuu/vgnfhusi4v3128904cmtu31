@@ -16,6 +16,8 @@ var stun := 0.0
 var fire_dps := 0.0
 var fire_time := 0.0
 var split_count := 0
+## 巨岩直撃：着弾地点の真ん中の敵1体への追加ダメージ
+var direct_bonus := 0.0
 
 var _t := 0.0
 var _height := 0.0
@@ -41,6 +43,10 @@ func _explode() -> void:
 			if stun > 0.0:
 				e.stun(stun)
 			e.take_damage(damage, to.normalized() * 300.0, src)
+	if direct_bonus > 0.0:
+		var near: Node2D = game.nearest_enemy(target, blast_radius)
+		if near != null:
+			near.take_damage(direct_bonus, Vector2.ZERO, src)
 	var col := Color(0.75, 0.65, 0.5) if boulder else Color(1.0, 0.6, 0.2)
 	game.spawn_burst(target, col, blast_radius / 2.2)
 	if fire_time > 0.0:

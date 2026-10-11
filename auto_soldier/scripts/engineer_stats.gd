@@ -23,3 +23,5 @@ var cluster_level := 0
 var poison_level := 0
 ## 二重設置（1回で爆弾と落とし穴を両方）
 var double_plant := false
+## 徹甲地雷（真上の敵1体に追加ダメージ）
+var ap_mine := false

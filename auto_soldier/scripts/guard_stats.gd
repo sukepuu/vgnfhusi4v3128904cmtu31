@@ -18,3 +18,5 @@ var bash_level := 0
 var trident_level := 0
 ## 挑発（近くの敵が迎撃兵を狙う）
 var taunt := false
+## 大旋風槍（定期的に周りへ大ダメージ）
+var whirl := false

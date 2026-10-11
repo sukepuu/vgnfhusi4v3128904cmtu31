@@ -68,6 +68,14 @@ var tower_crit := false
 var rock_rain := false
 var big_bolt := false
 var blizzard := false
+var arrow_rain := false
+var ap_shell := false
+var direct_hit := false
+var blast_bolt := false
+var ice_lance := false
+var _rain_cd := 4.0
+var _ap_cd := 3.0
+var _lance_cd := 2.0
 var _blizzard_tick := 0.0
 var _freeze_cd := 5.0
 var _icicle_cd := 2.0
@@ -101,6 +109,7 @@ func _process(delta: float) -> void:
 	_update_catapult(delta)
 	_update_ballista(delta)
 	_update_frost_specials(delta)
+	_update_new_specials(delta)
 	queue_redraw()
 
 
@@ -221,6 +230,8 @@ func _update_catapult(delta: float) -> void:
 		var s := _fire_shell(from, best.global_position, catapult_damage, catapult_radius, true, _equip_record("catapult", "投石器", i))
 		if split_level > 0:
 			s.split_count = 2 + 2 * split_level
+		if direct_hit:
+			s.direct_bonus = catapult_damage * 4.0
 		# 岩雨：ランダムな敵2体の頭上にも岩が落ちる
 		if rock_rain:
 			var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool: return is_instance_valid(e) and not e.dead)
@@ -258,6 +269,9 @@ func _update_ballista(delta: float) -> void:
 			b.src = _equip_record("ballista", "バリスタ", i)
 			b.life = 2.5
 			b.position = from
+			if blast_bolt:
+				b.first_blast_radius = 140.0
+				b.first_blast_damage = ballista_damage * 1.5
 			if bolt_blast_level > 0:
 				b.explode_radius = 40.0 + 15.0 * bolt_blast_level
 				b.explode_ratio = 0.15 + 0.15 * bolt_blast_level
@@ -302,6 +316,61 @@ func _fire_shell(from: Vector2, to: Vector2, dmg: float, area: float, boulder: b
 	game.effects.add_child(s)
 	_recent_shots.append({"pos": to, "area": area, "until": _t + s.flight_time + 0.3})
 	return s
+
+
+## 4つ目の特別強化（火矢の雨・徹甲榴弾・氷槍）
+func _update_new_specials(delta: float) -> void:
+	if arrow_rain and tower_count > 0:
+		_rain_cd -= delta
+		if _rain_cd <= 0.0:
+			_rain_cd = 7.0
+			for i in tower_count:
+				var t := _densest_enemy(tower_range * 1.3, 120.0)
+				if t == null:
+					break
+				var p: Vector2 = t.global_position + Vector2(randf_range(-30, 30), randf_range(-30, 30))
+				game.spawn_blast(p, 0.8, 120.0, tower_damage * 4.0, _equip_record("tower", "矢倉", i), Color(1.0, 0.55, 0.2), "arrow")
+				_recent_shots.append({"pos": p, "area": 120.0, "until": _t + 1.2})
+	if ap_shell and cannon_level > 0:
+		_ap_cd -= delta
+		if _ap_cd <= 0.0:
+			_ap_cd = 6.0
+			for i in mini(cannon_level, MAX_GUNS):
+				var big := _toughest_enemy_in(global_position, cannon_range * 1.5)
+				if big == null:
+					break
+				var from := global_position + _cannon_local_pos(i)
+				var dir := (big.global_position - from).normalized()
+				_cannon_aims[i] = dir
+				var b := BulletScript.new()
+				b.game = game
+				b.velocity = dir * 1100.0
+				b.damage = cannon_damage * 8.0
+				b.radius = 9.0
+				b.color = Color(0.3, 0.3, 0.35)
+				b.life = 2.0
+				b.position = from
+				b.src = _equip_record("cannon", "大砲", i)
+				game.world.add_child(b)
+	if ice_lance and frost_radius > 0.0:
+		_lance_cd -= delta
+		if _lance_cd <= 0.0:
+			_lance_cd = 3.0
+			var big := _toughest_enemy_in(global_position, frost_radius)
+			if big != null:
+				var dmg: float = 300.0 * (1.0 + game.elapsed / 120.0)
+				game.spawn_blast(big.global_position, 0.4, 30.0, dmg, _equip_record("frost", "氷結の結界", 0), Color(0.6, 0.9, 1.0), "ice")
+
+
+## 範囲内で一番HPの多い敵
+func _toughest_enemy_in(center: Vector2, max_dist: float) -> Node2D:
+	var best: Node2D = null
+	var best_hp := 0.0
+	for e in game.enemies_cache:
+		if is_instance_valid(e) and not e.dead and center.distance_to(e.global_position) < max_dist and e.hp > best_hp:
+			best_hp = e.hp
+			best = e
+	return best
 
 
 ## 氷結の結界の特別強化（絶対零度・氷柱）

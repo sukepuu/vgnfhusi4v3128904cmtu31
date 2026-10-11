@@ -12,7 +12,6 @@ var _hp_label: Label
 var _time_label: Label
 var _kill_label: Label
 var _soldier_label: Label
-var _skills_label: Label
 var _game_over: Control
 var _boss_bar: ProgressBar
 var _boss_label: Label
@@ -76,14 +75,6 @@ func _ready() -> void:
 	_soldier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	root.add_child(_soldier_label)
 
-	_skills_label = _make_label(13)
-	_skills_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_skills_label.offset_left = 16
-	_skills_label.offset_top = -560
-	_skills_label.offset_right = 400
-	_skills_label.offset_bottom = -16
-	_skills_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	root.add_child(_skills_label)
 
 	# ボスのHPバー（画面上の中央）
 	_boss_bar = _make_bar(Color(0.75, 0.2, 0.85))
@@ -134,6 +125,16 @@ func _ready() -> void:
 	_auto_btn.pressed.connect(func() -> void: game.set_auto_pick(not game.auto_pick))
 	root.add_child(_auto_btn)
 	update_auto_button()
+
+	# 強化状態ボタン（オート選択ボタンの下）
+	var up_btn := Button.new()
+	up_btn.text = "強化状態（U）"
+	up_btn.add_theme_font_size_override("font_size", 16)
+	up_btn.position = Vector2(16, 164)
+	up_btn.size = Vector2(170, 34)
+	up_btn.focus_mode = Control.FOCUS_NONE
+	up_btn.pressed.connect(func() -> void: game.toggle_upgrades())
+	root.add_child(up_btn)
 
 	# オート選択で何を選んだかのお知らせ（画面下）
 	_notice = _make_label(18)
@@ -239,15 +240,7 @@ func refresh() -> void:
 	var t := int(game.elapsed)
 	_time_label.text = "%02d:%02d" % [t / 60, t % 60]
 	_kill_label.text = "撃破 %d" % game.kills
-	var lines := PackedStringArray()
-	for u in Upgrades.LIST + Upgrades.SPECIAL:
-		var lv: int = game.upgrade_levels.get(u["id"], 0)
-		if lv > 0:
-			if u.get("special", false):
-				lines.append("【%s】★%s" % [Upgrades.CAT_LABEL[u["cat"]], u["name"]])
-			else:
-				lines.append("【%s】%s  Lv%d" % [Upgrades.CAT_LABEL[u["cat"]], u["name"], lv])
-	_skills_label.text = "\n".join(lines)
+
 
 
 func _alive(units: Array) -> int:

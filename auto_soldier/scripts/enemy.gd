@@ -7,7 +7,8 @@ extends Node2D
 ## 分裂体（splitter）は倒すと小さな分裂体（splitling）3体に分かれる。
 ## 治癒師（healer）は後方にとどまり、周りの敵を定期的に回復する。
 ## 自爆兵（bomber）は兵士・壁・城にぶつかると爆発する（壁は3発分削る）。
-## ボス（boss）は Lv10 ごとに出現。壁を壊して進み、城に着いても消えずに攻撃し続ける。
+## 隠密兵（stealth）は右下・左下から現れて城を狙う。半透明で見えにくい。
+## ボス（boss）は Lv10 ごとに出現。壁に触れると壁の耐久を7削り、城に着いても消えずに攻撃し続ける。
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
@@ -31,6 +32,7 @@ var _hp_mult := 1.0
 var _skill_cd := 3.0
 var _summon_cd := 8.0
 var _heal_fx := 0.0
+var _wall_cd := 0.0
 var dead := false
 
 var knock := Vector2.ZERO
@@ -76,6 +78,9 @@ func setup(k: String, hp_mult: float) -> void:
 		"bomber":
 			max_hp = 25.0; speed = 120.0; damage = 30.0; castle_damage = 30.0; radius = 13.0; xp_value = 2
 			color = Color(0.35, 0.1, 0.1)
+		"stealth":
+			max_hp = 30.0; speed = 80.0; damage = 8.0; castle_damage = 10.0; radius = 12.0; xp_value = 2
+			color = Color(0.3, 0.35, 0.45)
 		"boss":
 			max_hp = 1100.0 * (1.0 + 0.3 * (boss_rank - 1)); speed = 20.0; damage = 30.0
 			castle_damage = 40.0; radius = 46.0; xp_value = 60
@@ -161,10 +166,13 @@ func _process(delta: float) -> void:
 		_contact_cd = 0.6
 	if is_boss:
 		# ボスは壁を壊して進み、城に着いたら殴り続ける
+		# ボスは壁に触れると壁の耐久を7減らし、少しだけ押し戻される
+		_wall_cd -= delta
 		var wi: int = game.walls.hit_test(global_position, radius)
-		if wi >= 0:
-			game.walls.destroy(wi)
-			knock = -dir * 120.0
+		if wi >= 0 and _wall_cd <= 0.0:
+			game.walls.damage_wall(wi, 7.0)
+			knock = -dir * 70.0
+			_wall_cd = 1.0
 		if castle.distance_to_point(global_position) < radius:
 			move = Vector2.ZERO
 			if _contact_cd <= 0.0:
@@ -331,6 +339,8 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 
 
 func _draw() -> void:
+	# 隠密兵は半透明
+	modulate.a = 0.45 if kind == "stealth" else 1.0
 	draw_circle(Vector2(0, radius * 0.45), radius, Color(0, 0, 0, 0.3))
 	var c := Color(1, 1, 1) if _flash > 0.0 else color
 	match kind:

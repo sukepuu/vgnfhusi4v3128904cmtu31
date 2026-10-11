@@ -250,6 +250,25 @@ func _shoot() -> void:
 			b.explode_radius = 30.0 + 15.0 * st.burst_level
 			b.explode_ratio = 0.25 + 0.15 * st.burst_level
 		game.world.add_child(b)
+	# 影分身：横の分身からも同じ弾を撃つ（威力50%）
+	if st.shadow:
+		var from := global_position + _shadow_offset()
+		for k in st.shot_count:
+			var sb := BulletScript.new()
+			sb.game = game
+			sb.velocity = Vector2.from_angle(base + SPREAD * k) * st.bullet_speed
+			sb.damage = st.bullet_damage * 0.5
+			sb.pierce = st.bullet_pierce
+			sb.radius = 5.0
+			sb.color = Color(0.7, 0.75, 1.0)
+			sb.life = st.fire_range / st.bullet_speed + 0.2
+			sb.position = from + aim_dir * 10.0
+			sb.src = record
+			game.world.add_child(sb)
+
+
+func _shadow_offset() -> Vector2:
+	return aim_dir.orthogonal() * 34.0
 
 
 ## 一斉射撃：全方位へ弾をばらまく
@@ -389,6 +408,11 @@ func _draw() -> void:
 			_dash_dir * (radius + 40.0) + _dash_dir.orthogonal() * 7.0,
 			_dash_dir * (radius + 40.0) - _dash_dir.orthogonal() * 7.0]), Color(1.0, 0.95, 0.6))
 
+	# 影分身
+	if game.stats.shadow:
+		var so := _shadow_offset()
+		draw_circle(so, radius * 0.9, Color(0.5, 0.55, 0.9, 0.35))
+		draw_line(so + aim_dir * 4.0, so + aim_dir * (radius + 10.0), Color(0.2, 0.2, 0.3, 0.4), 5.0)
 	var body := Color(0.3, 0.55, 1.0)
 	if _hurt_flash > 0.0:
 		body = Color(1, 1, 1)

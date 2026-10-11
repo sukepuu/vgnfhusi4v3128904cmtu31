@@ -84,6 +84,11 @@ func _activate() -> void:
 	else:
 		game.spawn_burst(global_position, Color(1.0, 0.45, 0.15), blast_radius / 2.2)
 		game.spawn_burst(global_position, Color(1.0, 0.85, 0.3), blast_radius / 3.5)
+		# 徹甲地雷：一番近い敵1体に追加の大ダメージ
+		if st.ap_mine:
+			var near: Node2D = game.nearest_enemy(global_position, blast_radius)
+			if near != null:
+				near.take_damage(damage * 4.0, Vector2.ZERO, src)
 		# 子爆弾：周りに小爆弾が散らばって爆発
 		if st.cluster_level > 0:
 			var n: int = 3 * st.cluster_level

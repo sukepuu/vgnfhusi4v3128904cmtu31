@@ -31,6 +31,10 @@ func _draw() -> void:
 		"ice":
 			var tip := Vector2(0, -h)
 			draw_colored_polygon(PackedVector2Array([tip + Vector2(0, 10), tip + Vector2(-6, -16), tip + Vector2(6, -16)]), Color(0.75, 0.95, 1.0))
+		"arrow":
+			for i in 5:
+				var off := Vector2(-radius * 0.6 + radius * 0.3 * i, -h - (i % 2) * 10.0)
+				draw_line(off, off + Vector2(0, 14), Color(1.0, 0.6, 0.2), 2.0)
 		"rock":
 			draw_circle(Vector2(0, -h), 8.0, Color(0.5, 0.47, 0.44))
 		_:

@@ -19,6 +19,7 @@ const DamageTextScript := preload("res://scripts/damage_text.gd")
 const BurstScript := preload("res://scripts/burst_effect.gd")
 const Upgrades := preload("res://scripts/upgrades.gd")
 const StatsScript := preload("res://scripts/stats_ui.gd")
+const UpgradesUIScript := preload("res://scripts/upgrades_ui.gd")
 const HazardScript := preload("res://scripts/hazard.gd")
 const BlastScript := preload("res://scripts/blast.gd")
 ## このレベルごとに特別強化の3択が出る
@@ -46,6 +47,7 @@ var ground: Node2D
 var hud: CanvasLayer
 var level_up_ui: CanvasLayer
 var stats_ui: CanvasLayer
+var upgrades_ui: CanvasLayer
 ## 部隊戦績（個体ごとの与ダメージ・被ダメージなど）。new_record() で追加する
 var records: Array = []
 
@@ -138,6 +140,10 @@ func _ready() -> void:
 	stats_ui = StatsScript.new()
 	stats_ui.game = self
 	add_child(stats_ui)
+
+	upgrades_ui = UpgradesUIScript.new()
+	upgrades_ui.game = self
+	add_child(upgrades_ui)
 
 	queue_redraw()
 
@@ -276,9 +282,15 @@ func set_auto_pick(on: bool) -> void:
 
 
 func toggle_stats() -> void:
-	if level_up_ui.visible:
+	if level_up_ui.visible or upgrades_ui.visible:
 		return
 	stats_ui.toggle()
+
+
+func toggle_upgrades() -> void:
+	if level_up_ui.visible or stats_ui.visible:
+		return
+	upgrades_ui.toggle()
 
 
 # ---------------------------------------------------------------- 兵士・ペット
@@ -374,7 +386,8 @@ func _update_spawning(delta: float) -> void:
 	while _spawn_acc >= 1.0:
 		_spawn_acc -= 1.0
 		if enemies_cache.size() < MAX_ENEMIES:
-			_spawn_enemy(_pick_kind(), _random_spawn_pos())
+			var k := _pick_kind()
+			_spawn_enemy(k, _stealth_spawn_pos() if k == "stealth" else _random_spawn_pos())
 	# 定期的に横一列の大群
 	if elapsed >= _next_wave:
 		_next_wave += 50.0
@@ -400,6 +413,8 @@ func _pick_kind() -> String:
 		pool.append(["healer", 1.2])
 	if elapsed > 120.0:
 		pool.append(["bomber", 1.0 + elapsed / 240.0])
+	if elapsed > 90.0:
+		pool.append(["stealth", 1.5 + elapsed / 200.0])
 	var total := 0.0
 	for entry in pool:
 		total += entry[1]
@@ -409,6 +424,12 @@ func _pick_kind() -> String:
 		if r <= 0.0:
 			return entry[0]
 	return "grunt"
+
+
+## 隠密兵：右下か左下の隅から出てくる
+func _stealth_spawn_pos() -> Vector2:
+	var x := MAP_RECT.position.x + 25.0 if randf() < 0.5 else MAP_RECT.end.x - 25.0
+	return Vector2(x, MAP_RECT.end.y - randf_range(25.0, 120.0))
 
 
 ## 上端か、左右の上半分から出てくる
@@ -599,6 +620,7 @@ func on_castle_destroyed() -> void:
 	game_over = true
 	level_up_ui.hide()
 	stats_ui.close_panel()
+	upgrades_ui.close_panel()
 	get_tree().paused = true
 	hud.show_game_over()
 

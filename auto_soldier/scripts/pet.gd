@@ -1,9 +1,12 @@
 extends Node2D
-## ペット。兵士のまわりを回りながら、近くの敵を自動で撃つ（兵士1人に1匹ずつ付く）
+## ペット。担当の遊撃兵のまわりを回りながら、近くの敵を自動で撃つ。
+## 「ペットの仲間」を取るたびに、全遊撃兵に1匹ずつ付く。
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
 var game: Node2D
+## 担当の遊撃兵と、その兵士のペットの中での番号
+var owner_soldier: Node2D
 var index := 0
 var damage := 7.0
 var interval := 0.8
@@ -17,9 +20,10 @@ var _aim := Vector2.RIGHT
 func _process(delta: float) -> void:
 	_t += delta
 	# 担当の兵士のまわりを回る。兵士が倒れているあいだは城の前で待つ
-	var owner_soldier: Node2D = game.soldiers[index % game.soldiers.size()]
 	var center: Vector2 = game.castle.gate_position() if owner_soldier.dead else owner_soldier.position
-	var ang := _t * 1.6 + PI * index
+	# 同じ兵士のペット同士は等間隔に並んで回る
+	var n: int = maxi(game.pets_per_soldier, 1)
+	var ang := _t * 1.6 + TAU * index / n
 	var target_pos: Vector2 = center + Vector2.from_angle(ang) * 60.0
 	position = position.lerp(target_pos, 1.0 - exp(-10.0 * delta))
 

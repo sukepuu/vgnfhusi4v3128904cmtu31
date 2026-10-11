@@ -23,6 +23,7 @@ const MAX_ENEMIES := 260
 const MAX_SOLDIERS := 5
 const MAX_GUARDS := 3
 const MAX_BUILDERS := 3
+## 遊撃兵1人あたりのペットの最大数
 const MAX_PETS := 4
 ## 近くの敵を素早く探すための空間グリッドのマス目サイズ
 const GRID_CELL := 64.0
@@ -46,6 +47,10 @@ var builders: Array = []
 ## 重装部隊（最大1体）
 var heavy: Node2D = null
 var pets: Array = []
+## 遊撃兵1人あたりのペットの数（「ペットの仲間」を取るたびに+1）
+var pets_per_soldier := 0
+## ペットの攻撃力（あとから付くペットにも反映）
+var pet_damage := 7.0
 ## 毎フレーム更新する敵リスト（各スクリプトから参照）
 var enemies_cache: Array = []
 var _grid := {}
@@ -229,6 +234,8 @@ func add_soldier() -> void:
 	s.position = castle.gate_position() + Vector2(randf_range(-40, 40), -20)
 	world.add_child(s)
 	soldiers.append(s)
+	# 新しく増えた遊撃兵にもペットを付ける
+	_fill_pets()
 
 
 func add_guard() -> void:
@@ -262,15 +269,31 @@ func add_builder() -> void:
 	builders.append(b)
 
 
+## 全遊撃兵にペットを1匹ずつ追加する
 func add_pet() -> void:
-	if pets.size() >= MAX_PETS:
+	if pets_per_soldier >= MAX_PETS:
 		return
-	var p := PetScript.new()
-	p.game = self
-	p.index = pets.size()
-	p.position = castle.gate_position()
-	world.add_child(p)
-	pets.append(p)
+	pets_per_soldier += 1
+	_fill_pets()
+
+
+## 各遊撃兵のペットが pets_per_soldier 匹になるように足りない分を付ける
+func _fill_pets() -> void:
+	for s in soldiers:
+		var have := 0
+		for p in pets:
+			if p.owner_soldier == s:
+				have += 1
+		while have < pets_per_soldier:
+			var p := PetScript.new()
+			p.game = self
+			p.owner_soldier = s
+			p.index = have
+			p.damage = pet_damage
+			p.position = s.position
+			world.add_child(p)
+			pets.append(p)
+			have += 1
 
 
 # ---------------------------------------------------------------- 敵の出現

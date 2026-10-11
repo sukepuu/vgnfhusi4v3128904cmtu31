@@ -19,8 +19,8 @@ const LIST := [
 	{"id": "whirlwind", "cat": "soldier", "name": "回転斬り", "desc": "斬撃が全方位360度になる", "max": 1},
 	{"id": "dash", "cat": "soldier", "name": "突進突き", "desc": "4秒ごとに敵へ突進して貫く（突進中は無敵）",
 		"desc_up": "突進の間隔 -20%、威力 +30%", "max": 4},
-	{"id": "pet", "cat": "soldier", "name": "ペットの仲間", "desc": "遊撃兵について回り、自動で射撃してくれる仲間が加わる",
-		"desc_up": "ペットがもう1体加わる、全ペットの攻撃力 +20%", "max": 4},
+	{"id": "pet", "cat": "soldier", "name": "ペットの仲間", "desc": "全遊撃兵にペットが1匹ずつ付き、自動で射撃してくれる（あとから増えた遊撃兵にも付く）",
+		"desc_up": "全遊撃兵にペットがもう1匹ずつ付く、全ペットの攻撃力 +20%", "max": 4},
 	{"id": "soldier_hp", "cat": "soldier", "name": "鍛錬", "desc": "遊撃兵の最大HP +25、全員HP全回復", "max": 4},
 	{"id": "speed", "cat": "soldier", "name": "俊足", "desc": "遊撃兵の移動速度 +12%", "max": 3},
 	# ---- 築城部隊
@@ -130,8 +130,9 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 				st.dash_damage *= 1.3
 		"pet":
 			if new_level > 1:
+				game.pet_damage *= 1.2
 				for p in game.pets:
-					p.damage *= 1.2
+					p.damage = game.pet_damage
 			game.add_pet()
 		"soldier_hp":
 			st.max_hp += 25.0

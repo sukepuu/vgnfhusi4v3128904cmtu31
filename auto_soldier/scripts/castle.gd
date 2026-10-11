@@ -16,7 +16,7 @@ var regen := 0.0
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0
 var tower_interval := 0.9
-var tower_damage := 12.0
+var tower_damage := 24.0
 var tower_range := 520.0
 var _tower_cds: Array = [0.0, 0.3, 0.6, 0.15]
 var _tower_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
@@ -34,14 +34,14 @@ var _cannon_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP]
 # --- 投石器（大砲より範囲が広いが、発射間隔が長い）。最大3台
 var catapult_level := 0
 var catapult_interval := 9.0
-var catapult_damage := 60.0
+var catapult_damage := 48.0
 var catapult_radius := 150.0
 var _catapult_cds: Array = [2.0, 5.0, 8.0]
 var _catapult_swings: Array = [0.0, 0.0, 0.0]
 # --- バリスタ（矢倉より発射間隔が長いが、高威力・射程無限・貫通無限）。最大3基
 var ballista_level := 0
 var ballista_interval := 4.0
-var ballista_damage := 120.0
+var ballista_damage := 96.0
 var _ballista_cds: Array = [1.0, 2.3, 3.6]
 var _ballista_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP]
 var _ballista_recoil: Array = [0.0, 0.0, 0.0]

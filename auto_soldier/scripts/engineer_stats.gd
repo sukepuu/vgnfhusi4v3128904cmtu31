@@ -7,9 +7,9 @@ var move_speed := 110.0
 var plant_time := 5.0
 
 # --- 罠
-var bomb_damage := 100.0
+var bomb_damage := 200.0
 var bomb_radius := 110.0
-var pit_damage := 50.0
+var pit_damage := 100.0
 var pit_radius := 90.0
 ## 敵がこの距離まで近づいたら作動開始
 var trigger_radius := 60.0

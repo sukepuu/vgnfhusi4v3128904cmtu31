@@ -78,15 +78,13 @@ func _ready() -> void:
 	_skills_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	root.add_child(_skills_label)
 
-	# 部隊戦績ボタン（右下）
+	# 部隊戦績ボタン
 	var stats_btn := Button.new()
 	stats_btn.text = "部隊戦績（Tab）"
 	stats_btn.add_theme_font_size_override("font_size", 16)
-	stats_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	stats_btn.offset_left = -180
-	stats_btn.offset_top = -52
-	stats_btn.offset_right = -16
-	stats_btn.offset_bottom = -16
+	# 城のHPバーのすぐ下（左上）
+	stats_btn.position = Vector2(16, 84)
+	stats_btn.size = Vector2(170, 34)
 	stats_btn.focus_mode = Control.FOCUS_NONE
 	stats_btn.pressed.connect(func() -> void: game.toggle_stats())
 	root.add_child(stats_btn)

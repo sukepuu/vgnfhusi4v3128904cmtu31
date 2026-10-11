@@ -18,6 +18,9 @@ var _boss_bar: ProgressBar
 var _boss_label: Label
 var _banner: Label
 var _banner_left := 0.0
+var _auto_btn: Button
+var _notice: Label
+var _notice_left := 0.0
 var _result_label: Label
 
 
@@ -122,6 +125,28 @@ func _ready() -> void:
 	stats_btn.pressed.connect(func() -> void: game.toggle_stats())
 	root.add_child(stats_btn)
 
+	# オート選択ボタン（部隊戦績ボタンの下）
+	_auto_btn = Button.new()
+	_auto_btn.add_theme_font_size_override("font_size", 16)
+	_auto_btn.position = Vector2(16, 124)
+	_auto_btn.size = Vector2(230, 34)
+	_auto_btn.focus_mode = Control.FOCUS_NONE
+	_auto_btn.pressed.connect(func() -> void: game.set_auto_pick(not game.auto_pick))
+	root.add_child(_auto_btn)
+	update_auto_button()
+
+	# オート選択で何を選んだかのお知らせ（画面下）
+	_notice = _make_label(18)
+	_notice.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_notice.offset_left = -400
+	_notice.offset_right = 400
+	_notice.offset_top = -64
+	_notice.offset_bottom = -36
+	_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_notice.add_theme_color_override("font_color", Color(1.0, 0.95, 0.6))
+	_notice.visible = false
+	root.add_child(_notice)
+
 	_build_game_over()
 
 
@@ -147,6 +172,23 @@ func _make_label(font_size: int) -> Label:
 	return l
 
 
+func update_auto_button() -> void:
+	if game.auto_pick:
+		_auto_btn.text = "オート選択：有効中（A）"
+		_auto_btn.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6))
+		_auto_btn.add_theme_color_override("font_hover_color", Color(0.7, 1.0, 0.8))
+	else:
+		_auto_btn.text = "オート選択：無効中（A）"
+		_auto_btn.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
+		_auto_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+
+
+func show_notice(text: String) -> void:
+	_notice.text = text
+	_notice.visible = true
+	_notice_left = 2.5
+
+
 func show_banner(text: String, col: Color) -> void:
 	_banner.text = text
 	_banner.add_theme_color_override("font_color", col)
@@ -155,6 +197,11 @@ func show_banner(text: String, col: Color) -> void:
 
 
 func _process(delta: float) -> void:
+	if _notice_left > 0.0 and not get_tree().paused:
+		_notice_left -= delta
+		_notice.modulate.a = clampf(_notice_left, 0.0, 1.0)
+		if _notice_left <= 0.0:
+			_notice.visible = false
 	if _banner_left > 0.0 and not get_tree().paused:
 		_banner_left -= delta
 		_banner.modulate.a = clampf(_banner_left, 0.0, 1.0)
@@ -267,3 +314,6 @@ func show_game_over() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _game_over.visible and event is InputEventKey and event.pressed and event.keycode == KEY_R:
 		game.restart()
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_A and not _game_over.visible:
+		get_viewport().set_input_as_handled()
+		game.set_auto_pick(not game.auto_pick)

@@ -81,6 +81,8 @@ var pending_levelups := 0
 ## まだ強化を選んでいないレベル（特別強化のレベルかどうかの判定に使う）
 var _pending_levels: Array = []
 var game_over := false
+## オート選択モード：レベルアップの強化をランダムで自動的に選ぶ
+var auto_pick := false
 
 var _spawn_acc := 0.0
 var _next_wave := 50.0
@@ -262,6 +264,15 @@ func new_record(cat: String, name_text: String) -> Dictionary:
 		"blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0}
 	records.append(r)
 	return r
+
+
+func set_auto_pick(on: bool) -> void:
+	auto_pick = on
+	hud.update_auto_button()
+	# 選択画面が出ている最中に有効にしたら、その場で自動選択
+	if on and level_up_ui.visible and not level_up_ui._ids.is_empty():
+		var ids: Array = level_up_ui._ids
+		level_up_ui._pick(ids[randi() % ids.size()])
 
 
 func toggle_stats() -> void:
@@ -490,6 +501,12 @@ func _open_level_up() -> void:
 		pending_levelups = 0
 		_pending_levels.clear()
 		castle.hp = castle.max_hp
+		return
+	if auto_pick:
+		# オート選択：画面を止めずにランダムで選ぶ
+		var u: Dictionary = choices[randi() % choices.size()]
+		hud.show_notice("オート選択：【%s】%s%s" % [Upgrades.CAT_LABEL[u["cat"]], "★" if u.get("special", false) else "", u["name"]])
+		_on_upgrade_chosen(u["id"])
 		return
 	hud.refresh()
 	get_tree().paused = true

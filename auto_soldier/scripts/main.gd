@@ -52,7 +52,7 @@ var _grid := {}
 
 var level := 1
 var xp := 0
-var xp_to_next := 5
+var xp_to_next := xp_needed(1)
 var kills := 0
 var elapsed := 0.0
 var upgrade_levels := {}
@@ -341,12 +341,17 @@ func on_enemy_killed(e: Node2D) -> void:
 	add_xp(e.xp_value)
 
 
+## レベル lv から次のレベルまでに必要な経験値（÷1.2 でレベルの上がり方を1.2倍に）
+func xp_needed(lv: int) -> int:
+	return maxi(1, roundi((4.0 + lv * 3.0 + lv * lv / 8.0) / 1.2))
+
+
 func add_xp(amount: int) -> void:
 	xp += amount
 	while xp >= xp_to_next:
 		xp -= xp_to_next
 		level += 1
-		xp_to_next = 4 + level * 3 + level * level / 8
+		xp_to_next = xp_needed(level)
 		pending_levelups += 1
 	if pending_levelups > 0 and not level_up_ui.visible and not game_over:
 		_open_level_up()

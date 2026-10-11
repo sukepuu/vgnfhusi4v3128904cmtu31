@@ -9,6 +9,8 @@ var radius := 5.0
 var from_enemy := false
 var color := Color(1, 1, 0.5)
 var life := 1.0
+## true ならバリスタの矢（太く長く描く）
+var bolt := false
 
 var _hit := {}
 
@@ -57,6 +59,13 @@ func _draw() -> void:
 	if from_enemy:
 		draw_circle(Vector2.ZERO, radius, color)
 		draw_circle(Vector2.ZERO, radius * 0.5, Color(1, 1, 1, 0.8))
+	elif bolt:
+		var dir := velocity.normalized()
+		draw_line(-dir * 34.0, dir * 6.0, Color(0.45, 0.3, 0.15), 4.0)
+		draw_colored_polygon(PackedVector2Array([
+			dir * 16.0, dir * 4.0 + dir.orthogonal() * 6.0, dir * 4.0 - dir.orthogonal() * 6.0]), Color(0.85, 0.88, 0.95))
+		draw_line(-dir * 34.0 + dir.orthogonal() * 5.0, -dir * 26.0, Color(0.9, 0.9, 0.85), 2.0)
+		draw_line(-dir * 34.0 - dir.orthogonal() * 5.0, -dir * 26.0, Color(0.9, 0.9, 0.85), 2.0)
 	else:
 		var tail := -velocity.normalized() * 14.0
 		draw_line(tail, Vector2.ZERO, Color(color, 0.5), radius * 1.2)

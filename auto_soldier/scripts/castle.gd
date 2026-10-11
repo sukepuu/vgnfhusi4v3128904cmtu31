@@ -1,6 +1,6 @@
 extends Node2D
 ## 守るべき城。HPが0になったらゲームオーバー。
-## 強化で迎撃システム（矢倉・大砲・投石器・氷結の結界）が増えていく。
+## 強化で迎撃システム（矢倉・大砲・投石器・バリスタ・氷結の結界）が増えていく。
 
 const BulletScript := preload("res://scripts/bullet.gd")
 const ShellScript := preload("res://scripts/shell.gd")
@@ -38,6 +38,14 @@ var catapult_damage := 60.0
 var catapult_radius := 150.0
 var _catapult_cds: Array = [2.0, 5.0, 8.0]
 var _catapult_swings: Array = [0.0, 0.0, 0.0]
+# --- バリスタ（矢倉より発射間隔が長いが、高威力・射程無限・貫通無限）。最大3基
+var ballista_level := 0
+var ballista_interval := 4.0
+var ballista_damage := 120.0
+var _ballista_cds: Array = [1.0, 2.3, 3.6]
+var _ballista_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP]
+var _ballista_recoil: Array = [0.0, 0.0, 0.0]
+
 ## 直前に撃ち込んだ場所（同じ場所に重ねて撃たないように）
 var _recent_shots: Array = []
 
@@ -57,6 +65,7 @@ func _process(delta: float) -> void:
 	_update_towers(delta)
 	_update_cannon(delta)
 	_update_catapult(delta)
+	_update_ballista(delta)
 	queue_redraw()
 
 
@@ -159,6 +168,52 @@ func _update_catapult(delta: float) -> void:
 		_catapult_swings[i] = 0.4
 
 
+func _update_ballista(delta: float) -> void:
+	for i in mini(ballista_level, MAX_GUNS):
+		_ballista_recoil[i] -= delta
+		_ballista_cds[i] -= delta
+		if _ballista_cds[i] > 0.0:
+			continue
+		var from := global_position + _ballista_local_pos(i)
+		var dir := _best_pierce_dir(from)
+		if dir == Vector2.ZERO:
+			continue
+		_ballista_aims[i] = dir
+		var b := BulletScript.new()
+		b.game = game
+		b.velocity = dir * 1000.0
+		b.damage = ballista_damage
+		b.pierce = 1000000
+		b.radius = 7.0
+		b.bolt = true
+		b.life = 2.5
+		b.position = from
+		game.world.add_child(b)
+		_ballista_cds[i] = ballista_interval
+		_ballista_recoil[i] = 0.25
+
+
+## 一直線上に一番多くの敵が並ぶ向き（敵がいなければ ZERO）
+func _best_pierce_dir(from: Vector2) -> Vector2:
+	var best := Vector2.ZERO
+	var best_n := 0
+	for e in game.enemies_cache:
+		if not is_instance_valid(e) or e.dead:
+			continue
+		var dir: Vector2 = (e.global_position - from).normalized()
+		var n := 0
+		for o in game.enemies_cache:
+			if not is_instance_valid(o) or o.dead:
+				continue
+			var rel: Vector2 = o.global_position - from
+			if rel.dot(dir) > 0.0 and absf(rel.dot(dir.orthogonal())) < o.radius + 7.0:
+				n += 1
+		if n > best_n:
+			best_n = n
+			best = dir
+	return best
+
+
 func _fire_shell(from: Vector2, to: Vector2, dmg: float, area: float, boulder: bool) -> void:
 	var s := ShellScript.new()
 	s.game = game
@@ -204,6 +259,13 @@ func _cannon_local_pos(i: int) -> Vector2:
 		0: return Vector2(0, -HALF.y - 30.0)
 		1: return Vector2(-72, -HALF.y - 26.0)
 		_: return Vector2(72, -HALF.y - 26.0)
+
+
+func _ballista_local_pos(i: int) -> Vector2:
+	match i:
+		0: return Vector2(-HALF.x * 0.78, HALF.y * 0.45)
+		1: return Vector2(HALF.x * 0.78, HALF.y * 0.45)
+		_: return Vector2(HALF.x * 0.4, HALF.y * 0.55)
 
 
 func _catapult_local_pos(i: int) -> Vector2:
@@ -257,6 +319,22 @@ func _draw() -> void:
 		var aim: Vector2 = _cannon_aims[i]
 		draw_circle(cp, 14.0, Color(0.25, 0.25, 0.28))
 		draw_line(cp, cp + aim * 26.0, Color(0.15, 0.15, 0.18), 10.0)
+
+	# バリスタ
+	for i in mini(ballista_level, MAX_GUNS):
+		var p := _ballista_local_pos(i)
+		var aim: Vector2 = _ballista_aims[i]
+		var side := aim.orthogonal()
+		var back: float = 4.0 if _ballista_recoil[i] > 0.0 else 0.0
+		var c := p - aim * back
+		draw_circle(p, 9.0, Color(0.4, 0.3, 0.2))
+		# 弓の部分
+		draw_line(c + side * 14.0 - aim * 4.0, c + aim * 6.0, Color(0.55, 0.4, 0.2), 4.0)
+		draw_line(c - side * 14.0 - aim * 4.0, c + aim * 6.0, Color(0.55, 0.4, 0.2), 4.0)
+		draw_line(c + side * 14.0 - aim * 4.0, c - aim * 8.0, Color(0.9, 0.9, 0.85), 1.5)
+		draw_line(c - side * 14.0 - aim * 4.0, c - aim * 8.0, Color(0.9, 0.9, 0.85), 1.5)
+		# 台座のレール
+		draw_line(c - aim * 12.0, c + aim * 16.0, Color(0.3, 0.2, 0.1), 5.0)
 
 	# 投石器
 	for i in mini(catapult_level, MAX_GUNS):

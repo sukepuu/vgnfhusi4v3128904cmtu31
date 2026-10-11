@@ -38,6 +38,9 @@ const LIST := [
 	{"id": "spear_dmg", "cat": "guard", "name": "槍術", "desc": "槍の攻撃力 +35%", "max": 5, "req": "guard"},
 	# ---- 重装部隊
 	{"id": "heavy", "cat": "heavy", "name": "重装部隊", "desc": "足は遅いが耐久力と攻撃力が高い重装兵が加わる。壁の中央の前に陣取り、近づく敵を斬撃で迎え撃つ", "max": 1, "weight": 1.5},
+	# ---- 工兵部隊
+	{"id": "engineer", "cat": "engineer", "name": "工兵部隊", "desc": "フィールドを回って、爆弾（範囲ダメージ）と落とし穴（範囲ダメージ＋10秒足止め）を交互に仕掛ける工兵が加わる",
+		"desc_up": "工兵が1人増える（最大2人）", "max": 2, "weight": 1.5},
 	# ---- 城
 	{"id": "tower", "cat": "castle", "name": "矢倉", "desc": "城に矢倉が建ち、近づく敵を自動で射る",
 		"desc_up": "矢倉をもう1基追加、全矢倉の威力 +15%", "max": 4, "weight": 1.5},
@@ -54,10 +57,10 @@ const LIST := [
 	{"id": "repair", "cat": "castle", "name": "修理工", "desc": "城のHPが毎秒2回復する", "max": 3},
 ]
 
-const CAT_LABEL := {"soldier": "遊撃", "builder": "築城", "guard": "迎撃", "heavy": "重装", "castle": "城"}
+const CAT_LABEL := {"soldier": "遊撃", "builder": "築城", "guard": "迎撃", "heavy": "重装", "engineer": "工兵", "castle": "城"}
 const CAT_COLOR := {
 	"soldier": Color(0.6, 0.85, 1.0), "builder": Color(1.0, 0.88, 0.45),
-	"guard": Color(0.6, 1.0, 0.65), "heavy": Color(0.85, 0.75, 1.0), "castle": Color(1.0, 0.7, 0.45)}
+	"guard": Color(0.6, 1.0, 0.65), "heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), "castle": Color(1.0, 0.7, 0.45)}
 
 
 ## まだ上限に達していない強化から、出やすさに応じてランダムに n 個選ぶ
@@ -170,6 +173,8 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.catapult_interval *= 0.9
 		"heavy":
 			game.add_heavy()
+		"engineer":
+			game.add_engineer()
 		"tower":
 			castle.tower_count = new_level
 			if new_level > 1:

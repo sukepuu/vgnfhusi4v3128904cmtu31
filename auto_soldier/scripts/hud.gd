@@ -117,6 +117,8 @@ func refresh() -> void:
 		lines_r.append("迎撃 %d / %d" % [_alive(game.guards), game.guards.size()])
 	if game.heavy != null:
 		lines_r.append("重装 %s" % ("復活待ち" if game.heavy.dead else "戦闘中"))
+	if not game.engineers.is_empty():
+		lines_r.append("工兵 %d人 罠 %d個" % [game.engineers.size(), get_tree().get_nodes_in_group("traps").size()])
 	if not game.builders.is_empty():
 		lines_r.append("壁 %d枚" % game.walls.walls.size())
 	_soldier_label.text = "\n".join(lines_r)

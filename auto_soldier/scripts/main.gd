@@ -7,6 +7,7 @@ const GuardScript := preload("res://scripts/guard.gd")
 const GuardStats := preload("res://scripts/guard_stats.gd")
 const BuilderScript := preload("res://scripts/builder.gd")
 const HeavyScript := preload("res://scripts/heavy.gd")
+const EngineerScript := preload("res://scripts/engineer.gd")
 const WallsScript := preload("res://scripts/walls.gd")
 const CastleScript := preload("res://scripts/castle.gd")
 const EnemyScript := preload("res://scripts/enemy.gd")
@@ -23,6 +24,7 @@ const MAX_ENEMIES := 260
 const MAX_SOLDIERS := 5
 const MAX_GUARDS := 3
 const MAX_BUILDERS := 3
+const MAX_ENGINEERS := 2
 ## 遊撃兵1人あたりのペットの最大数
 const MAX_PETS := 4
 ## 近くの敵を素早く探すための空間グリッドのマス目サイズ
@@ -33,6 +35,8 @@ var effects: Node2D
 var camera: Camera2D
 var castle: Node2D
 var walls: Node2D
+## 罠などを置く地面のレイヤー（兵士や敵より下に描く）
+var ground: Node2D
 var hud: CanvasLayer
 var level_up_ui: CanvasLayer
 
@@ -46,6 +50,8 @@ var guards: Array = []
 var builders: Array = []
 ## 重装部隊（最大1体）
 var heavy: Node2D = null
+## 工兵部隊
+var engineers: Array = []
 var pets: Array = []
 ## 遊撃兵1人あたりのペットの数（「ペットの仲間」を取るたびに+1）
 var pets_per_soldier := 0
@@ -87,6 +93,10 @@ func _ready() -> void:
 	walls.game = self
 	walls.position = castle.position
 	world.add_child(walls)
+
+	ground = Node2D.new()
+	ground.name = "Ground"
+	world.add_child(ground)
 
 	# 最初は兵士2人でスタート
 	add_soldier()
@@ -256,6 +266,17 @@ func add_heavy() -> void:
 	heavy.game = self
 	heavy.position = castle.gate_position()
 	world.add_child(heavy)
+
+
+func add_engineer() -> void:
+	if engineers.size() >= MAX_ENGINEERS:
+		return
+	var e := EngineerScript.new()
+	e.game = self
+	e.index = engineers.size()
+	e.position = castle.gate_position()
+	world.add_child(e)
+	engineers.append(e)
 
 
 func add_builder() -> void:

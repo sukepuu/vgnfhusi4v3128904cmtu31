@@ -29,6 +29,8 @@ var _contact_cd := 0.0
 var _flash := 0.0
 var _strafe_sign := 1.0
 var speed_mult := 1.0
+## 落とし穴で動けない残り時間
+var stun_left := 0.0
 
 
 func setup(k: String, hp_mult: float) -> void:
@@ -64,6 +66,13 @@ func _process(delta: float) -> void:
 		return
 	_flash -= delta
 	_contact_cd -= delta
+	if stun_left > 0.0:
+		# 落とし穴にはまって動けない（攻撃もできない）
+		stun_left -= delta
+		position += knock * delta
+		knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
+		queue_redraw()
+		return
 	var castle: Node2D = game.castle
 	var move := Vector2.ZERO
 	# 基本は城へ。近くに兵士がいればそちらを狙う
@@ -161,6 +170,11 @@ func _shoot(dir: Vector2, dmg: float) -> void:
 	game.world.add_child(b)
 
 
+func stun(seconds: float) -> void:
+	stun_left = maxf(stun_left, seconds)
+	knock = Vector2.ZERO
+
+
 func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO) -> void:
 	if dead:
 		return
@@ -210,6 +224,11 @@ func _draw() -> void:
 	for s in [-1.0, 1.0]:
 		draw_circle(_facing * radius * 0.45 + side2 * radius * 0.3 * s, radius * 0.15, Color(0.1, 0.05, 0.05))
 	# 氷結の結界で遅くなっている
+	if stun_left > 0.0:
+		# 落とし穴で動けない：頭の上でぐるぐる回る星
+		for i in 3:
+			var a := stun_left * 4.0 + TAU * i / 3.0
+			draw_circle(Vector2(cos(a) * radius * 0.7, -radius - 6.0 + sin(a) * 3.0), 3.0, Color(1.0, 0.9, 0.3))
 	if speed_mult < 1.0:
 		draw_arc(Vector2.ZERO, radius + 3.0, 0.0, TAU, 20, Color(0.6, 0.9, 1.0, 0.8), 2.0)
 	# HPバー

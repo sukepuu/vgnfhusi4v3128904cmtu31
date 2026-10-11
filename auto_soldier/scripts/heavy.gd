@@ -19,8 +19,8 @@ var facing := Vector2.UP
 var target: Node2D = null
 
 # --- ステータス
-var max_hp := 450.0
-var hp := 450.0
+var max_hp := 1350.0
+var hp := 1350.0
 var regen := 4.0
 var move_speed := 60.0
 var slash_damage := 45.0

@@ -11,7 +11,8 @@ const HALF := Vector2(95, 45)
 var game: Node2D
 var max_hp := 600.0
 var hp := 600.0
-var regen := 0.0
+## 城のHPの自然回復（毎秒）。「修理工」で +2 ずつ増える
+var regen := 2.0
 
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0

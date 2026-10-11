@@ -13,6 +13,9 @@ var life := 1.0
 var bolt := false
 ## 撃った味方の戦績カード
 var src: Dictionary = {}
+## 当たったときに小爆発する（炸裂弾・爆裂ボルト）。0なら爆発しない
+var explode_radius := 0.0
+var explode_ratio := 0.0
 
 var _hit := {}
 
@@ -50,6 +53,8 @@ func _process(delta: float) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < radius + e.radius:
 			e.take_damage(damage, velocity.normalized() * 120.0, src)
+			if explode_radius > 0.0:
+				game.explode(global_position, explode_radius, damage * explode_ratio, src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
 			_hit[e] = true
 			if pierce <= 0:
 				queue_free()

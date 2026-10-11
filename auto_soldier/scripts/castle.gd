@@ -53,6 +53,20 @@ var _recent_shots: Array = []
 var frost_radius := 0.0
 var frost_slow := 0.0
 
+# --- 特別強化
+var tower_shots := 1
+var tower_pierce := 0
+var scatter_level := 0
+var fire_level := 0
+var catapult_stun := 0.0
+var split_level := 0
+var ballista_shots := 1
+var bolt_blast_level := 0
+var freeze_level := 0
+var icicle_level := 0
+var _freeze_cd := 5.0
+var _icicle_cd := 2.0
+
 var _flash := 0.0
 ## 戦績カード（城の本体と、設備1基ずつ）
 var record: Dictionary
@@ -81,6 +95,7 @@ func _process(delta: float) -> void:
 	_update_cannon(delta)
 	_update_catapult(delta)
 	_update_ballista(delta)
+	_update_frost_specials(delta)
 	queue_redraw()
 
 
@@ -141,18 +156,22 @@ func _update_towers(delta: float) -> void:
 		var target: Node2D = game.nearest_enemy(from, tower_range)
 		if target == null:
 			continue
-		var dir := (target.global_position - from).normalized()
-		_tower_aims[i] = dir
-		var b := BulletScript.new()
-		b.game = game
-		b.velocity = dir * 760.0
-		b.damage = tower_damage
-		b.radius = 4.0
-		b.color = Color(0.95, 0.8, 0.55)
-		b.src = _equip_record("tower", "矢倉", i)
-		b.life = tower_range / 760.0 + 0.2
-		b.position = from
-		game.world.add_child(b)
+		var aim := (target.global_position - from).normalized()
+		_tower_aims[i] = aim
+		# 連射なら少しずつ角度をずらして複数本
+		for k in tower_shots:
+			var dir := aim.rotated((k - (tower_shots - 1) / 2.0) * 0.12)
+			var b := BulletScript.new()
+			b.game = game
+			b.velocity = dir * 760.0
+			b.damage = tower_damage
+			b.pierce = tower_pierce
+			b.radius = 4.0
+			b.color = Color(0.95, 0.8, 0.55)
+			b.src = _equip_record("tower", "矢倉", i)
+			b.life = tower_range / 760.0 + 0.2
+			b.position = from
+			game.world.add_child(b)
 		_tower_cds[i] = tower_interval
 
 
@@ -166,7 +185,17 @@ func _update_cannon(delta: float) -> void:
 			continue
 		var from := global_position + _cannon_local_pos(i)
 		_cannon_aims[i] = (best.global_position - from).normalized()
-		_fire_shell(from, best.global_position, cannon_damage, cannon_radius, false, _equip_record("cannon", "大砲", i))
+		var rec := _equip_record("cannon", "大砲", i)
+		var shells: Array = [_fire_shell(from, best.global_position, cannon_damage, cannon_radius, false, rec)]
+		# 散弾砲：着弾地点の周りにも落ちる
+		for k in scatter_level * 2:
+			var off := Vector2.from_angle(randf() * TAU) * randf_range(60.0, 110.0)
+			shells.append(_fire_shell(from, best.global_position + off, cannon_damage * 0.7, cannon_radius * 0.8, false, rec))
+		# 焼夷弾：着弾地点が燃える
+		if fire_level > 0:
+			for s in shells:
+				s.fire_time = 4.0 + 2.0 * (fire_level - 1)
+				s.fire_dps = cannon_damage * 0.3 * fire_level
 		_cannon_cds[i] = cannon_interval
 
 
@@ -180,7 +209,10 @@ func _update_catapult(delta: float) -> void:
 		if best == null:
 			continue
 		var from := global_position + _catapult_local_pos(i) + Vector2(0, -20)
-		_fire_shell(from, best.global_position, catapult_damage, catapult_radius, true, _equip_record("catapult", "投石器", i))
+		var s := _fire_shell(from, best.global_position, catapult_damage, catapult_radius, true, _equip_record("catapult", "投石器", i))
+		s.stun = catapult_stun
+		if split_level > 0:
+			s.split_count = 2 + 2 * split_level
 		_catapult_cds[i] = catapult_interval
 		_catapult_swings[i] = 0.4
 
@@ -192,21 +224,27 @@ func _update_ballista(delta: float) -> void:
 		if _ballista_cds[i] > 0.0:
 			continue
 		var from := global_position + _ballista_local_pos(i)
-		var dir := _best_pierce_dir(from)
-		if dir == Vector2.ZERO:
+		var aim := _best_pierce_dir(from)
+		if aim == Vector2.ZERO:
 			continue
-		_ballista_aims[i] = dir
-		var b := BulletScript.new()
-		b.game = game
-		b.velocity = dir * 1000.0
-		b.damage = ballista_damage
-		b.pierce = 1000000
-		b.radius = 7.0
-		b.bolt = true
-		b.src = _equip_record("ballista", "バリスタ", i)
-		b.life = 2.5
-		b.position = from
-		game.world.add_child(b)
+		_ballista_aims[i] = aim
+		# 連装なら少しずつ角度をずらして複数発
+		for k in ballista_shots:
+			var dir := aim.rotated((k - (ballista_shots - 1) / 2.0) * 0.07)
+			var b := BulletScript.new()
+			b.game = game
+			b.velocity = dir * 1000.0
+			b.damage = ballista_damage
+			b.pierce = 1000000
+			b.radius = 7.0
+			b.bolt = true
+			b.src = _equip_record("ballista", "バリスタ", i)
+			b.life = 2.5
+			b.position = from
+			if bolt_blast_level > 0:
+				b.explode_radius = 40.0 + 15.0 * bolt_blast_level
+				b.explode_ratio = 0.15 + 0.15 * bolt_blast_level
+			game.world.add_child(b)
 		_ballista_cds[i] = ballista_interval
 		_ballista_recoil[i] = 0.25
 
@@ -232,7 +270,7 @@ func _best_pierce_dir(from: Vector2) -> Vector2:
 	return best
 
 
-func _fire_shell(from: Vector2, to: Vector2, dmg: float, area: float, boulder: bool, src: Dictionary) -> void:
+func _fire_shell(from: Vector2, to: Vector2, dmg: float, area: float, boulder: bool, src: Dictionary) -> Node2D:
 	var s := ShellScript.new()
 	s.src = src
 	s.game = game
@@ -246,6 +284,34 @@ func _fire_shell(from: Vector2, to: Vector2, dmg: float, area: float, boulder: b
 	s.position = from
 	game.effects.add_child(s)
 	_recent_shots.append({"pos": to, "area": area, "until": _t + s.flight_time + 0.3})
+	return s
+
+
+## 氷結の結界の特別強化（絶対零度・氷柱）
+func _update_frost_specials(delta: float) -> void:
+	if frost_radius <= 0.0:
+		return
+	if freeze_level > 0:
+		_freeze_cd -= delta
+		if _freeze_cd <= 0.0:
+			_freeze_cd = 10.0 if freeze_level == 1 else 8.0
+			var t := 2.0 if freeze_level == 1 else 3.5
+			for e in game.enemies_cache:
+				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < frost_radius:
+					e.stun(t)
+			game.spawn_burst(global_position, Color(0.7, 0.95, 1.0), frost_radius / 2.2)
+	if icicle_level > 0:
+		_icicle_cd -= delta
+		if _icicle_cd <= 0.0:
+			_icicle_cd = 2.5 if icicle_level == 1 else 1.5
+			var inside: Array = []
+			for e in game.enemies_cache:
+				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < frost_radius:
+					inside.append(e)
+			inside.shuffle()
+			var dmg: float = 60.0 * icicle_level * (1.0 + game.elapsed / 180.0)
+			for e in inside.slice(0, icicle_level):
+				game.spawn_blast(e.global_position, 0.5, 45.0, dmg, _equip_record("frost", "氷結の結界", 0), Color(0.7, 0.95, 1.0), "ice", 0.5)
 
 
 ## 敵が一番密集している場所にいる敵（射程内）

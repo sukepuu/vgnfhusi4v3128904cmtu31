@@ -15,3 +15,9 @@ var pit_radius := 90.0
 var trigger_radius := 60.0
 ## 落とし穴の足止め時間（秒）
 var stun_time := 10.0
+
+# --- 特別強化
+## 子爆弾（爆弾の爆発後に小爆弾が散る）
+var cluster_level := 0
+## 毒沼（落とし穴の跡が毒の沼になる）
+var poison_level := 0

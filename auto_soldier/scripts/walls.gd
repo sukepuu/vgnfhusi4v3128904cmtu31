@@ -17,6 +17,14 @@ var build_time := 20.0
 var wall_max_hp := 10.0
 var wall_width := deg_to_rad(12.0)
 
+# --- 特別強化
+## 砲台壁（壁から弾を撃つ）
+var turret_level := 0
+## 自己修復（壁が少しずつ回復）
+var repair_level := 0
+
+const BulletScript := preload("res://scripts/bullet.gd")
+
 ## 建っている壁。{"a0": 開始角, "a1": 終了角, "hp": 残り回数, "max": 最大回数, "flash": 被弾演出}
 var walls: Array = []
 
@@ -24,7 +32,37 @@ var walls: Array = []
 func _process(delta: float) -> void:
 	for w in walls:
 		w["flash"] = maxf(0.0, w["flash"] - delta)
+		if turret_level > 0:
+			_update_turret(w, delta)
+		if repair_level > 0 and w["hp"] < w["max"]:
+			w["rep"] = w.get("rep", 0.0) + delta
+			if w["rep"] >= (6.0 if repair_level == 1 else 3.0):
+				w["rep"] = 0.0
+				w["hp"] = minf(w["max"], w["hp"] + 1.0)
 	queue_redraw()
+
+
+## 砲台壁：壁の中央から近くの敵へ弾を撃つ（時間とともに威力も上がる）
+func _update_turret(w: Dictionary, delta: float) -> void:
+	w["cd"] = w.get("cd", randf() * 1.5) - delta
+	if w["cd"] > 0.0:
+		return
+	var from := point_at((w["a0"] + w["a1"]) / 2.0)
+	var target: Node2D = game.nearest_enemy(from, 340.0)
+	if target == null:
+		return
+	w["cd"] = 2.0 / (1.0 + 0.5 * (turret_level - 1))
+	var dir := (target.global_position - from).normalized()
+	var b := BulletScript.new()
+	b.game = game
+	b.velocity = dir * 640.0
+	b.damage = 15.0 * turret_level * (1.0 + game.elapsed / 180.0)
+	b.radius = 5.0
+	b.color = Color(0.85, 0.8, 0.7)
+	b.life = 340.0 / 640.0 + 0.2
+	b.position = from
+	b.src = w["src"]
+	game.world.add_child(b)
 
 
 func point_at(angle: float, r: float = RADIUS) -> Vector2:

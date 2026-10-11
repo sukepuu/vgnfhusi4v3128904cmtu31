@@ -23,3 +23,9 @@ var sword_interval := 0.75
 var dash_level := 0
 var dash_interval := 4.0
 var dash_damage := 40.0
+
+# --- 特別強化
+## 炸裂弾（弾が当たると小爆発）
+var burst_level := 0
+## 一斉射撃（定期的に全方位へ弾をばらまく）
+var volley_level := 0

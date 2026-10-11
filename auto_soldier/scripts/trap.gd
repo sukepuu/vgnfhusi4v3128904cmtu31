@@ -71,14 +71,25 @@ func _activate() -> void:
 			e.take_damage(damage, Vector2.ZERO, src)
 		else:
 			e.take_damage(damage, rel.normalized() * 350.0, src)
+	var st = game.engineer_stats
 	if kind == "pit":
 		game.spawn_burst(global_position, Color(0.45, 0.32, 0.2), blast_radius / 2.2)
+		# 毒沼：跡が毒の沼になる
+		if st.poison_level > 0:
+			game.spawn_hazard(global_position, blast_radius, st.pit_damage * 0.3 * st.poison_level,
+				6.0 + 3.0 * (st.poison_level - 1), Color(0.5, 0.9, 0.3), src)
 		remove_from_group("traps")
 		_hole_left = 1.5
 		queue_redraw()
 	else:
 		game.spawn_burst(global_position, Color(1.0, 0.45, 0.15), blast_radius / 2.2)
 		game.spawn_burst(global_position, Color(1.0, 0.85, 0.3), blast_radius / 3.5)
+		# 子爆弾：周りに小爆弾が散らばって爆発
+		if st.cluster_level > 0:
+			var n: int = 3 * st.cluster_level
+			for i in n:
+				var p: Vector2 = global_position + Vector2.from_angle(TAU * i / n + randf() * 0.4) * randf_range(blast_radius * 0.8, blast_radius * 1.4)
+				game.spawn_blast(p, 0.35 + 0.06 * i, blast_radius * 0.5, damage * 0.5, src, Color(1.0, 0.55, 0.2), "bomb")
 		queue_free()
 
 

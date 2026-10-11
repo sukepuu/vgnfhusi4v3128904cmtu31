@@ -11,6 +11,11 @@ var flight_time := 0.7
 var boulder := false
 ## 撃った設備の戦績カード
 var src: Dictionary = {}
+## 特別強化：当たった敵の気絶時間・着弾地点の炎・砕けて周りに落ちる岩の数
+var stun := 0.0
+var fire_dps := 0.0
+var fire_time := 0.0
+var split_count := 0
 
 var _t := 0.0
 var _height := 0.0
@@ -33,9 +38,16 @@ func _explode() -> void:
 			continue
 		var to: Vector2 = e.global_position - target
 		if to.length() < blast_radius + e.radius:
+			if stun > 0.0:
+				e.stun(stun)
 			e.take_damage(damage, to.normalized() * 300.0, src)
 	var col := Color(0.75, 0.65, 0.5) if boulder else Color(1.0, 0.6, 0.2)
 	game.spawn_burst(target, col, blast_radius / 2.2)
+	if fire_time > 0.0:
+		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), src)
+	for i in split_count:
+		var p := target + Vector2.from_angle(TAU * i / split_count + randf() * 0.5) * randf_range(blast_radius * 0.8, blast_radius * 1.2)
+		game.spawn_blast(p, 0.3 + 0.08 * i, 70.0, damage * 0.4, src, Color(0.75, 0.65, 0.5), "rock")
 	queue_free()
 
 

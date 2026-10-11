@@ -34,6 +34,15 @@ var _hurt_flash := 0.0
 var _invuln := 0.0
 var _retarget_cd := 0.0
 
+# --- 特別強化
+## 連続斬り：1回の斬撃のあとに追加で出る回数
+var extra_slashes := 0
+## 地割れ
+var quake_level := 0
+var _pending_slashes := 0
+var _followup_cd := 0.0
+var _quake_cd := 3.0
+
 
 func _ready() -> void:
 	record = game.new_record("heavy", "重装兵")
@@ -52,6 +61,8 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		return
 	_slash_cd -= delta
+	_followup_cd -= delta
+	_quake_cd -= delta
 	_hurt_flash -= delta
 	_invuln -= delta
 	_retarget_cd -= delta
@@ -81,6 +92,15 @@ func _process(delta: float) -> void:
 
 	if _slash_cd <= 0.0 and _try_slash():
 		_slash_cd = slash_interval
+		_pending_slashes = extra_slashes
+		_followup_cd = 0.18
+	elif _pending_slashes > 0 and _followup_cd <= 0.0:
+		# 連続斬り：追加の斬撃
+		_pending_slashes = _pending_slashes - 1 if _try_slash() else 0
+		_followup_cd = 0.18
+	if quake_level > 0 and _quake_cd <= 0.0 and game.nearest_enemy(global_position, 140.0) != null:
+		_quake()
+		_quake_cd = 5.0
 	queue_redraw()
 
 
@@ -130,6 +150,13 @@ func _try_slash() -> bool:
 	fx.position = global_position
 	game.effects.add_child(fx)
 	return true
+
+
+## 地割れ：周りの敵に大ダメージ＋気絶
+func _quake() -> void:
+	var r := 150.0 + 50.0 * (quake_level - 1)
+	game.explode(global_position, r, slash_damage * 0.6, record, Color(0.65, 0.5, 0.3), 2.0 + 1.5 * (quake_level - 1), 380.0)
+	game.spawn_burst(global_position, Color(0.9, 0.8, 0.6), r / 1.6)
 
 
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:

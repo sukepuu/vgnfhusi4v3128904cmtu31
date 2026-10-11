@@ -19,6 +19,10 @@ const DamageTextScript := preload("res://scripts/damage_text.gd")
 const BurstScript := preload("res://scripts/burst_effect.gd")
 const Upgrades := preload("res://scripts/upgrades.gd")
 const StatsScript := preload("res://scripts/stats_ui.gd")
+const HazardScript := preload("res://scripts/hazard.gd")
+const BlastScript := preload("res://scripts/blast.gd")
+## このレベルごとに特別強化の3択が出る
+const SPECIAL_EVERY := 7
 
 ## フィールドの範囲。城は一番下の中央に置く
 const MAP_RECT := Rect2(-700, -780, 1400, 840)
@@ -74,6 +78,8 @@ var kills := 0
 var elapsed := 0.0
 var upgrade_levels := {}
 var pending_levelups := 0
+## まだ強化を選んでいないレベル（特別強化のレベルかどうかの判定に使う）
+var _pending_levels: Array = []
 var game_over := false
 
 var _spawn_acc := 0.0
@@ -424,20 +430,30 @@ func add_xp(amount: int) -> void:
 		level += 1
 		xp_to_next = xp_needed(level)
 		pending_levelups += 1
+		_pending_levels.append(level)
 	if pending_levelups > 0 and not level_up_ui.visible and not game_over:
 		_open_level_up()
 
 
 func _open_level_up() -> void:
-	var choices := Upgrades.roll(upgrade_levels, 3, self)
+	var for_level: int = _pending_levels[0] if not _pending_levels.is_empty() else level
+	var special := false
+	var choices: Array = []
+	# Lv7ごとに特別強化（候補がなければ通常の強化）
+	if for_level % SPECIAL_EVERY == 0:
+		choices = Upgrades.roll_special(upgrade_levels, 3)
+		special = not choices.is_empty()
+	if choices.is_empty():
+		choices = Upgrades.roll(upgrade_levels, 3, self)
 	if choices.is_empty():
 		# 全部取りきったら城を回復
 		pending_levelups = 0
+		_pending_levels.clear()
 		castle.hp = castle.max_hp
 		return
 	hud.refresh()
 	get_tree().paused = true
-	level_up_ui.show_choices(choices, upgrade_levels, level)
+	level_up_ui.show_choices(choices, upgrade_levels, for_level, special)
 
 
 func _on_upgrade_chosen(id: String) -> void:
@@ -445,6 +461,8 @@ func _on_upgrade_chosen(id: String) -> void:
 	upgrade_levels[id] = lv
 	Upgrades.apply(id, lv, self)
 	pending_levelups -= 1
+	if not _pending_levels.is_empty():
+		_pending_levels.pop_front()
 	level_up_ui.hide()
 	if pending_levelups > 0:
 		_open_level_up()
@@ -465,10 +483,54 @@ func spawn_damage_text(pos: Vector2, amount: float, col: Color) -> void:
 
 
 func spawn_burst(pos: Vector2, col: Color, r: float) -> void:
+	if effects.get_child_count() > 260:
+		return
 	var b := BurstScript.new()
 	b.color = col
 	b.max_radius = r * 2.2
 	b.position = pos
+	effects.add_child(b)
+
+
+## 範囲爆発。範囲内の敵にダメージ（stun > 0 なら気絶も）
+func explode(pos: Vector2, radius: float, dmg: float, src: Dictionary, col: Color, stun: float = 0.0, knock: float = 220.0) -> void:
+	for e in enemies_near(pos, radius + 30.0):
+		if not is_instance_valid(e) or e.dead:
+			continue
+		var rel: Vector2 = e.global_position - pos
+		if rel.length() > radius + e.radius:
+			continue
+		if stun > 0.0:
+			e.stun(stun)
+		e.take_damage(dmg, rel.normalized() * knock, src)
+	spawn_burst(pos, col, radius / 2.2)
+
+
+## 一定時間残るダメージ地帯（炎・毒沼など）
+func spawn_hazard(pos: Vector2, radius: float, dps: float, duration: float, col: Color, src: Dictionary) -> void:
+	var h := HazardScript.new()
+	h.game = self
+	h.radius = radius
+	h.dps = dps
+	h.duration = duration
+	h.color = col
+	h.src = src
+	h.position = pos
+	ground.add_child(h)
+
+
+## 少し遅れて起きる爆発（look: "bomb" / "rock" / "ice"）
+func spawn_blast(pos: Vector2, delay: float, radius: float, dmg: float, src: Dictionary, col: Color, look: String = "bomb", stun: float = 0.0) -> void:
+	var b := BlastScript.new()
+	b.game = self
+	b.delay = delay
+	b.radius = radius
+	b.damage = dmg
+	b.src = src
+	b.color = col
+	b.look = look
+	b.stun = stun
+	b.position = clamp_to_map(pos, 10.0)
 	effects.add_child(b)
 
 

@@ -139,10 +139,10 @@ func refresh() -> void:
 	_time_label.text = "%02d:%02d" % [t / 60, t % 60]
 	_kill_label.text = "撃破 %d" % game.kills
 	var lines := PackedStringArray()
-	for u in Upgrades.LIST:
+	for u in Upgrades.LIST + Upgrades.SPECIAL:
 		var lv: int = game.upgrade_levels.get(u["id"], 0)
 		if lv > 0:
-			lines.append("【%s】%s  Lv%d" % [Upgrades.CAT_LABEL[u["cat"]], u["name"], lv])
+			lines.append("【%s】%s%s  Lv%d" % [Upgrades.CAT_LABEL[u["cat"]], "★" if u.get("special", false) else "", u["name"], lv])
 	_skills_label.text = "\n".join(lines)
 
 

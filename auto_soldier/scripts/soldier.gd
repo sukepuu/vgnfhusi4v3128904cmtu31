@@ -35,6 +35,7 @@ var _dash_hit := {}
 var _hurt_flash := 0.0
 var _invuln := 0.0
 var _retarget_cd := 0.0
+var _volley_cd := 3.0
 var _strafe_sign := 1.0
 var _strafe_cd := 2.0
 
@@ -54,6 +55,7 @@ func _process(delta: float) -> void:
 		return
 	var st = game.stats
 	_fire_cd -= delta
+	_volley_cd -= delta
 	_sword_cd -= delta
 	_dash_cd -= delta
 	_hurt_flash -= delta
@@ -85,6 +87,9 @@ func _process(delta: float) -> void:
 		if _fire_cd <= 0.0:
 			_shoot()
 			_fire_cd = st.fire_interval
+	if st.volley_level > 0 and _volley_cd <= 0.0 and game.nearest_enemy(global_position, 500.0) != null:
+		_volley()
+		_volley_cd = 6.0
 	if _sword_cd <= 0.0 and _try_slash():
 		_sword_cd = st.sword_interval
 	if st.dash_level > 0 and _dash_cd <= 0.0 and _dash_time <= 0.0:
@@ -240,6 +245,28 @@ func _shoot() -> void:
 		b.color = Color(1.0, 0.92, 0.4)
 		b.life = st.fire_range / st.bullet_speed + 0.2
 		b.position = global_position + aim_dir * (radius + 8.0)
+		b.src = record
+		if st.burst_level > 0:
+			b.explode_radius = 30.0 + 15.0 * st.burst_level
+			b.explode_ratio = 0.25 + 0.15 * st.burst_level
+		game.world.add_child(b)
+
+
+## 一斉射撃：全方位へ弾をばらまく
+func _volley() -> void:
+	var st = game.stats
+	var count: int = 6 + 6 * st.volley_level
+	for i in count:
+		var dir := Vector2.from_angle(TAU * i / count)
+		var b := BulletScript.new()
+		b.game = game
+		b.velocity = dir * st.bullet_speed
+		b.damage = st.bullet_damage
+		b.pierce = st.bullet_pierce
+		b.radius = 5.0
+		b.color = Color(1.0, 0.75, 0.3)
+		b.life = st.fire_range / st.bullet_speed + 0.2
+		b.position = global_position + dir * (radius + 6.0)
 		b.src = record
 		game.world.add_child(b)
 

@@ -40,8 +40,13 @@ func _ready() -> void:
 	_box.add_child(hint)
 
 
-func show_choices(choices: Array, levels: Dictionary, player_level: int) -> void:
-	_title.text = "LEVEL UP!  Lv %d" % player_level
+func show_choices(choices: Array, levels: Dictionary, player_level: int, special: bool = false) -> void:
+	if special:
+		_title.text = "★ 特別強化 ★  Lv %d" % player_level
+		_title.add_theme_color_override("font_color", Color(1.0, 0.55, 0.9))
+	else:
+		_title.text = "LEVEL UP!  Lv %d" % player_level
+		_title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
 	for c in _box.get_children():
 		if c is Button:
 			c.queue_free()
@@ -53,7 +58,8 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int) -> void
 		btn.custom_minimum_size = Vector2(520, 84)
 		btn.add_theme_font_size_override("font_size", 20)
 		var lv_text := "NEW!" if cur == 0 else "Lv %d → %d" % [cur, cur + 1]
-		btn.text = "[%d] 【%s】%s  (%s)\n%s" % [i + 1, Upgrades.CAT_LABEL[u["cat"]], u["name"], lv_text, Upgrades.describe(u, cur)]
+		var star := "★" if u.get("special", false) else ""
+		btn.text = "[%d] 【%s】%s%s  (%s)\n%s" % [i + 1, Upgrades.CAT_LABEL[u["cat"]], star, u["name"], lv_text, Upgrades.describe(u, cur)]
 		var col: Color = Upgrades.CAT_COLOR[u["cat"]]
 		btn.add_theme_color_override("font_color", col)
 		btn.add_theme_color_override("font_hover_color", col.lightened(0.4))

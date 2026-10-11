@@ -27,6 +27,7 @@ var _hurt_flash := 0.0
 var _block_flash := 0.0
 var _invuln := 0.0
 var _retarget_cd := 0.0
+var _bash_cd := 0.0
 
 
 func _ready() -> void:
@@ -44,6 +45,7 @@ func _process(delta: float) -> void:
 	var st = game.guard_stats
 	var castle_pos: Vector2 = game.castle.global_position
 	_spear_cd -= delta
+	_bash_cd -= delta
 	_thrust -= delta
 	_hurt_flash -= delta
 	_block_flash -= delta
@@ -118,23 +120,37 @@ func _post_position(castle_pos: Vector2) -> Vector2:
 	return castle_pos + Vector2.from_angle(ang) * 140.0
 
 
+## 槍を突く向き（三叉槍なら3方向・5方向）
+func _spear_dirs() -> Array:
+	var dirs: Array = [facing]
+	var lv: int = game.guard_stats.trident_level
+	if lv >= 1:
+		dirs.append(facing.rotated(0.45))
+		dirs.append(facing.rotated(-0.45))
+	if lv >= 2:
+		dirs.append(facing.rotated(0.9))
+		dirs.append(facing.rotated(-0.9))
+	return dirs
+
+
 ## 槍で突く。前方の細長い範囲の敵すべてにダメージ
 func _try_thrust() -> bool:
 	var st = game.guard_stats
-	var hits: Array = []
-	var mid: Vector2 = global_position + facing * st.spear_reach / 2.0
-	for e in game.enemies_near(mid, st.spear_reach / 2.0 + 30.0):
-		if not is_instance_valid(e) or e.dead:
-			continue
-		var rel: Vector2 = e.global_position - global_position
-		var along := rel.dot(facing)
-		var perp := absf(rel.dot(facing.orthogonal()))
-		if along > 0.0 and along < st.spear_reach + e.radius and perp < st.spear_width + e.radius:
-			hits.append(e)
+	var hits := {}
+	for dir in _spear_dirs():
+		var mid: Vector2 = global_position + dir * st.spear_reach / 2.0
+		for e in game.enemies_near(mid, st.spear_reach / 2.0 + 30.0):
+			if not is_instance_valid(e) or e.dead or hits.has(e):
+				continue
+			var rel: Vector2 = e.global_position - global_position
+			var along: float = rel.dot(dir)
+			var perp: float = absf(rel.dot(dir.orthogonal()))
+			if along > 0.0 and along < st.spear_reach + e.radius and perp < st.spear_width + e.radius:
+				hits[e] = dir
 	if hits.is_empty():
 		return false
 	for e in hits:
-		e.take_damage(st.spear_damage, facing * 260.0, record)
+		e.take_damage(st.spear_damage, hits[e] * 260.0, record)
 	_thrust = 0.18
 	return true
 
@@ -148,6 +164,11 @@ func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 		if absf(facing.angle_to(dir)) <= game.guard_stats.shield_arc / 2.0:
 			_block_flash = 0.15
 			record["blocked"] += amount
+			# 盾撃：防いだ瞬間に周りへ衝撃波
+			var bash: int = game.guard_stats.bash_level
+			if bash > 0 and _bash_cd <= 0.0:
+				_bash_cd = 0.4
+				game.explode(global_position, 60.0 + 20.0 * bash, game.guard_stats.spear_damage * (0.7 + 0.3 * bash), record, Color(0.7, 1.0, 0.6), 0.0, 320.0)
 			return
 	record["taken"] += minf(amount, hp)
 	hp -= amount
@@ -198,6 +219,10 @@ func _draw() -> void:
 		tip + facing * 12.0, tip + facing.orthogonal() * 4.0, tip - facing.orthogonal() * 4.0]), Color(0.85, 0.88, 0.95))
 	if _thrust > 0.0:
 		draw_line(side + facing * 20.0, tip, Color(1, 1, 1, 0.5), st.spear_width)
+		# 三叉槍：ほかの向きの突き
+		for d in _spear_dirs().slice(1):
+			draw_line(d * 20.0, d * st.spear_reach, Color(0.85, 0.88, 0.95, 0.7), 3.0)
+			draw_line(d * 20.0, d * st.spear_reach, Color(1, 1, 1, 0.3), st.spear_width)
 
 	# 盾
 	var shield_col := Color(1.0, 1.0, 0.7) if _block_flash > 0.0 else Color(0.75, 0.6, 0.3)

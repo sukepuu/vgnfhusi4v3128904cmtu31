@@ -6,6 +6,7 @@ import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.UriPermission;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -329,8 +330,8 @@ public class MainActivity extends Activity {
      */
     private void showMenu() {
         String[] items = {"フォルダ選択...", "表示", "スライドショー", "動画再生モード"};
-        new AlertDialog.Builder(this)
-                .setTitle("メニュー")
+        showCentered(new AlertDialog.Builder(this)
+                .setTitle("メニュー（v" + versionName() + "）")
                 .setItems(items, (d, which) -> {
                     switch (which) {
                         case 0: pickFolder(); break;
@@ -338,8 +339,7 @@ public class MainActivity extends Activity {
                         case 2: showSlideshowMenu(); break;
                         default: startVideoMode(); break;
                     }
-                })
-                .show();
+                }));
     }
 
     private void showViewMenu() {
@@ -367,11 +367,25 @@ public class MainActivity extends Activity {
     }
 
     private void showActionDialog(String title, List<String> labels, List<Runnable> actions) {
-        new AlertDialog.Builder(this)
+        showCentered(new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setItems(labels.toArray(new String[0]), (d, which) -> actions.get(which).run())
-                .setNegativeButton("戻る", (d, w) -> showMenu())
-                .show();
+                .setNegativeButton("戻る", (d, w) -> showMenu()));
+    }
+
+    /** ダイアログを必ず画面中央に出す */
+    private void showCentered(AlertDialog.Builder builder) {
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        if (dialog.getWindow() != null) dialog.getWindow().setGravity(Gravity.CENTER);
+    }
+
+    private String versionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            return "?";
+        }
     }
 
     private void showIntervalDialog() {
@@ -381,7 +395,7 @@ public class MainActivity extends Activity {
         picker.setValue(intervalSec);
         picker.setWrapSelectorWheel(false);
 
-        new AlertDialog.Builder(this)
+        showCentered(new AlertDialog.Builder(this)
                 .setTitle("切り替え秒数（" + MIN_INTERVAL + "〜" + MAX_INTERVAL + "秒）")
                 .setView(picker)
                 .setPositiveButton("OK", (d, w) -> {
@@ -391,8 +405,7 @@ public class MainActivity extends Activity {
                     updateSlideshow();
                     updateStatus();
                 })
-                .setNegativeButton("キャンセル", null)
-                .show();
+                .setNegativeButton("キャンセル", null));
     }
 
     // ------------------------------------------------------------------
@@ -695,7 +708,7 @@ public class MainActivity extends Activity {
                         startActivity(intent);
                     });
         }
-        builder.show();
+        showCentered(builder);
     }
 
     // ------------------------------------------------------------------

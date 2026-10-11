@@ -38,9 +38,19 @@ const LIST := [
 	{"id": "spear_dmg", "cat": "guard", "name": "槍術", "desc": "槍の攻撃力 +35%", "max": 5, "req": "guard"},
 	# ---- 重装部隊
 	{"id": "heavy", "cat": "heavy", "name": "重装部隊", "desc": "足は遅いが耐久力と攻撃力が高い重装兵が加わる。壁の中央の前に陣取り、近づく敵を斬撃で迎え撃つ", "max": 1, "weight": 1.5},
+	{"id": "heavy_dmg", "cat": "heavy", "name": "剛剣", "desc": "重装兵の斬撃の威力 +35%", "max": 5, "req": "heavy"},
+	{"id": "heavy_haste", "cat": "heavy", "name": "連撃", "desc": "重装兵の斬撃の間隔 -15%", "max": 4, "req": "heavy"},
+	{"id": "heavy_range", "cat": "heavy", "name": "大薙ぎ", "desc": "重装兵の斬撃の範囲 +20%", "max": 4, "req": "heavy"},
+	{"id": "heavy_hp", "cat": "heavy", "name": "重鎧", "desc": "重装兵の最大HP +40%、HP全回復、自然回復 +3/秒", "max": 4, "req": "heavy"},
+	{"id": "heavy_speed", "cat": "heavy", "name": "軽量化", "desc": "重装兵の移動速度 +20%、持ち場から離れて戦える距離 +40", "max": 3, "req": "heavy"},
+	{"id": "heavy_whirl", "cat": "heavy", "name": "旋風斬り", "desc": "重装兵の斬撃が全方位360度になる", "max": 1, "req": "heavy"},
 	# ---- 工兵部隊
 	{"id": "engineer", "cat": "engineer", "name": "工兵部隊", "desc": "フィールドを回って、爆弾（範囲ダメージ）と落とし穴（範囲ダメージ＋10秒足止め）を交互に仕掛ける工兵が加わる",
 		"desc_up": "工兵が1人増える（最大2人）", "max": 2, "weight": 1.5},
+	{"id": "trap_dmg", "cat": "engineer", "name": "高性能火薬", "desc": "爆弾と落とし穴の威力 +40%（仕掛け済みの罠にも反映）", "max": 5, "req": "engineer"},
+	{"id": "trap_speed", "cat": "engineer", "name": "手際", "desc": "罠の設置時間 -20%、工兵の移動速度 +15%", "max": 4, "req": "engineer"},
+	{"id": "trap_range", "cat": "engineer", "name": "広域罠", "desc": "罠の効果範囲 +20%、反応する距離 +15%", "max": 3, "req": "engineer"},
+	{"id": "pit_stun", "cat": "engineer", "name": "深い落とし穴", "desc": "落とし穴の足止め時間 +3秒", "max": 3, "req": "engineer"},
 	# ---- 城
 	{"id": "tower", "cat": "castle", "name": "矢倉", "desc": "城に矢倉が建ち、近づく敵を自動で射る",
 		"desc_up": "矢倉をもう1基追加、全矢倉の威力 +15%", "max": 4, "weight": 1.5},
@@ -49,7 +59,7 @@ const LIST := [
 	{"id": "catapult", "cat": "castle", "name": "投石器", "desc": "大砲より広い範囲に岩を落とす（発射間隔は長い）",
 		"desc_up": "投石器をもう1台追加（最大3台）", "max": 3},
 	{"id": "ballista", "cat": "castle", "name": "バリスタ", "desc": "城にバリスタを設置。発射間隔は長いが、高威力・射程無限で敵を何体でも貫通する",
-		"desc_up": "バリスタをもう1基追加（最大3基）", "max": 3},
+		"desc_up": "バリスタをもう1基追加、全バリスタの威力 +30%（最大3基）", "max": 3},
 	{"id": "artillery", "cat": "castle", "name": "砲術", "desc": "大砲と投石器の威力 +30%、発射間隔 -10%", "max": 4, "req_any": ["cannon", "catapult"]},
 	{"id": "frost", "cat": "castle", "name": "氷結の結界", "desc": "城のまわりの敵の動きを遅くする",
 		"desc_up": "結界の範囲が広がり、さらに遅くなる", "max": 3},
@@ -166,6 +176,8 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.catapult_level = new_level
 		"ballista":
 			castle.ballista_level = new_level
+			if new_level > 1:
+				castle.ballista_damage *= 1.3
 		"artillery":
 			castle.cannon_damage *= 1.3
 			castle.catapult_damage *= 1.3
@@ -175,6 +187,34 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.add_heavy()
 		"engineer":
 			game.add_engineer()
+		"heavy_dmg":
+			game.heavy.slash_damage *= 1.35
+		"heavy_haste":
+			game.heavy.slash_interval *= 0.85
+		"heavy_range":
+			game.heavy.slash_radius *= 1.2
+		"heavy_hp":
+			game.heavy.max_hp *= 1.4
+			game.heavy.regen += 3.0
+			if not game.heavy.dead:
+				game.heavy.hp = game.heavy.max_hp
+		"heavy_speed":
+			game.heavy.move_speed *= 1.2
+			game.heavy.leash += 40.0
+		"heavy_whirl":
+			game.heavy.slash_arc = TAU
+		"trap_dmg":
+			game.engineer_stats.bomb_damage *= 1.4
+			game.engineer_stats.pit_damage *= 1.4
+		"trap_speed":
+			game.engineer_stats.plant_time *= 0.8
+			game.engineer_stats.move_speed *= 1.15
+		"trap_range":
+			game.engineer_stats.bomb_radius *= 1.2
+			game.engineer_stats.pit_radius *= 1.2
+			game.engineer_stats.trigger_radius *= 1.15
+		"pit_stun":
+			game.engineer_stats.stun_time += 3.0
 		"tower":
 			castle.tower_count = new_level
 			if new_level > 1:

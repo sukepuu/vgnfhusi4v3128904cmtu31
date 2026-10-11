@@ -4,14 +4,10 @@ extends Node2D
 ## pit（落とし穴）：近くに敵が来たら1秒後に作動して範囲ダメージ＋範囲内の敵を10秒間動けなくする。
 ## どちらも1回作動したら消える。
 
-const TRIGGER_RADIUS := 60.0
 const FUSE := 1.0
 
 var game: Node2D
 var kind := "bomb"
-var damage := 100.0
-var blast_radius := 110.0
-var stun_time := 10.0
 
 var _fuse_left := -1.0
 var _t := 0.0
@@ -21,9 +17,15 @@ var _hole_left := 0.0
 
 func _ready() -> void:
 	add_to_group("traps")
-	if kind == "pit":
-		damage = 50.0
-		blast_radius = 90.0
+
+
+## 威力・範囲は工兵部隊の強化に合わせて、その時点の値を使う
+func _damage() -> float:
+	return game.engineer_stats.pit_damage if kind == "pit" else game.engineer_stats.bomb_damage
+
+
+func _blast_radius() -> float:
+	return game.engineer_stats.pit_radius if kind == "pit" else game.engineer_stats.bomb_radius
 
 
 func is_spent() -> bool:
@@ -40,8 +42,9 @@ func _process(delta: float) -> void:
 		return
 	if _fuse_left < 0.0:
 		# 敵が近くに来たら作動開始
-		for e in game.enemies_near(global_position, TRIGGER_RADIUS + 30.0):
-			if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < TRIGGER_RADIUS + e.radius:
+		var trigger: float = game.engineer_stats.trigger_radius
+		for e in game.enemies_near(global_position, trigger + 30.0):
+			if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < trigger + e.radius:
 				_fuse_left = FUSE
 				break
 	else:
@@ -53,6 +56,8 @@ func _process(delta: float) -> void:
 
 
 func _activate() -> void:
+	var damage := _damage()
+	var blast_radius := _blast_radius()
 	for e in game.enemies_near(global_position, blast_radius + 30.0):
 		if not is_instance_valid(e) or e.dead:
 			continue
@@ -60,7 +65,7 @@ func _activate() -> void:
 		if rel.length() > blast_radius + e.radius:
 			continue
 		if kind == "pit":
-			e.stun(stun_time)
+			e.stun(game.engineer_stats.stun_time)
 			e.take_damage(damage)
 		else:
 			e.take_damage(damage, rel.normalized() * 350.0)
@@ -96,4 +101,4 @@ func _draw() -> void:
 			draw_line(Vector2.from_angle(a) * 4.0, Vector2.from_angle(a) * 17.0, Color(0.35, 0.25, 0.12, 0.8), 2.0)
 	# 作動範囲の目安
 	if _fuse_left >= 0.0:
-		draw_arc(Vector2.ZERO, blast_radius, 0.0, TAU, 40, Color(1.0, 0.5, 0.3, 0.5), 2.0)
+		draw_arc(Vector2.ZERO, _blast_radius(), 0.0, TAU, 40, Color(1.0, 0.5, 0.3, 0.5), 2.0)

@@ -1,12 +1,10 @@
 extends Node2D
 ## 工兵部隊。ランダムな地点へ移動して、5秒かけて罠を仕掛ける。
-## 爆弾 → 落とし穴 → 爆弾 … と交互に仕掛け続ける。
+## 爆弾 → 落とし穴 → 爆弾 … と交互に仕掛け続ける。ステータスは game.engineer_stats で共有。
 ## 敵からは狙われない（作業員なので戦闘には参加しない）。
 
 const TrapScript := preload("res://scripts/trap.gd")
 
-const SPEED := 110.0
-const PLANT_TIME := 5.0
 ## フィールドに置ける罠の上限（全工兵の合計）
 const MAX_TRAPS := 20
 
@@ -35,7 +33,7 @@ func _process(delta: float) -> void:
 				state = "planting"
 				progress = 0.0
 		"planting":
-			progress += delta / PLANT_TIME
+			progress += delta / game.engineer_stats.plant_time
 			if progress >= 1.0:
 				_place_trap()
 				next_kind = "pit" if next_kind == "bomb" else "bomb"
@@ -70,7 +68,7 @@ func _move_to(p: Vector2, delta: float) -> bool:
 	if d < 4.0:
 		return true
 	_facing = to / d
-	position += _facing * minf(SPEED * delta, d)
+	position += _facing * minf(game.engineer_stats.move_speed * delta, d)
 	return false
 
 

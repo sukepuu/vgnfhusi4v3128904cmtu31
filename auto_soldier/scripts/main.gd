@@ -8,6 +8,7 @@ const GuardStats := preload("res://scripts/guard_stats.gd")
 const BuilderScript := preload("res://scripts/builder.gd")
 const HeavyScript := preload("res://scripts/heavy.gd")
 const EngineerScript := preload("res://scripts/engineer.gd")
+const EngineerStats := preload("res://scripts/engineer_stats.gd")
 const WallsScript := preload("res://scripts/walls.gd")
 const CastleScript := preload("res://scripts/castle.gd")
 const EnemyScript := preload("res://scripts/enemy.gd")
@@ -52,6 +53,7 @@ var builders: Array = []
 var heavy: Node2D = null
 ## 工兵部隊
 var engineers: Array = []
+var engineer_stats := EngineerStats.new()
 var pets: Array = []
 ## 遊撃兵1人あたりのペットの数（「ペットの仲間」を取るたびに+1）
 var pets_per_soldier := 0

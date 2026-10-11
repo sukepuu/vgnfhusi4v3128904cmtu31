@@ -6,8 +6,6 @@ extends Node2D
 const SlashScript := preload("res://scripts/slash_effect.gd")
 
 const RESPAWN_TIME := 15.0
-## 持ち場からどこまで離れて戦うか
-const LEASH := 170.0
 ## 持ち場からどの距離の敵に反応するか
 const ALERT := 300.0
 
@@ -27,6 +25,8 @@ var slash_damage := 135.0
 var slash_radius := 105.0
 var slash_arc := deg_to_rad(150.0)
 var slash_interval := 1.1
+## 持ち場からどこまで離れて戦うか
+var leash := 170.0
 
 var _slash_cd := 0.0
 var _hurt_flash := 0.0
@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 	var desired := post
 	if _target_valid():
 		var to_t := target.global_position - post
-		desired = post + to_t.limit_length(LEASH)
+		desired = post + to_t.limit_length(leash)
 	var to := desired - global_position
 	if to.length() > 6.0:
 		position += to.normalized() * minf(move_speed * delta, to.length())
@@ -110,13 +110,13 @@ func _try_slash() -> bool:
 		var rel: Vector2 = e.global_position - global_position
 		if rel.length() > slash_radius + e.radius:
 			continue
-		if absf(dir.angle_to(rel)) > slash_arc / 2.0 + 0.2:
+		if slash_arc < TAU and absf(dir.angle_to(rel)) > slash_arc / 2.0 + 0.2:
 			continue
 		e.take_damage(slash_damage, rel.normalized() * 420.0)
 	# 斬撃で敵の弾もかき消す
 	for b in get_tree().get_nodes_in_group("enemy_bullets"):
 		var to_b: Vector2 = b.global_position - global_position
-		if to_b.length() <= slash_radius and absf(dir.angle_to(to_b)) <= slash_arc / 2.0:
+		if to_b.length() <= slash_radius and (slash_arc >= TAU or absf(dir.angle_to(to_b)) <= slash_arc / 2.0):
 			b.queue_free()
 	var fx := SlashScript.new()
 	fx.radius = slash_radius

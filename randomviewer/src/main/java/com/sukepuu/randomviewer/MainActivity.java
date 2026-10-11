@@ -23,9 +23,6 @@ import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -35,7 +32,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.NumberPicker;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -68,12 +64,6 @@ public class MainActivity extends Activity {
     private static final String KEY_FRAMES = "frames";
     private static final String KEY_SLIDESHOW = "slideshow";
     private static final String KEY_INTERVAL = "interval";
-
-    private static final int MENU_FOLDER = 1;
-    private static final int MENU_ADD = 2;
-    private static final int MENU_REMOVE = 3;
-    private static final int MENU_SLIDESHOW = 4;
-    private static final int MENU_INTERVAL = 5;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newFixedThreadPool(3);
@@ -202,7 +192,7 @@ public class MainActivity extends Activity {
         grid.setOrientation(LinearLayout.VERTICAL);
         grid.setBackgroundColor(Color.rgb(40, 40, 40));
         grid.setOnLongClickListener(v -> {
-            showMenu(v);
+            showMenu();
             return true;
         });
         main.addView(grid, new LinearLayout.LayoutParams(
@@ -216,7 +206,7 @@ public class MainActivity extends Activity {
         int pad = dp(6);
         statusView.setPadding(pad * 2, pad, pad * 2, pad);
         statusView.setOnLongClickListener(v -> {
-            showMenu(v);
+            showMenu();
             return true;
         });
         main.addView(statusView, new LinearLayout.LayoutParams(
@@ -241,7 +231,7 @@ public class MainActivity extends Activity {
             cell.setBackgroundColor(Color.BLACK);
             cell.setOnClickListener(v -> enterFullscreen(index));
             cell.setOnLongClickListener(v -> {
-                showMenu(v);
+                showMenu();
                 return true;
             });
             cells[i] = cell;
@@ -298,7 +288,7 @@ public class MainActivity extends Activity {
                     child = new View(this);
                     child.setBackgroundColor(Color.BLACK);
                     child.setOnLongClickListener(v -> {
-                        showMenu(v);
+                        showMenu();
                         return true;
                     });
                 }
@@ -354,45 +344,54 @@ public class MainActivity extends Activity {
     // メニュー
     // ------------------------------------------------------------------
 
-    private void showMenu(View anchor) {
-        PopupMenu popup = new PopupMenu(this, anchor, Gravity.CENTER);
-        Menu menu = popup.getMenu();
-        menu.add(Menu.NONE, MENU_FOLDER, 0, "フォルダ選択...");
-
-        SubMenu view = menu.addSubMenu(Menu.NONE, Menu.NONE, 1, "表示");
-        view.add(Menu.NONE, MENU_ADD, 0, "画像を追加").setEnabled(frameCount < MAX_FRAMES);
-        view.add(Menu.NONE, MENU_REMOVE, 1, "画像を減らす").setEnabled(frameCount > MIN_FRAMES);
-
-        SubMenu slideshow = menu.addSubMenu(Menu.NONE, Menu.NONE, 2, "スライドショー");
-        slideshow.add(Menu.NONE, MENU_SLIDESHOW, 0, "スライドショー ON")
-                .setCheckable(true)
-                .setChecked(slideshowOn);
-        slideshow.add(Menu.NONE, MENU_INTERVAL, 1, "切り替え秒数を設定...（現在 " + intervalSec + "秒）");
-
-        popup.setOnMenuItemClickListener(this::onMenuItemSelected);
-        popup.show();
+    /**
+     * 長押しメニュー。PopupMenu は全画面（システムバー非表示）だと画面端に出て
+     * 触れなくなることがあるため、画面中央に出るダイアログで表示する。
+     */
+    private void showMenu() {
+        String[] items = {"フォルダ選択...", "表示", "スライドショー"};
+        new AlertDialog.Builder(this)
+                .setTitle("メニュー")
+                .setItems(items, (d, which) -> {
+                    switch (which) {
+                        case 0: pickFolder(); break;
+                        case 1: showViewMenu(); break;
+                        default: showSlideshowMenu(); break;
+                    }
+                })
+                .show();
     }
 
-    private boolean onMenuItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case MENU_FOLDER:
-                pickFolder();
-                return true;
-            case MENU_ADD:
-                setFrameCount(frameCount + 1);
-                return true;
-            case MENU_REMOVE:
-                setFrameCount(frameCount - 1);
-                return true;
-            case MENU_SLIDESHOW:
-                setSlideshow(!slideshowOn);
-                return true;
-            case MENU_INTERVAL:
-                showIntervalDialog();
-                return true;
-            default:
-                return false;
+    private void showViewMenu() {
+        List<String> labels = new ArrayList<>();
+        List<Runnable> actions = new ArrayList<>();
+        if (frameCount < MAX_FRAMES) {
+            labels.add("画像を追加（" + frameCount + " → " + (frameCount + 1) + "枠）");
+            actions.add(() -> setFrameCount(frameCount + 1));
         }
+        if (frameCount > MIN_FRAMES) {
+            labels.add("画像を減らす（" + frameCount + " → " + (frameCount - 1) + "枠）");
+            actions.add(() -> setFrameCount(frameCount - 1));
+        }
+        showActionDialog("表示", labels, actions);
+    }
+
+    private void showSlideshowMenu() {
+        List<String> labels = new ArrayList<>();
+        List<Runnable> actions = new ArrayList<>();
+        labels.add(slideshowOn ? "✓ スライドショー ON（タップで OFF）" : "　 スライドショー ON");
+        actions.add(() -> setSlideshow(!slideshowOn));
+        labels.add("切り替え秒数を設定...（現在 " + intervalSec + "秒）");
+        actions.add(this::showIntervalDialog);
+        showActionDialog("スライドショー", labels, actions);
+    }
+
+    private void showActionDialog(String title, List<String> labels, List<Runnable> actions) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setItems(labels.toArray(new String[0]), (d, which) -> actions.get(which).run())
+                .setNegativeButton("戻る", (d, w) -> showMenu())
+                .show();
     }
 
     private void showIntervalDialog() {

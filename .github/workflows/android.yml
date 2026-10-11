@@ -24,3 +24,8 @@ jobs:
         with:
           name: fishing-rush-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: random-viewer-apk
+          path: randomviewer/build/outputs/apk/debug/randomviewer-debug.apk

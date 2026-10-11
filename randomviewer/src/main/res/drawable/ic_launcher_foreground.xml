@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2×2 の写真グリッドのアイコン（108dp のアダプティブアイコン用、中央 72dp が表示領域） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#4FC3F7" android:pathData="M30,30 h22 v22 h-22 Z" />
+    <path android:fillColor="#FFD54F" android:pathData="M56,30 h22 v22 h-22 Z" />
+    <path android:fillColor="#81C784" android:pathData="M30,56 h22 v22 h-22 Z" />
+    <path android:fillColor="#E57373" android:pathData="M56,56 h22 v22 h-22 Z" />
+</vector>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ImageView に「何pxでデコードした画像か」を覚えさせるタグ -->
+    <item name="decoded_edge_tag" type="id" />
+</resources>

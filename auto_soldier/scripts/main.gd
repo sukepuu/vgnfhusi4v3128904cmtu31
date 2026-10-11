@@ -84,6 +84,11 @@ var game_over := false
 
 var _spawn_acc := 0.0
 var _next_wave := 50.0
+## 出現中のボス（いなければ null）
+var boss: Node2D = null
+var bosses_spawned := 0
+## このレベルごとにボスが出る
+const BOSS_EVERY := 10
 
 
 func _ready() -> void:
@@ -378,6 +383,12 @@ func _pick_kind() -> String:
 		pool.append(["brute", 1.0 + elapsed / 120.0])
 	if elapsed > 75.0:
 		pool.append(["hunter", 1.0 + elapsed / 200.0])
+	if elapsed > 60.0:
+		pool.append(["splitter", 2.0])
+	if elapsed > 100.0:
+		pool.append(["healer", 1.2])
+	if elapsed > 120.0:
+		pool.append(["bomber", 1.0 + elapsed / 240.0])
 	var total := 0.0
 	for entry in pool:
 		total += entry[1]
@@ -401,18 +412,45 @@ func _random_spawn_pos() -> Vector2:
 	return Vector2(MAP_RECT.end.x - m, y)
 
 
+func _hp_mult() -> float:
+	return 1.0 + elapsed / 75.0 + pow(elapsed / 170.0, 2.0)
+
+
 func _spawn_enemy(kind: String, pos: Vector2) -> void:
+	spawn_enemy_at(kind, pos)
+
+
+## 指定した場所に敵を出す（hp_mult を省略すると今の時間に合わせた強さ）
+func spawn_enemy_at(kind: String, pos: Vector2, hp_mult: float = -1.0) -> Node2D:
 	var e := EnemyScript.new()
 	e.game = self
-	e.setup(kind, 1.0 + elapsed / 75.0 + pow(elapsed / 170.0, 2.0))
-	e.position = pos
+	e.setup(kind, hp_mult if hp_mult > 0.0 else _hp_mult())
+	e.position = clamp_to_map(pos, 20.0)
 	world.add_child(e)
+	return e
+
+
+## ボス出現（Lv10ごと）
+func _spawn_boss() -> void:
+	bosses_spawned += 1
+	var e := EnemyScript.new()
+	e.game = self
+	e.boss_rank = bosses_spawned
+	e.setup("boss", _hp_mult())
+	e.position = Vector2(MAP_RECT.get_center().x, MAP_RECT.position.y + 60.0)
+	world.add_child(e)
+	boss = e
+	hud.show_banner("⚠ BOSS 出現！ ⚠", Color(1.0, 0.4, 0.5))
 
 
 # ---------------------------------------------------------------- 経験値・レベルアップ
 
 func on_enemy_killed(e: Node2D) -> void:
 	kills += 1
+	if e == boss:
+		boss = null
+		hud.show_banner("BOSS 撃破！", Color(1.0, 0.85, 0.3))
+		spawn_burst(e.global_position, Color(1.0, 0.85, 0.3), 60.0)
 	spawn_burst(e.global_position, e.color, e.radius)
 	add_xp(e.xp_value)
 
@@ -431,6 +469,8 @@ func add_xp(amount: int) -> void:
 		xp_to_next = xp_needed(level)
 		pending_levelups += 1
 		_pending_levels.append(level)
+		if level % BOSS_EVERY == 0:
+			_spawn_boss()
 	if pending_levelups > 0 and not level_up_ui.visible and not game_over:
 		_open_level_up()
 

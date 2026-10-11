@@ -14,6 +14,10 @@ var _kill_label: Label
 var _soldier_label: Label
 var _skills_label: Label
 var _game_over: Control
+var _boss_bar: ProgressBar
+var _boss_label: Label
+var _banner: Label
+var _banner_left := 0.0
 var _result_label: Label
 
 
@@ -78,6 +82,35 @@ func _ready() -> void:
 	_skills_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	root.add_child(_skills_label)
 
+	# ボスのHPバー（画面上の中央）
+	_boss_bar = _make_bar(Color(0.75, 0.2, 0.85))
+	_boss_bar.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_boss_bar.offset_left = -260
+	_boss_bar.offset_right = 260
+	_boss_bar.offset_top = 66
+	_boss_bar.offset_bottom = 82
+	_boss_bar.visible = false
+	root.add_child(_boss_bar)
+	_boss_label = _make_label(16)
+	_boss_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_boss_label.offset_left = -260
+	_boss_label.offset_right = 260
+	_boss_label.offset_top = 64
+	_boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_label.visible = false
+	root.add_child(_boss_label)
+
+	# 「BOSS出現！」などの大きな表示
+	_banner = _make_label(44)
+	_banner.set_anchors_preset(Control.PRESET_CENTER)
+	_banner.offset_left = -400
+	_banner.offset_right = 400
+	_banner.offset_top = -160
+	_banner.offset_bottom = -100
+	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner.visible = false
+	root.add_child(_banner)
+
 	# 部隊戦績ボタン
 	var stats_btn := Button.new()
 	stats_btn.text = "部隊戦績（Tab）"
@@ -114,7 +147,30 @@ func _make_label(font_size: int) -> Label:
 	return l
 
 
+func show_banner(text: String, col: Color) -> void:
+	_banner.text = text
+	_banner.add_theme_color_override("font_color", col)
+	_banner.visible = true
+	_banner_left = 3.0
+
+
+func _process(delta: float) -> void:
+	if _banner_left > 0.0 and not get_tree().paused:
+		_banner_left -= delta
+		_banner.modulate.a = clampf(_banner_left, 0.0, 1.0)
+		if _banner_left <= 0.0:
+			_banner.visible = false
+
+
 func refresh() -> void:
+	var b: Node2D = game.boss
+	var has_boss: bool = b != null and is_instance_valid(b) and not b.dead
+	_boss_bar.visible = has_boss
+	_boss_label.visible = has_boss
+	if has_boss:
+		_boss_bar.max_value = b.max_hp
+		_boss_bar.value = b.hp
+		_boss_label.text = "BOSS（%d体目）  %d / %d" % [b.boss_rank, ceili(b.hp), int(b.max_hp)]
 	var castle: Node2D = game.castle
 	_xp_bar.max_value = game.xp_to_next
 	_xp_bar.value = game.xp

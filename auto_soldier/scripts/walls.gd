@@ -104,6 +104,13 @@ func absorb(i: int, pos: Vector2 = Vector2.INF) -> void:
 		walls.remove_at(i)
 
 
+## 壁 i をまるごと壊す（ボス用）
+func destroy(i: int) -> void:
+	var mid: float = (walls[i]["a0"] + walls[i]["a1"]) / 2.0
+	game.spawn_burst(point_at(mid), Color(0.7, 0.65, 0.55), 30.0)
+	walls.remove_at(i)
+
+
 ## src = 建てた築城兵の戦績カード（防いだ回数を記録する）
 func add_wall(seg: Vector2, src: Dictionary = {}) -> void:
 	walls.append({"a0": seg.x, "a1": seg.y, "hp": wall_max_hp, "max": wall_max_hp, "flash": 0.0, "src": src})

@@ -4,6 +4,10 @@ extends Node2D
 ## 遠距離型（archer）は近くの兵士か城を狙って弾を撃つ。
 ## 刺客（hunter）は城を無視して兵士（遊撃部隊・迎撃部隊）だけを狙う。壁もすり抜ける。
 ## 壁に触れると壁に1発分防がれて消滅する（ダメージの大きさに関係なし）。
+## 分裂体（splitter）は倒すと小さな分裂体（splitling）3体に分かれる。
+## 治癒師（healer）は後方にとどまり、周りの敵を定期的に回復する。
+## 自爆兵（bomber）は兵士・壁・城にぶつかると爆発する（壁は3発分削る）。
+## ボス（boss）は Lv10 ごとに出現。壁を壊して進み、城に着いても消えずに攻撃し続ける。
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
@@ -20,6 +24,13 @@ var xp_value := 1
 var color := Color(0.9, 0.3, 0.3)
 var ranged := false
 var hunter := false
+var is_boss := false
+## 何体目のボスか（1始まり。強さに使う）
+var boss_rank := 1
+var _hp_mult := 1.0
+var _skill_cd := 3.0
+var _summon_cd := 8.0
+var _heal_fx := 0.0
 var dead := false
 
 var knock := Vector2.ZERO
@@ -53,9 +64,28 @@ func setup(k: String, hp_mult: float) -> void:
 			max_hp = 35.0; speed = 92.0; damage = 12.0; castle_damage = 0.0; radius = 13.0; xp_value = 3
 			color = Color(0.2, 0.65, 0.6)
 			hunter = true
+		"splitter":
+			max_hp = 45.0; speed = 60.0; damage = 8.0; castle_damage = 8.0; radius = 18.0; xp_value = 2
+			color = Color(0.75, 0.85, 0.25)
+		"splitling":
+			max_hp = 10.0; speed = 95.0; damage = 4.0; castle_damage = 4.0; radius = 9.0; xp_value = 1
+			color = Color(0.85, 0.95, 0.35)
+		"healer":
+			max_hp = 30.0; speed = 50.0; damage = 4.0; castle_damage = 6.0; radius = 14.0; xp_value = 3
+			color = Color(1.0, 0.6, 0.8)
+		"bomber":
+			max_hp = 25.0; speed = 120.0; damage = 30.0; castle_damage = 30.0; radius = 13.0; xp_value = 2
+			color = Color(0.35, 0.1, 0.1)
+		"boss":
+			max_hp = 1100.0 * (1.0 + 0.3 * (boss_rank - 1)); speed = 20.0; damage = 30.0
+			castle_damage = 40.0; radius = 46.0; xp_value = 60
+			color = Color(0.4, 0.12, 0.5)
+			is_boss = true
+	_hp_mult = hp_mult
 	max_hp *= hp_mult
 	hp = max_hp
-	speed *= randf_range(0.9, 1.1)
+	if not is_boss:
+		speed *= randf_range(0.9, 1.1)
 	_strafe_sign = 1.0 if randf() < 0.5 else -1.0
 	_shoot_cd = randf_range(1.0, 2.5)
 	add_to_group("enemies")
@@ -75,10 +105,18 @@ func _process(delta: float) -> void:
 		return
 	var castle: Node2D = game.castle
 	var move := Vector2.ZERO
+	if is_boss:
+		_boss_skills(delta)
+	elif kind == "healer":
+		_heal_skill(delta)
 	# 基本は城へ。近くに兵士がいればそちらを狙う
 	var aggro := 300.0 if ranged else 110.0
 	if hunter:
 		aggro = INF
+	elif kind == "bomber":
+		aggro = 300.0
+	elif kind == "healer" or is_boss:
+		aggro = 0.0
 	var soldier: Node2D = game.nearest_ally(global_position, aggro)
 	# 挑発：近くに迎撃兵がいればそちらを狙う
 	if game.guard_stats.taunt:
@@ -108,17 +146,37 @@ func _process(delta: float) -> void:
 			_shoot_cd = randf_range(2.2, 3.0)
 	elif hunter and soldier == null and d < 20.0:
 		move = Vector2.ZERO
+	elif kind == "healer" and soldier == null and global_position.distance_to(castle.global_position) < 400.0:
+		# 治癒師は後方（城から離れた所）にとどまる
+		move = Vector2.ZERO
 	else:
 		move = dir
 	# 兵士への体当たり
 	var touching: Node2D = game.nearest_ally(global_position, radius + 16.0)
+	if touching != null and kind == "bomber":
+		_bomber_explode()
+		return
 	if touching != null and _contact_cd <= 0.0:
 		touching.take_damage(damage, global_position)
 		_contact_cd = 0.6
-	if not hunter and not _check_wall():
+	if is_boss:
+		# ボスは壁を壊して進み、城に着いたら殴り続ける
+		var wi: int = game.walls.hit_test(global_position, radius)
+		if wi >= 0:
+			game.walls.destroy(wi)
+			knock = -dir * 120.0
+		if castle.distance_to_point(global_position) < radius:
+			move = Vector2.ZERO
+			if _contact_cd <= 0.0:
+				castle.take_damage(castle_damage)
+				_contact_cd = 2.0
+	elif not hunter and not _check_wall():
 		return
 	# 城に触れたら消滅して城にダメージ（経験値は入らない）
-	if not hunter and castle.distance_to_point(global_position) < radius:
+	if not hunter and not is_boss and castle.distance_to_point(global_position) < radius:
+		if kind == "bomber":
+			_bomber_explode()
+			return
 		castle.take_damage(castle_damage)
 		dead = true
 		remove_from_group("enemies")
@@ -153,11 +211,65 @@ func _check_wall() -> bool:
 	if wi < 0:
 		return true
 	game.walls.absorb(wi, global_position)
+	if kind == "bomber":
+		# 自爆兵は壁を3発分削る
+		for k in 2:
+			wi = game.walls.hit_test(global_position, radius)
+			if wi >= 0:
+				game.walls.absorb(wi, global_position)
+		game.spawn_burst(global_position, Color(1.0, 0.4, 0.1), 40.0)
 	dead = true
 	remove_from_group("enemies")
 	game.spawn_burst(global_position, color, radius)
 	queue_free()
 	return false
+
+
+## ボスの技：全方位への弾と、手下の呼び出し
+func _boss_skills(delta: float) -> void:
+	_skill_cd -= delta
+	_summon_cd -= delta
+	if _skill_cd <= 0.0:
+		_skill_cd = 5.0
+		var n := 16
+		for i in n:
+			_shoot(Vector2.from_angle(TAU * i / n + randf() * 0.2), 12.0 * (1.0 + 0.3 * (boss_rank - 1)))
+	if _summon_cd <= 0.0:
+		_summon_cd = 12.0
+		for i in 5:
+			game.spawn_enemy_at("grunt", global_position + Vector2.from_angle(TAU * i / 5.0) * (radius + 30.0))
+
+
+## 治癒師：3秒ごとに周りの敵を回復
+func _heal_skill(delta: float) -> void:
+	_heal_fx -= delta
+	_skill_cd -= delta
+	if _skill_cd > 0.0:
+		return
+	_skill_cd = 3.0
+	var healed := false
+	for e in game.enemies_near(global_position, 150.0):
+		if e == self or not is_instance_valid(e) or e.dead or e.hp >= e.max_hp:
+			continue
+		if global_position.distance_to(e.global_position) < 150.0:
+			e.hp = minf(e.max_hp, e.hp + e.max_hp * 0.25)
+			healed = true
+	if healed:
+		_heal_fx = 0.5
+
+
+## 自爆兵の爆発：周りの味方と城にダメージ
+func _bomber_explode() -> void:
+	for a in game.allies():
+		if not a.dead and global_position.distance_to(a.global_position) < 80.0 + a.radius:
+			a.take_damage(damage, global_position)
+	if game.castle.distance_to_point(global_position) < 80.0:
+		game.castle.take_damage(castle_damage)
+	game.spawn_burst(global_position, Color(1.0, 0.4, 0.1), 40.0)
+	game.spawn_burst(global_position, Color(1.0, 0.85, 0.3), 25.0)
+	dead = true
+	remove_from_group("enemies")
+	queue_free()
 
 
 ## 敵同士が重なりすぎないように押し出す
@@ -189,7 +301,8 @@ func _shoot(dir: Vector2, dmg: float) -> void:
 
 
 func stun(seconds: float) -> void:
-	stun_left = maxf(stun_left, seconds)
+	# ボスはほとんど気絶しない
+	stun_left = maxf(stun_left, seconds * (0.15 if is_boss else 1.0))
 	knock = Vector2.ZERO
 
 
@@ -204,12 +317,16 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	hp -= amount
 	_flash = 0.1
 	# 大型は吹き飛びにくい
-	knock += knockback * (0.3 if kind == "brute" else 1.0)
+	knock += knockback * (0.05 if is_boss else (0.3 if kind == "brute" else 1.0))
 	game.spawn_damage_text(global_position, amount, Color(1, 1, 1))
 	if hp <= 0.0:
 		dead = true
 		remove_from_group("enemies")
 		game.on_enemy_killed(self)
+		# 分裂体は小さな分裂体3体に分かれる
+		if kind == "splitter":
+			for i in 3:
+				game.spawn_enemy_at("splitling", global_position + Vector2.from_angle(TAU * i / 3.0 + randf()) * 16.0, _hp_mult)
 		queue_free()
 
 
@@ -240,6 +357,40 @@ func _draw() -> void:
 				f * radius * 1.5, o * radius, -f * radius * 0.8, -o * radius]), c)
 			draw_line(o * radius * 0.9, o * radius * 0.9 + f * 14.0, Color(0.85, 0.9, 0.95), 2.0)
 			draw_line(-o * radius * 0.9, -o * radius * 0.9 + f * 14.0, Color(0.85, 0.9, 0.95), 2.0)
+		"splitter", "splitling":
+			# ぷるぷるした塊（中に小さな粒）
+			var wob := sin(Time.get_ticks_msec() / 150.0 + radius) * 1.5
+			draw_circle(Vector2.ZERO, radius + wob, c)
+			if kind == "splitter":
+				for i in 3:
+					draw_circle(Vector2.from_angle(TAU * i / 3.0) * radius * 0.45, radius * 0.22, Color(0.55, 0.65, 0.15))
+		"healer":
+			draw_circle(Vector2.ZERO, radius, c)
+			# 十字マーク
+			draw_rect(Rect2(Vector2(-3, -radius * 0.7), Vector2(6, radius * 1.4)), Color(1, 1, 1))
+			draw_rect(Rect2(Vector2(-radius * 0.7, -3), Vector2(radius * 1.4, 6)), Color(1, 1, 1))
+			if _heal_fx > 0.0:
+				draw_arc(Vector2.ZERO, 150.0 * (1.0 - _heal_fx), 0.0, TAU, 40, Color(0.5, 1.0, 0.6, _heal_fx * 1.6), 3.0)
+		"bomber":
+			draw_circle(Vector2.ZERO, radius, c)
+			# 導火線と火花
+			var top := -_facing * radius
+			draw_line(top, top - _facing * 8.0 + _facing.orthogonal() * 4.0, Color(0.7, 0.6, 0.4), 2.0)
+			if int(Time.get_ticks_msec() / 100) % 2 == 0:
+				draw_circle(top - _facing * 9.0 + _facing.orthogonal() * 4.0, 3.5, Color(1.0, 0.8, 0.2))
+		"boss":
+			# 大きな体とトゲ、王冠
+			for i in 10:
+				var a := TAU * i / 10.0 + Time.get_ticks_msec() / 2000.0
+				draw_colored_polygon(PackedVector2Array([
+					Vector2.from_angle(a - 0.15) * radius * 0.9, Vector2.from_angle(a) * radius * 1.3,
+					Vector2.from_angle(a + 0.15) * radius * 0.9]), Color(0.25, 0.08, 0.3))
+			draw_circle(Vector2.ZERO, radius, c)
+			draw_arc(Vector2.ZERO, radius, 0.0, TAU, 48, Color(0.15, 0.05, 0.2), 4.0)
+			var crown_y := -radius - 4.0
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(-22, crown_y), Vector2(-22, crown_y - 14), Vector2(-11, crown_y - 6), Vector2(0, crown_y - 18),
+				Vector2(11, crown_y - 6), Vector2(22, crown_y - 14), Vector2(22, crown_y)]), Color(1.0, 0.82, 0.25))
 		_:
 			draw_circle(Vector2.ZERO, radius, c)
 	# 目

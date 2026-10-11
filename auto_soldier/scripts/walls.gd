@@ -22,6 +22,8 @@ var wall_width := deg_to_rad(12.0)
 var turret_level := 0
 ## 自己修復（壁が少しずつ回復）
 var repair_level := 0
+## 爆裂壁（防ぐたびにその場で爆発）
+var explode_on_block := false
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
@@ -36,7 +38,7 @@ func _process(delta: float) -> void:
 			_update_turret(w, delta)
 		if repair_level > 0 and w["hp"] < w["max"]:
 			w["rep"] = w.get("rep", 0.0) + delta
-			if w["rep"] >= (6.0 if repair_level == 1 else 3.0):
+			if w["rep"] >= 3.0:
 				w["rep"] = 0.0
 				w["hp"] = minf(w["max"], w["hp"] + 1.0)
 	queue_redraw()
@@ -87,9 +89,11 @@ func hit_test(p: Vector2, r: float) -> int:
 	return -1
 
 
-## 壁 i で攻撃を1発防ぐ（ダメージの大きさに関係なく1回分）
-func absorb(i: int) -> void:
+## 壁 i で攻撃を1発防ぐ（ダメージの大きさに関係なく1回分）。pos = 防いだ場所
+func absorb(i: int, pos: Vector2 = Vector2.INF) -> void:
 	var w: Dictionary = walls[i]
+	if explode_on_block and pos != Vector2.INF:
+		game.explode(pos, 75.0, 40.0 * (1.0 + game.elapsed / 180.0), w["src"], Color(0.9, 0.75, 0.5))
 	w["hp"] -= 1.0
 	w["flash"] = 0.15
 	if not w["src"].is_empty():

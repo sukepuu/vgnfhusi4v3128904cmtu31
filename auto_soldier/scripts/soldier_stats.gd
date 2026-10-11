@@ -29,3 +29,5 @@ var dash_damage := 40.0
 var burst_level := 0
 ## 一斉射撃（定期的に全方位へ弾をばらまく）
 var volley_level := 0
+## 剣気（斬撃と一緒に衝撃波が飛ぶ）
+var sword_wave := false

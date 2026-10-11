@@ -293,6 +293,20 @@ func _try_slash() -> bool:
 		var to_b: Vector2 = b.global_position - global_position
 		if to_b.length() <= st.sword_radius and (st.sword_arc >= TAU or absf(facing.angle_to(to_b)) <= st.sword_arc / 2.0):
 			b.queue_free()
+	if st.sword_wave:
+		# 剣気：敵を貫く三日月形の衝撃波
+		var w := BulletScript.new()
+		w.game = game
+		w.velocity = facing * 520.0
+		w.damage = st.sword_damage
+		w.pierce = 1000000
+		w.radius = 16.0
+		w.wave = true
+		w.color = Color(0.75, 0.9, 1.0)
+		w.life = 0.75
+		w.position = global_position + facing * 20.0
+		w.src = record
+		game.world.add_child(w)
 	var fx := SlashScript.new()
 	fx.radius = st.sword_radius
 	fx.arc = st.sword_arc

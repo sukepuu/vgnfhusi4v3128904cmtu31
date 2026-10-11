@@ -142,7 +142,10 @@ func refresh() -> void:
 	for u in Upgrades.LIST + Upgrades.SPECIAL:
 		var lv: int = game.upgrade_levels.get(u["id"], 0)
 		if lv > 0:
-			lines.append("【%s】%s%s  Lv%d" % [Upgrades.CAT_LABEL[u["cat"]], "★" if u.get("special", false) else "", u["name"], lv])
+			if u.get("special", false):
+				lines.append("【%s】★%s" % [Upgrades.CAT_LABEL[u["cat"]], u["name"]])
+			else:
+				lines.append("【%s】%s  Lv%d" % [Upgrades.CAT_LABEL[u["cat"]], u["name"], lv])
 	_skills_label.text = "\n".join(lines)
 
 

@@ -58,12 +58,16 @@ var tower_shots := 1
 var tower_pierce := 0
 var scatter_level := 0
 var fire_level := 0
-var catapult_stun := 0.0
 var split_level := 0
 var ballista_shots := 1
 var bolt_blast_level := 0
 var freeze_level := 0
 var icicle_level := 0
+var tower_crit := false
+var rock_rain := false
+var big_bolt := false
+var blizzard := false
+var _blizzard_tick := 0.0
 var _freeze_cd := 5.0
 var _icicle_cd := 2.0
 
@@ -165,6 +169,10 @@ func _update_towers(delta: float) -> void:
 			b.game = game
 			b.velocity = dir * 760.0
 			b.damage = tower_damage
+			# 会心の一矢：25%でダメージ3倍
+			if tower_crit and randf() < 0.25:
+				b.damage = tower_damage * 3.0
+				b.radius = 6.0
 			b.pierce = tower_pierce
 			b.radius = 4.0
 			b.color = Color(0.95, 0.8, 0.55)
@@ -210,9 +218,14 @@ func _update_catapult(delta: float) -> void:
 			continue
 		var from := global_position + _catapult_local_pos(i) + Vector2(0, -20)
 		var s := _fire_shell(from, best.global_position, catapult_damage, catapult_radius, true, _equip_record("catapult", "投石器", i))
-		s.stun = catapult_stun
 		if split_level > 0:
 			s.split_count = 2 + 2 * split_level
+		# 岩雨：ランダムな敵2体の頭上にも岩が落ちる
+		if rock_rain:
+			var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool: return is_instance_valid(e) and not e.dead)
+			pool.shuffle()
+			for e in pool.slice(0, 2):
+				game.spawn_blast(e.global_position, 1.0, 75.0, catapult_damage * 0.6, s.src, Color(0.75, 0.65, 0.5), "rock")
 		_catapult_cds[i] = catapult_interval
 		_catapult_swings[i] = 0.4
 
@@ -237,6 +250,9 @@ func _update_ballista(delta: float) -> void:
 			b.damage = ballista_damage
 			b.pierce = 1000000
 			b.radius = 7.0
+			if big_bolt:
+				b.radius = 16.0
+				b.scale = Vector2(1.8, 1.8)
 			b.bolt = true
 			b.src = _equip_record("ballista", "バリスタ", i)
 			b.life = 2.5
@@ -300,6 +316,16 @@ func _update_frost_specials(delta: float) -> void:
 				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < frost_radius:
 					e.stun(t)
 			game.spawn_burst(global_position, Color(0.7, 0.95, 1.0), frost_radius / 2.2)
+	# 吹雪：結界の中の敵にずっとダメージ
+	if blizzard:
+		_blizzard_tick -= delta
+		if _blizzard_tick <= 0.0:
+			_blizzard_tick = 0.5
+			var dps: float = 20.0 * (1.0 + game.elapsed / 120.0)
+			var rec := _equip_record("frost", "氷結の結界", 0)
+			for e in game.enemies_cache:
+				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < frost_radius:
+					e.take_damage(dps * 0.5, Vector2.ZERO, rec)
 	if icicle_level > 0:
 		_icicle_cd -= delta
 		if _icicle_cd <= 0.0:

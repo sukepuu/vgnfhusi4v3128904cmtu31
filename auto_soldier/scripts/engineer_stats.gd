@@ -21,3 +21,5 @@ var stun_time := 10.0
 var cluster_level := 0
 ## 毒沼（落とし穴の跡が毒の沼になる）
 var poison_level := 0
+## 二重設置（1回で爆弾と落とし穴を両方）
+var double_plant := false

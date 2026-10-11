@@ -80,6 +80,11 @@ func _process(delta: float) -> void:
 	if hunter:
 		aggro = INF
 	var soldier: Node2D = game.nearest_ally(global_position, aggro)
+	# 挑発：近くに迎撃兵がいればそちらを狙う
+	if game.guard_stats.taunt:
+		var g := _nearest_guard(230.0)
+		if g != null:
+			soldier = g
 	var target_pos: Vector2 = soldier.global_position if soldier != null else castle.closest_point(global_position)
 	if hunter and soldier == null:
 		# 狙える兵士がいなければ城の前で待ち伏せ
@@ -129,12 +134,25 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+func _nearest_guard(max_dist: float) -> Node2D:
+	var best: Node2D = null
+	var best_d := max_dist
+	for g in game.guards:
+		if g.dead:
+			continue
+		var d: float = global_position.distance_to(g.global_position)
+		if d < best_d:
+			best_d = d
+			best = g
+	return best
+
+
 ## 壁に触れたら壁が1発分防ぎ、この敵は消滅する（false を返す）
 func _check_wall() -> bool:
 	var wi: int = game.walls.hit_test(global_position, radius)
 	if wi < 0:
 		return true
-	game.walls.absorb(wi)
+	game.walls.absorb(wi, global_position)
 	dead = true
 	remove_from_group("enemies")
 	game.spawn_burst(global_position, color, radius)

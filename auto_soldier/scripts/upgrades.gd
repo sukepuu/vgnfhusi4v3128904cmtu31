@@ -67,59 +67,49 @@ const LIST := [
 	{"id": "repair", "cat": "castle", "name": "修理工", "desc": "城のHPが毎秒2回復する", "max": 3},
 ]
 
-## Lv7ごとに出る特別強化。部隊・設備の種類ごとに2つずつ。
+## Lv7ごとに出る特別強化。部隊・設備の種類ごとに3つずつ。どれも1回取れば完成（レベルなし）。
 ## req = この強化（部隊・設備）を持っていないと出ない（なければ誰でも）
 const SPECIAL := [
 	# ---- 遊撃部隊
-	{"id": "sp_burst", "cat": "soldier", "special": true, "name": "炸裂弾", "desc": "遊撃兵の弾が当たると小爆発する（威力40%）",
-		"desc_up": "炸裂の範囲と威力アップ", "max": 3},
-	{"id": "sp_volley", "cat": "soldier", "special": true, "name": "一斉射撃", "desc": "6秒ごとに全方位へ12発の弾をばらまく",
-		"desc_up": "一斉射撃の弾数 +6", "max": 3},
+	{"id": "sp_burst", "cat": "soldier", "special": true, "name": "炸裂弾", "desc": "遊撃兵の弾が当たると小爆発する（威力55%）", "max": 1},
+	{"id": "sp_volley", "cat": "soldier", "special": true, "name": "一斉射撃", "desc": "6秒ごとに全方位へ18発の弾をばらまく", "max": 1},
+	{"id": "sp_sword_wave", "cat": "soldier", "special": true, "name": "剣気", "desc": "斬撃と一緒に、敵を貫く三日月形の衝撃波が飛ぶ", "max": 1},
 	# ---- 迎撃部隊
-	{"id": "sp_bash", "cat": "guard", "special": true, "name": "盾撃", "desc": "盾で攻撃を防ぐたびに、周りの敵へ衝撃波（槍の威力ぶん）",
-		"desc_up": "衝撃波の威力・範囲アップ", "max": 3, "req": "guard"},
-	{"id": "sp_trident", "cat": "guard", "special": true, "name": "三叉槍", "desc": "槍の突きが3方向に出る",
-		"desc_up": "槍の突きが5方向に出る", "max": 2, "req": "guard"},
+	{"id": "sp_bash", "cat": "guard", "special": true, "name": "盾撃", "desc": "盾で攻撃を防ぐたびに、周りの敵へ衝撃波（槍の1.3倍の威力）", "max": 1, "req": "guard"},
+	{"id": "sp_trident", "cat": "guard", "special": true, "name": "三叉槍", "desc": "槍の突きが3方向に出る", "max": 1, "req": "guard"},
+	{"id": "sp_taunt", "cat": "guard", "special": true, "name": "挑発", "desc": "近くの敵が城より迎撃兵を狙うようになる（正面から来れば盾で無効）", "max": 1, "req": "guard"},
 	# ---- 重装部隊
-	{"id": "sp_multi_slash", "cat": "heavy", "special": true, "name": "連続斬り", "desc": "斬撃が2回出る",
-		"desc_up": "斬撃の回数 +1", "max": 4, "req": "heavy"},
-	{"id": "sp_quake", "cat": "heavy", "special": true, "name": "地割れ", "desc": "5秒ごとに地面を叩き、周りの敵に大ダメージ＋2秒気絶",
-		"desc_up": "地割れの範囲と気絶時間アップ", "max": 2, "req": "heavy"},
+	{"id": "sp_multi_slash", "cat": "heavy", "special": true, "name": "連続斬り", "desc": "斬撃が3回連続で出る", "max": 1, "req": "heavy"},
+	{"id": "sp_quake", "cat": "heavy", "special": true, "name": "地割れ", "desc": "5秒ごとに地面を叩き、周りの敵に大ダメージ＋3.5秒気絶", "max": 1, "req": "heavy"},
+	{"id": "sp_lifesteal", "cat": "heavy", "special": true, "name": "吸命の剣", "desc": "斬撃で与えたダメージの10%ぶんHPが回復する", "max": 1, "req": "heavy"},
 	# ---- 築城部隊
-	{"id": "sp_wall_turret", "cat": "builder", "special": true, "name": "砲台壁", "desc": "壁から近くの敵へ弾が発射されるようになる",
-		"desc_up": "壁の弾の威力アップ・発射間隔短縮", "max": 3, "req": "builder"},
-	{"id": "sp_wall_repair", "cat": "builder", "special": true, "name": "自己修復", "desc": "壁が6秒ごとに1発分ずつ回復する",
-		"desc_up": "回復の間隔が3秒になる", "max": 2, "req": "builder"},
+	{"id": "sp_wall_turret", "cat": "builder", "special": true, "name": "砲台壁", "desc": "壁から近くの敵へ弾が発射されるようになる", "max": 1, "req": "builder"},
+	{"id": "sp_wall_repair", "cat": "builder", "special": true, "name": "自己修復", "desc": "壁が3秒ごとに1発分ずつ回復する", "max": 1, "req": "builder"},
+	{"id": "sp_wall_blast", "cat": "builder", "special": true, "name": "爆裂壁", "desc": "壁が攻撃を防ぐたびに、その場で爆発して周りの敵にダメージ", "max": 1, "req": "builder"},
 	# ---- 工兵部隊
-	{"id": "sp_cluster", "cat": "engineer", "special": true, "name": "子爆弾", "desc": "爆弾が爆発すると、周りに小爆弾が3個散らばって爆発する",
-		"desc_up": "小爆弾の数 +3", "max": 2, "req": "engineer"},
-	{"id": "sp_poison", "cat": "engineer", "special": true, "name": "毒沼", "desc": "作動した落とし穴の跡が6秒間、毒の沼になる",
-		"desc_up": "毒の威力と時間アップ", "max": 2, "req": "engineer"},
+	{"id": "sp_cluster", "cat": "engineer", "special": true, "name": "子爆弾", "desc": "爆弾が爆発すると、周りに小爆弾が6個散らばって爆発する", "max": 1, "req": "engineer"},
+	{"id": "sp_poison", "cat": "engineer", "special": true, "name": "毒沼", "desc": "作動した落とし穴の跡が9秒間、毒の沼になる", "max": 1, "req": "engineer"},
+	{"id": "sp_double_plant", "cat": "engineer", "special": true, "name": "二重設置", "desc": "1回で爆弾と落とし穴を両方仕掛ける（罠の上限も30個に）", "max": 1, "req": "engineer"},
 	# ---- 矢倉
-	{"id": "sp_tower_multi", "cat": "castle", "special": true, "name": "矢倉・連射", "desc": "矢倉が一度に2本の矢を放つ",
-		"desc_up": "一度に放つ矢 +1本", "max": 2, "req": "tower"},
-	{"id": "sp_tower_ap", "cat": "castle", "special": true, "name": "矢倉・徹甲矢", "desc": "矢倉の矢が敵を2体貫通し、威力 +40%",
-		"desc_up": "さらに貫通 +2、威力 +40%", "max": 2, "req": "tower"},
+	{"id": "sp_tower_multi", "cat": "castle", "special": true, "name": "矢倉・連射", "desc": "矢倉が一度に3本の矢を放つ", "max": 1, "req": "tower"},
+	{"id": "sp_tower_ap", "cat": "castle", "special": true, "name": "矢倉・徹甲矢", "desc": "矢倉の矢が敵を3体貫通し、威力 +60%", "max": 1, "req": "tower"},
+	{"id": "sp_tower_crit", "cat": "castle", "special": true, "name": "矢倉・会心の一矢", "desc": "矢倉の矢が25%の確率でダメージ3倍、射程 +40%", "max": 1, "req": "tower"},
 	# ---- 大砲
-	{"id": "sp_scatter", "cat": "castle", "special": true, "name": "大砲・散弾砲", "desc": "砲弾が分裂して、着弾地点の周りにも2発落ちる",
-		"desc_up": "分裂する砲弾 +2", "max": 2, "req": "cannon"},
-	{"id": "sp_incendiary", "cat": "castle", "special": true, "name": "大砲・焼夷弾", "desc": "着弾地点が4秒間燃え続ける",
-		"desc_up": "炎の威力と時間アップ", "max": 2, "req": "cannon"},
+	{"id": "sp_scatter", "cat": "castle", "special": true, "name": "大砲・散弾砲", "desc": "砲弾が分裂して、着弾地点の周りにも4発落ちる", "max": 1, "req": "cannon"},
+	{"id": "sp_incendiary", "cat": "castle", "special": true, "name": "大砲・焼夷弾", "desc": "着弾地点が6秒間燃え続ける", "max": 1, "req": "cannon"},
+	{"id": "sp_rapid_cannon", "cat": "castle", "special": true, "name": "大砲・速射砲", "desc": "大砲の発射間隔 -40%", "max": 1, "req": "cannon"},
 	# ---- 投石器
-	{"id": "sp_big_rock", "cat": "castle", "special": true, "name": "投石器・大岩", "desc": "岩の範囲 +35%・威力 +60%、当たった敵は1.5秒気絶",
-		"desc_up": "さらに大きく、気絶時間 +1.5秒", "max": 2, "req": "catapult"},
-	{"id": "sp_split_rock", "cat": "castle", "special": true, "name": "投石器・分裂岩", "desc": "着弾した岩が砕けて、周りに4個の岩が落ちる",
-		"desc_up": "砕けた岩 +2個", "max": 2, "req": "catapult"},
+	{"id": "sp_big_rock", "cat": "castle", "special": true, "name": "投石器・大岩", "desc": "岩の範囲 +40%・威力 +80%", "max": 1, "req": "catapult"},
+	{"id": "sp_split_rock", "cat": "castle", "special": true, "name": "投石器・分裂岩", "desc": "着弾した岩が砕けて、周りに6個の岩が落ちる", "max": 1, "req": "catapult"},
+	{"id": "sp_rock_rain", "cat": "castle", "special": true, "name": "投石器・岩雨", "desc": "撃つたびに、ランダムな敵2体の頭上にも岩が落ちる", "max": 1, "req": "catapult"},
 	# ---- バリスタ
-	{"id": "sp_ballista_multi", "cat": "castle", "special": true, "name": "バリスタ・連装", "desc": "バリスタが一度に2発撃つ",
-		"desc_up": "一度に撃つ矢 +1発", "max": 3, "req": "ballista"},
-	{"id": "sp_ballista_blast", "cat": "castle", "special": true, "name": "バリスタ・爆裂ボルト", "desc": "貫いた敵ごとに小爆発が起きる（威力30%）",
-		"desc_up": "爆発の範囲と威力アップ", "max": 2, "req": "ballista"},
+	{"id": "sp_ballista_multi", "cat": "castle", "special": true, "name": "バリスタ・連装", "desc": "バリスタが一度に3発撃つ", "max": 1, "req": "ballista"},
+	{"id": "sp_ballista_blast", "cat": "castle", "special": true, "name": "バリスタ・爆裂ボルト", "desc": "貫いた敵ごとに小爆発が起きる（威力45%）", "max": 1, "req": "ballista"},
+	{"id": "sp_big_bolt", "cat": "castle", "special": true, "name": "バリスタ・大型弩", "desc": "矢が大きくなって当たり判定が広がり、威力 +50%", "max": 1, "req": "ballista"},
 	# ---- 氷結の結界
-	{"id": "sp_freeze", "cat": "castle", "special": true, "name": "結界・絶対零度", "desc": "10秒ごとに結界内の敵すべてを2秒間凍らせる",
-		"desc_up": "8秒ごとに3.5秒間凍らせる", "max": 2, "req": "frost"},
-	{"id": "sp_icicle", "cat": "castle", "special": true, "name": "結界・氷柱", "desc": "2.5秒ごとに結界内の敵へ氷柱が降る",
-		"desc_up": "氷柱が2本ずつ・間隔短縮・威力アップ", "max": 2, "req": "frost"},
+	{"id": "sp_freeze", "cat": "castle", "special": true, "name": "結界・絶対零度", "desc": "8秒ごとに結界内の敵すべてを3.5秒間凍らせる", "max": 1, "req": "frost"},
+	{"id": "sp_icicle", "cat": "castle", "special": true, "name": "結界・氷柱", "desc": "1.5秒ごとに結界内の敵2体へ氷柱が降る", "max": 1, "req": "frost"},
+	{"id": "sp_blizzard", "cat": "castle", "special": true, "name": "結界・吹雪", "desc": "結界の中の敵にずっとダメージを与え続ける", "max": 1, "req": "frost"},
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "builder": "築城", "guard": "迎撃", "heavy": "重装", "engineer": "工兵", "castle": "城"}
@@ -283,50 +273,71 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.engineer_stats.trigger_radius *= 1.15
 		"pit_stun":
 			game.engineer_stats.stun_time += 3.0
-		# ---- 特別強化（効果の中身はそれぞれのスクリプトが sp レベルを見て処理する）
+		# ---- 特別強化（1回きり。効果の中身はそれぞれのスクリプトが処理する）
 		"sp_burst":
-			st.burst_level = new_level
+			st.burst_level = 2
 		"sp_volley":
-			st.volley_level = new_level
+			st.volley_level = 2
+		"sp_sword_wave":
+			st.sword_wave = true
 		"sp_bash":
-			game.guard_stats.bash_level = new_level
+			game.guard_stats.bash_level = 2
 		"sp_trident":
-			game.guard_stats.trident_level = new_level
+			game.guard_stats.trident_level = 1
+		"sp_taunt":
+			game.guard_stats.taunt = true
 		"sp_multi_slash":
-			game.heavy.extra_slashes = new_level
+			game.heavy.extra_slashes = 2
 		"sp_quake":
-			game.heavy.quake_level = new_level
+			game.heavy.quake_level = 2
+		"sp_lifesteal":
+			game.heavy.lifesteal = 0.1
 		"sp_wall_turret":
-			game.walls.turret_level = new_level
+			game.walls.turret_level = 2
 		"sp_wall_repair":
-			game.walls.repair_level = new_level
+			game.walls.repair_level = 2
+		"sp_wall_blast":
+			game.walls.explode_on_block = true
 		"sp_cluster":
-			game.engineer_stats.cluster_level = new_level
+			game.engineer_stats.cluster_level = 2
 		"sp_poison":
-			game.engineer_stats.poison_level = new_level
+			game.engineer_stats.poison_level = 2
+		"sp_double_plant":
+			game.engineer_stats.double_plant = true
 		"sp_tower_multi":
-			castle.tower_shots = 1 + new_level
+			castle.tower_shots = 3
 		"sp_tower_ap":
-			castle.tower_pierce += 2
-			castle.tower_damage *= 1.4
+			castle.tower_pierce += 3
+			castle.tower_damage *= 1.6
+		"sp_tower_crit":
+			castle.tower_crit = true
+			castle.tower_range *= 1.4
 		"sp_scatter":
-			castle.scatter_level = new_level
+			castle.scatter_level = 2
 		"sp_incendiary":
-			castle.fire_level = new_level
+			castle.fire_level = 2
+		"sp_rapid_cannon":
+			castle.cannon_interval *= 0.6
 		"sp_big_rock":
-			castle.catapult_radius *= 1.35
-			castle.catapult_damage *= 1.6
-			castle.catapult_stun = 1.5 * new_level
+			castle.catapult_radius *= 1.4
+			castle.catapult_damage *= 1.8
 		"sp_split_rock":
-			castle.split_level = new_level
+			castle.split_level = 2
+		"sp_rock_rain":
+			castle.rock_rain = true
 		"sp_ballista_multi":
-			castle.ballista_shots = 1 + new_level
+			castle.ballista_shots = 3
 		"sp_ballista_blast":
-			castle.bolt_blast_level = new_level
+			castle.bolt_blast_level = 2
+		"sp_big_bolt":
+			castle.big_bolt = true
+			castle.ballista_damage *= 1.5
 		"sp_freeze":
-			castle.freeze_level = new_level
+			castle.freeze_level = 2
 		"sp_icicle":
-			castle.icicle_level = new_level
+			castle.icicle_level = 2
+		"sp_blizzard":
+			castle.blizzard = true
 		"tower":
 			castle.tower_count = new_level
 			if new_level > 1:

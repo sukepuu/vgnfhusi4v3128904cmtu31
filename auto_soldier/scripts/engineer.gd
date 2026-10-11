@@ -30,7 +30,8 @@ func _process(delta: float) -> void:
 	match state:
 		"waiting":
 			_move_to(game.castle.gate_position() + Vector2(-60.0 - index * 30.0, 10.0), delta)
-			if game.get_tree().get_nodes_in_group("traps").size() < MAX_TRAPS:
+			var cap := MAX_TRAPS + (10 if game.engineer_stats.double_plant else 0)
+			if game.get_tree().get_nodes_in_group("traps").size() < cap:
 				target_pos = _random_spot()
 				state = "moving"
 		"moving":
@@ -59,12 +60,19 @@ func _random_spot() -> Vector2:
 
 
 func _place_trap() -> void:
+	_spawn_trap(next_kind, position)
+	# 二重設置：もう1種類の罠も隣に仕掛ける
+	if game.engineer_stats.double_plant:
+		_spawn_trap("pit" if next_kind == "bomb" else "bomb", game.clamp_to_map(position + _facing.orthogonal() * 45.0, 20.0))
+
+
+func _spawn_trap(kind: String, pos: Vector2) -> void:
 	var t := TrapScript.new()
 	t.game = game
-	t.kind = next_kind
+	t.kind = kind
 	t.src = record
 	record["traps"] += 1
-	t.position = position
+	t.position = pos
 	game.ground.add_child(t)
 
 

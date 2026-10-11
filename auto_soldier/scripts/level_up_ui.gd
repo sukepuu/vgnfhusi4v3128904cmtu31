@@ -58,6 +58,8 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int, special
 		btn.custom_minimum_size = Vector2(520, 84)
 		btn.add_theme_font_size_override("font_size", 20)
 		var lv_text := "NEW!" if cur == 0 else "Lv %d → %d" % [cur, cur + 1]
+		if u.get("special", false):
+			lv_text = "特別"
 		var star := "★" if u.get("special", false) else ""
 		btn.text = "[%d] 【%s】%s%s  (%s)\n%s" % [i + 1, Upgrades.CAT_LABEL[u["cat"]], star, u["name"], lv_text, Upgrades.describe(u, cur)]
 		var col: Color = Upgrades.CAT_COLOR[u["cat"]]

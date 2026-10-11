@@ -16,6 +16,8 @@ var src: Dictionary = {}
 ## 当たったときに小爆発する（炸裂弾・爆裂ボルト）。0なら爆発しない
 var explode_radius := 0.0
 var explode_ratio := 0.0
+## true なら剣気の衝撃波（三日月形に描く）
+var wave := false
 
 var _hit := {}
 
@@ -41,7 +43,7 @@ func _process(delta: float) -> void:
 		var wi: int = game.walls.hit_test(global_position, radius)
 		if wi >= 0:
 			# 壁が1発分防ぐ
-			game.walls.absorb(wi)
+			game.walls.absorb(wi, global_position)
 			queue_free()
 			return
 		if game.castle.distance_to_point(global_position) < radius:
@@ -66,6 +68,10 @@ func _draw() -> void:
 	if from_enemy:
 		draw_circle(Vector2.ZERO, radius, color)
 		draw_circle(Vector2.ZERO, radius * 0.5, Color(1, 1, 1, 0.8))
+	elif wave:
+		var a := velocity.angle()
+		draw_arc(Vector2.ZERO, radius, a - 1.1, a + 1.1, 16, Color(color, 0.85), 5.0)
+		draw_arc(Vector2(-4, 0).rotated(a), radius * 0.8, a - 0.9, a + 0.9, 12, Color(1, 1, 1, 0.5), 2.0)
 	elif bolt:
 		var dir := velocity.normalized()
 		draw_line(-dir * 34.0, dir * 6.0, Color(0.45, 0.3, 0.15), 4.0)

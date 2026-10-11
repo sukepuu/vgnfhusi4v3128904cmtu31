@@ -16,3 +16,5 @@ var spear_interval := 0.9
 var bash_level := 0
 ## 三叉槍（槍が3方向・5方向に出る）
 var trident_level := 0
+## 挑発（近くの敵が迎撃兵を狙う）
+var taunt := false

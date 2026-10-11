@@ -39,6 +39,8 @@ var _retarget_cd := 0.0
 var extra_slashes := 0
 ## 地割れ
 var quake_level := 0
+## 吸命の剣：斬撃で与えたダメージのこの割合だけ回復
+var lifesteal := 0.0
 var _pending_slashes := 0
 var _followup_cd := 0.0
 var _quake_cd := 3.0
@@ -129,6 +131,7 @@ func _try_slash() -> bool:
 		return false
 	var dir := (near.global_position - global_position).normalized()
 	facing = dir
+	var dealt_before: float = record["dealt"]
 	for e in game.enemies_near(global_position, slash_radius + 30.0):
 		if not is_instance_valid(e) or e.dead:
 			continue
@@ -138,6 +141,8 @@ func _try_slash() -> bool:
 		if slash_arc < TAU and absf(dir.angle_to(rel)) > slash_arc / 2.0 + 0.2:
 			continue
 		e.take_damage(slash_damage, rel.normalized() * 420.0, record)
+	if lifesteal > 0.0:
+		hp = minf(max_hp, hp + (record["dealt"] - dealt_before) * lifesteal)
 	# 斬撃で敵の弾もかき消す
 	for b in get_tree().get_nodes_in_group("enemy_bullets"):
 		var to_b: Vector2 = b.global_position - global_position

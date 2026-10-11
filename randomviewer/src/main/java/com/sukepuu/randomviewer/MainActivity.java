@@ -7,14 +7,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.UriPermission;
 import android.content.res.Configuration;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.ImageDecoder;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -25,8 +23,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -48,10 +44,12 @@ import java.util.concurrent.Executors;
 /**
  * 指定フォルダ内の画像を 1〜6 枠の均等分割グリッドにランダム表示するビューア。
  * 長押しでメニュー、枠のタップで全画面表示、全画面中のタップで元に戻る。
+ * メニューの「動画再生モード」からはフォルダ内の動画を {@link VideoActivity} で再生する。
  */
 public class MainActivity extends Activity {
 
     private static final int REQ_PICK_FOLDER = 1;
+    private static final int REQ_PICK_VIDEO_FOLDER = 2;
 
     private static final int MIN_FRAMES = 1;
     private static final int MAX_FRAMES = 6;
@@ -64,6 +62,7 @@ public class MainActivity extends Activity {
     private static final String KEY_FRAMES = "frames";
     private static final String KEY_SLIDESHOW = "slideshow";
     private static final String KEY_INTERVAL = "interval";
+    private static final String KEY_VIDEO_TREE_URI = "videoTreeUri";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newFixedThreadPool(3);
@@ -147,7 +146,7 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) hideSystemBars();
+        if (hasFocus) SystemBars.hide(getWindow());
     }
 
     @Override
@@ -320,26 +319,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void hideSystemBars() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(false);
-            WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller != null) {
-                controller.hide(WindowInsets.Type.systemBars());
-                controller.setSystemBarsBehavior(
-                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            }
-        } else {
-            getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_FULLSCREEN);
-        }
-    }
-
     // ------------------------------------------------------------------
     // メニュー
     // ------------------------------------------------------------------
@@ -349,14 +328,15 @@ public class MainActivity extends Activity {
      * 触れなくなることがあるため、画面中央に出るダイアログで表示する。
      */
     private void showMenu() {
-        String[] items = {"フォルダ選択...", "表示", "スライドショー"};
+        String[] items = {"フォルダ選択...", "表示", "スライドショー", "動画再生モード"};
         new AlertDialog.Builder(this)
                 .setTitle("メニュー")
                 .setItems(items, (d, which) -> {
                     switch (which) {
                         case 0: pickFolder(); break;
                         case 1: showViewMenu(); break;
-                        default: showSlideshowMenu(); break;
+                        case 2: showSlideshowMenu(); break;
+                        default: startVideoMode(); break;
                     }
                 })
                 .show();
@@ -544,11 +524,21 @@ public class MainActivity extends Activity {
     // ------------------------------------------------------------------
 
     private void pickFolder() {
+        openFolderPicker(REQ_PICK_FOLDER, treeUri);
+    }
+
+    private void openFolderPicker(int requestCode, Uri initialTree) {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
                 | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        if (initialTree != null) {
+            // 前回のフォルダから開く
+            intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI,
+                    DocumentsContract.buildDocumentUriUsingTree(
+                            initialTree, DocumentsContract.getTreeDocumentId(initialTree)));
+        }
         try {
-            startActivityForResult(intent, REQ_PICK_FOLDER);
+            startActivityForResult(intent, requestCode);
         } catch (RuntimeException e) {
             toast("フォルダ選択画面を開けませんでした");
         }
@@ -557,7 +547,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != REQ_PICK_FOLDER || resultCode != RESULT_OK || data == null) return;
+        if (requestCode != REQ_PICK_FOLDER && requestCode != REQ_PICK_VIDEO_FOLDER) return;
+        if (resultCode != RESULT_OK || data == null) return;
         Uri uri = data.getData();
         if (uri == null) return;
 
@@ -568,9 +559,25 @@ public class MainActivity extends Activity {
             toast("フォルダへのアクセス許可を取得できませんでした");
             return;
         }
-        // 以前のフォルダの許可は手放す
+        if (requestCode == REQ_PICK_VIDEO_FOLDER) {
+            prefs.edit().putString(KEY_VIDEO_TREE_URI, uri.toString()).apply();
+            releaseUnusedPermissions();
+            showVideoChooser(uri);
+        } else {
+            prefs.edit().putString(KEY_TREE_URI, uri.toString()).apply();
+            releaseUnusedPermissions();
+            loadFolder(uri);
+        }
+    }
+
+    /** 画像フォルダ・動画フォルダのどちらでもなくなったフォルダの許可を手放す */
+    private void releaseUnusedPermissions() {
+        Set<String> inUse = new HashSet<>();
+        inUse.add(prefs.getString(KEY_TREE_URI, ""));
+        inUse.add(prefs.getString(KEY_VIDEO_TREE_URI, ""));
+        ContentResolver resolver = getContentResolver();
         for (UriPermission p : resolver.getPersistedUriPermissions()) {
-            if (!p.getUri().equals(uri)) {
+            if (!inUse.contains(p.getUri().toString())) {
                 try {
                     resolver.releasePersistableUriPermission(
                             p.getUri(), Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -579,8 +586,6 @@ public class MainActivity extends Activity {
                 }
             }
         }
-        prefs.edit().putString(KEY_TREE_URI, uri.toString()).apply();
-        loadFolder(uri);
     }
 
     private boolean hasPersistedPermission(Uri uri) {
@@ -598,11 +603,15 @@ public class MainActivity extends Activity {
         updateStatus();
 
         executor.execute(() -> {
-            String name = queryFolderName(tree);
+            String name = FolderScanner.folderName(getContentResolver(), tree);
             List<Uri> found;
             String error = null;
             try {
-                found = listImages(tree);
+                found = new ArrayList<>();
+                for (FolderScanner.Item item
+                        : FolderScanner.list(getContentResolver(), tree, "image/")) {
+                    found.add(item.uri);
+                }
             } catch (RuntimeException e) {
                 found = new ArrayList<>();
                 error = "フォルダを読み込めませんでした";
@@ -630,43 +639,63 @@ public class MainActivity extends Activity {
         updateStatus();
     }
 
-    private String queryFolderName(Uri tree) {
-        Uri doc = DocumentsContract.buildDocumentUriUsingTree(
-                tree, DocumentsContract.getTreeDocumentId(tree));
-        try (Cursor c = getContentResolver().query(doc,
-                new String[] {DocumentsContract.Document.COLUMN_DISPLAY_NAME},
-                null, null, null)) {
-            if (c != null && c.moveToFirst()) {
-                String name = c.getString(0);
-                if (name != null) return name;
-            }
-        } catch (RuntimeException ignored) {
-            // 名前が取れなくても表示に支障はない
+    // ------------------------------------------------------------------
+    // 動画再生モード
+    // ------------------------------------------------------------------
+
+    /** 前回の動画フォルダが使えればその中から選ばせ、なければフォルダ選択を開く */
+    private void startVideoMode() {
+        String saved = prefs.getString(KEY_VIDEO_TREE_URI, null);
+        Uri tree = saved == null ? null : Uri.parse(saved);
+        if (tree != null && hasPersistedPermission(tree)) {
+            showVideoChooser(tree);
+        } else {
+            openFolderPicker(REQ_PICK_VIDEO_FOLDER, tree != null ? tree : treeUri);
         }
-        return tree.getLastPathSegment();
     }
 
-    /** フォルダ直下の画像ファイルを列挙する */
-    private List<Uri> listImages(Uri tree) {
-        List<Uri> result = new ArrayList<>();
-        Uri children = DocumentsContract.buildChildDocumentsUriUsingTree(
-                tree, DocumentsContract.getTreeDocumentId(tree));
-        try (Cursor c = getContentResolver().query(children,
-                new String[] {
-                        DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-                        DocumentsContract.Document.COLUMN_MIME_TYPE
-                },
-                null, null, null)) {
-            if (c == null) return result;
-            while (c.moveToNext()) {
-                String id = c.getString(0);
-                String mime = c.getString(1);
-                if (id != null && mime != null && mime.startsWith("image/")) {
-                    result.add(DocumentsContract.buildDocumentUriUsingTree(tree, id));
-                }
+    private void showVideoChooser(Uri tree) {
+        Toast loading = Toast.makeText(this, "動画を探しています...", Toast.LENGTH_SHORT);
+        loading.show();
+        executor.execute(() -> {
+            String name = FolderScanner.folderName(getContentResolver(), tree);
+            List<FolderScanner.Item> videos;
+            try {
+                videos = FolderScanner.list(getContentResolver(), tree, "video/");
+            } catch (RuntimeException e) {
+                videos = null;
             }
+            final List<FolderScanner.Item> result = videos;
+            handler.post(() -> {
+                loading.cancel();
+                if (isFinishing() || isDestroyed()) return;
+                showVideoChooserDialog(tree, name, result);
+            });
+        });
+    }
+
+    private void showVideoChooserDialog(Uri tree, String name, List<FolderScanner.Item> videos) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setNeutralButton("別のフォルダ...",
+                        (d, w) -> openFolderPicker(REQ_PICK_VIDEO_FOLDER, tree))
+                .setNegativeButton("キャンセル", null);
+        if (videos == null || videos.isEmpty()) {
+            builder.setTitle(name)
+                    .setMessage(videos == null
+                            ? "フォルダを読み込めませんでした"
+                            : "このフォルダには動画がありません");
+        } else {
+            String[] names = new String[videos.size()];
+            for (int i = 0; i < names.length; i++) names[i] = videos.get(i).name;
+            builder.setTitle("再生する動画を選択（" + name + "）")
+                    .setItems(names, (d, which) -> {
+                        Intent intent = new Intent(this, VideoActivity.class);
+                        intent.putExtra(VideoActivity.EXTRA_TREE_URI, tree.toString());
+                        intent.setData(videos.get(which).uri);
+                        startActivity(intent);
+                    });
         }
-        return result;
+        builder.show();
     }
 
     // ------------------------------------------------------------------

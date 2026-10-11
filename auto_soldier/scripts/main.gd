@@ -341,9 +341,10 @@ func on_enemy_killed(e: Node2D) -> void:
 	add_xp(e.xp_value)
 
 
-## レベル lv から次のレベルまでに必要な経験値（÷1.2 でレベルの上がり方を1.2倍に）
+## レベル lv から次のレベルまでに必要な経験値
+## （元の式を 1.44 = 1.2×1.2 で割って、レベルの上がりやすさを元の約1.44倍にしている）
 func xp_needed(lv: int) -> int:
-	return maxi(1, roundi((4.0 + lv * 3.0 + lv * lv / 8.0) / 1.2))
+	return maxi(1, roundi((4.0 + lv * 3.0 + lv * lv / 8.0) / 1.44))
 
 
 func add_xp(amount: int) -> void:

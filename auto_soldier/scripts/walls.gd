@@ -1,6 +1,6 @@
 extends Node2D
 ## 城を中心とした半円状（城の上側180度）の壁。築城部隊が1枚ずつ建てる。
-## 壁は受けたダメージを耐久力のぶんだけ受け止め、受け止めきれなかった分は通り抜ける。
+## 壁はダメージの大きさに関係なく、耐久回数（最初は10発）ぶんの攻撃を完全に防ぐ。
 ## 角度はGodotの向き（右=0、y軸が下向き）なので、上半分は PI〜TAU になる。
 
 const RADIUS := 215.0
@@ -12,11 +12,12 @@ const TOP := PI * 1.5
 var game: Node2D
 
 # --- 築城部隊のステータス（強化で変わる）
-var build_time := 30.0
+var build_time := 20.0
+## 壁1枚が防げる攻撃の回数
 var wall_max_hp := 10.0
 var wall_width := deg_to_rad(12.0)
 
-## 建っている壁。{"a0": 開始角, "a1": 終了角, "hp": 耐久, "max": 最大耐久, "flash": 被弾演出}
+## 建っている壁。{"a0": 開始角, "a1": 終了角, "hp": 残り回数, "max": 最大回数, "flash": 被弾演出}
 var walls: Array = []
 
 
@@ -48,24 +49,22 @@ func hit_test(p: Vector2, r: float) -> int:
 	return -1
 
 
-## 壁 i でダメージを受け止める。受け止めきれなかった残りを返す（0なら完全に防いだ）
-func absorb(i: int, dmg: float) -> float:
+## 壁 i で攻撃を1発防ぐ（ダメージの大きさに関係なく1回分）
+func absorb(i: int) -> void:
 	var w: Dictionary = walls[i]
-	var taken := minf(w["hp"], dmg)
-	w["hp"] -= taken
+	w["hp"] -= 1.0
 	w["flash"] = 0.15
 	if w["hp"] <= 0.0:
 		var mid: float = (w["a0"] + w["a1"]) / 2.0
 		game.spawn_burst(point_at(mid), Color(0.7, 0.65, 0.55), 20.0)
 		walls.remove_at(i)
-	return dmg - taken
 
 
 func add_wall(seg: Vector2) -> void:
 	walls.append({"a0": seg.x, "a1": seg.y, "hp": wall_max_hp, "max": wall_max_hp, "flash": 0.0})
 
 
-## 耐久力アップ（建っている壁にも反映）
+## 耐久回数アップ（建っている壁にも反映）
 func add_wall_hp(amount: float) -> void:
 	wall_max_hp += amount
 	for w in walls:
@@ -136,5 +135,10 @@ func _draw() -> void:
 		var steps := maxi(4, int((w["a1"] - w["a0"]) / 0.03))
 		draw_arc(Vector2.ZERO, RADIUS, w["a0"], w["a1"], steps, Color(0.25, 0.22, 0.2), THICKNESS + 4.0)
 		draw_arc(Vector2.ZERO, RADIUS, w["a0"] + 0.004, w["a1"] - 0.004, steps, col, THICKNESS)
-		# 耐久力の目盛り
+		# 残り回数
+		var font := ThemeDB.fallback_font
+		var label_pos := Vector2.from_angle((w["a0"] + w["a1"]) / 2.0) * (RADIUS + THICKNESS + 8.0)
+		draw_string_outline(font, label_pos + Vector2(-15, 5), str(int(w["hp"])), HORIZONTAL_ALIGNMENT_CENTER, 30, 13, 3, Color(0, 0, 0, 0.8))
+		draw_string(font, label_pos + Vector2(-15, 5), str(int(w["hp"])), HORIZONTAL_ALIGNMENT_CENTER, 30, 13, Color(1.0, 0.9, 0.6))
+		# 耐久の目盛り
 		draw_arc(Vector2.ZERO, RADIUS + THICKNESS / 2.0 + 3.0, w["a0"], lerpf(w["a0"], w["a1"], ratio), steps, Color(1.0, 0.85, 0.4, 0.8), 2.0)

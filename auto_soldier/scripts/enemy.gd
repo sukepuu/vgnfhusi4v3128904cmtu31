@@ -3,7 +3,7 @@ extends Node2D
 ## 近接型（grunt / runner / brute）は城に触れると消滅して城にダメージ、近くの兵士には体当たり。
 ## 遠距離型（archer）は近くの兵士か城を狙って弾を撃つ。
 ## 刺客（hunter）は城を無視して兵士（遊撃部隊・迎撃部隊）だけを狙う。壁もすり抜ける。
-## 壁に触れると、城へ与えるはずのダメージを壁が受け止める。受け止めきれなければ残りのダメージで進み続ける。
+## 壁に触れると壁に1発分防がれて消滅する（ダメージの大きさに関係なし）。
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
@@ -120,14 +120,12 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-## 壁に触れたら、城へのダメージを壁が受け止める。完全に止められたら消滅して false
+## 壁に触れたら壁が1発分防ぎ、この敵は消滅する（false を返す）
 func _check_wall() -> bool:
 	var wi: int = game.walls.hit_test(global_position, radius)
 	if wi < 0:
 		return true
-	castle_damage = game.walls.absorb(wi, castle_damage)
-	if castle_damage > 0.0:
-		return true
+	game.walls.absorb(wi)
 	dead = true
 	remove_from_group("enemies")
 	game.spawn_burst(global_position, color, radius)

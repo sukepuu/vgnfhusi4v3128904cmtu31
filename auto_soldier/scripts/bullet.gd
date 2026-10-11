@@ -33,10 +33,10 @@ func _process(delta: float) -> void:
 				return
 		var wi: int = game.walls.hit_test(global_position, radius)
 		if wi >= 0:
-			damage = game.walls.absorb(wi, damage)
-			if damage <= 0.0:
-				queue_free()
-				return
+			# 壁が1発分防ぐ
+			game.walls.absorb(wi)
+			queue_free()
+			return
 		if game.castle.distance_to_point(global_position) < radius:
 			game.castle.take_damage(damage)
 			queue_free()

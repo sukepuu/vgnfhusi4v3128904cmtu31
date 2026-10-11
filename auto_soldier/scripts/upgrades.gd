@@ -24,10 +24,10 @@ const LIST := [
 	{"id": "soldier_hp", "cat": "soldier", "name": "鍛錬", "desc": "遊撃兵の最大HP +25、全員HP全回復", "max": 4},
 	{"id": "speed", "cat": "soldier", "name": "俊足", "desc": "遊撃兵の移動速度 +12%", "max": 3},
 	# ---- 築城部隊
-	{"id": "builder", "cat": "builder", "name": "築城部隊", "desc": "城の上側180度を囲むように、30秒ごとに壁を1枚建てる（壁は10ダメージ分防ぐ）",
+	{"id": "builder", "cat": "builder", "name": "築城部隊", "desc": "城の上側180度を囲むように、20秒ごとに壁を1枚建てる（壁1枚で敵の攻撃を10発防ぐ）",
 		"desc_up": "築城部隊の作業員が1人増える（最大3人、それぞれ別の場所に壁を建てる）", "max": 3, "weight": 2.0},
 	{"id": "build_speed", "cat": "builder", "name": "突貫工事", "desc": "壁の建築時間 -20%", "max": 4, "req": "builder"},
-	{"id": "wall_hp", "cat": "builder", "name": "石壁強化", "desc": "壁の耐久力 +10（建っている壁にも反映）", "max": 5, "req": "builder"},
+	{"id": "wall_hp", "cat": "builder", "name": "石壁強化", "desc": "壁が防げる回数 +5発（建っている壁にも反映）", "max": 5, "req": "builder"},
 	{"id": "wall_width", "cat": "builder", "name": "大きな壁", "desc": "これから建てる壁の幅 +4度（少ない枚数で囲める）", "max": 3, "req": "builder"},
 	# ---- 迎撃部隊
 	{"id": "guard", "cat": "guard", "name": "迎撃部隊", "desc": "盾と槍を持ち、城の近くで敵を迎え撃つ兵士が加わる（前方からの攻撃は盾で無効）",
@@ -143,7 +143,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"build_speed":
 			game.walls.build_time *= 0.8
 		"wall_hp":
-			game.walls.add_wall_hp(10.0)
+			game.walls.add_wall_hp(5.0)
 		"wall_width":
 			game.walls.wall_width += deg_to_rad(4.0)
 		"guard":

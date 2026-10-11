@@ -18,6 +18,7 @@ const LevelUpScript := preload("res://scripts/level_up_ui.gd")
 const DamageTextScript := preload("res://scripts/damage_text.gd")
 const BurstScript := preload("res://scripts/burst_effect.gd")
 const Upgrades := preload("res://scripts/upgrades.gd")
+const StatsScript := preload("res://scripts/stats_ui.gd")
 
 ## フィールドの範囲。城は一番下の中央に置く
 const MAP_RECT := Rect2(-700, -780, 1400, 840)
@@ -40,6 +41,9 @@ var walls: Node2D
 var ground: Node2D
 var hud: CanvasLayer
 var level_up_ui: CanvasLayer
+var stats_ui: CanvasLayer
+## 部隊戦績（個体ごとの与ダメージ・被ダメージなど）。new_record() で追加する
+var records: Array = []
 
 ## 兵士全員で共有するステータス（強化はここに入る）
 var stats := SoldierStats.new()
@@ -117,6 +121,10 @@ func _ready() -> void:
 	level_up_ui = LevelUpScript.new()
 	add_child(level_up_ui)
 	level_up_ui.chosen.connect(_on_upgrade_chosen)
+
+	stats_ui = StatsScript.new()
+	stats_ui.game = self
+	add_child(stats_ui)
 
 	queue_redraw()
 
@@ -233,6 +241,22 @@ func nearest_ally(pos: Vector2, max_dist: float) -> Node2D:
 			best_d = d
 			best = s
 	return best
+
+
+# ---------------------------------------------------------------- 部隊戦績
+
+## 戦績カードを1枚作る。弾や罠にこのカードを持たせて、与えたダメージを記録する
+func new_record(cat: String, name_text: String) -> Dictionary:
+	var r := {"cat": cat, "name": name_text, "dealt": 0.0, "taken": 0.0, "kills": 0,
+		"blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0}
+	records.append(r)
+	return r
+
+
+func toggle_stats() -> void:
+	if level_up_ui.visible:
+		return
+	stats_ui.toggle()
 
 
 # ---------------------------------------------------------------- 兵士・ペット
@@ -455,6 +479,7 @@ func on_castle_destroyed() -> void:
 		return
 	game_over = true
 	level_up_ui.hide()
+	stats_ui.close_panel()
 	get_tree().paused = true
 	hud.show_game_over()
 

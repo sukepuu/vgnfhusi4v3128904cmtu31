@@ -14,10 +14,15 @@ var index := 0
 var state := "waiting"
 var next_kind := "bomb"
 var target_pos := Vector2.ZERO
+var record: Dictionary
 var progress := 0.0
 
 var _t := 0.0
 var _facing := Vector2.UP
+
+
+func _ready() -> void:
+	record = game.new_record("engineer", "工兵%d" % (index + 1))
 
 
 func _process(delta: float) -> void:
@@ -57,6 +62,8 @@ func _place_trap() -> void:
 	var t := TrapScript.new()
 	t.game = game
 	t.kind = next_kind
+	t.src = record
+	record["traps"] += 1
 	t.position = position
 	game.ground.add_child(t)
 

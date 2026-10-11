@@ -24,6 +24,7 @@ var respawn_left := 0.0
 var velocity := Vector2.ZERO
 var aim_dir := Vector2.UP
 var target: Node2D = null
+var record: Dictionary
 
 var _fire_cd := 0.0
 var _sword_cd := 0.0
@@ -39,6 +40,7 @@ var _strafe_cd := 2.0
 
 
 func _ready() -> void:
+	record = game.new_record("soldier", "遊撃兵%d" % (index + 1))
 	hp = game.stats.max_hp
 	_strafe_sign = 1.0 if index % 2 == 0 else -1.0
 
@@ -238,6 +240,7 @@ func _shoot() -> void:
 		b.color = Color(1.0, 0.92, 0.4)
 		b.life = st.fire_range / st.bullet_speed + 0.2
 		b.position = global_position + aim_dir * (radius + 8.0)
+		b.src = record
 		game.world.add_child(b)
 
 
@@ -257,7 +260,7 @@ func _try_slash() -> bool:
 			continue
 		if st.sword_arc < TAU and absf(facing.angle_to(to)) > st.sword_arc / 2.0 + 0.2:
 			continue
-		e.take_damage(st.sword_damage, to.normalized() * 380.0)
+		e.take_damage(st.sword_damage, to.normalized() * 380.0, record)
 	# 斬撃で敵の弾もかき消す
 	for b in get_tree().get_nodes_in_group("enemy_bullets"):
 		var to_b: Vector2 = b.global_position - global_position
@@ -294,7 +297,7 @@ func _update_dash(delta: float) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < radius + e.radius + 18.0:
 			_dash_hit[e] = true
-			e.take_damage(game.stats.dash_damage, _dash_dir * 500.0)
+			e.take_damage(game.stats.dash_damage, _dash_dir * 500.0, record)
 
 
 # ---------------------------------------------------------------- 被ダメージ・復活
@@ -302,6 +305,7 @@ func _update_dash(delta: float) -> void:
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 	if dead or _invuln > 0.0:
 		return
+	record["taken"] += minf(amount, hp)
 	hp -= amount
 	_hurt_flash = 0.15
 	_invuln = 0.3

@@ -10,10 +10,15 @@ var state := "idle"
 ## 建設予定の壁 Vector2(開始角, 終了角)
 var plan := Vector2.ZERO
 var progress := 0.0
+var record: Dictionary
 
 const SPEED := 120.0
 var _t := 0.0
 var _facing := Vector2.UP
+
+
+func _ready() -> void:
+	record = game.new_record("builder", "築城兵%d" % (index + 1))
 
 
 func _process(delta: float) -> void:
@@ -35,7 +40,8 @@ func _process(delta: float) -> void:
 			_facing = (walls.point_at((plan.x + plan.y) / 2.0) - global_position).normalized()
 			progress += delta / walls.build_time
 			if progress >= 1.0:
-				walls.add_wall(plan)
+				walls.add_wall(plan, record)
+				record["walls"] += 1
 				state = "idle"
 	queue_redraw()
 

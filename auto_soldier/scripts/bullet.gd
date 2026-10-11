@@ -11,6 +11,8 @@ var color := Color(1, 1, 0.5)
 var life := 1.0
 ## true ならバリスタの矢（太く長く描く）
 var bolt := false
+## 撃った味方の戦績カード
+var src: Dictionary = {}
 
 var _hit := {}
 
@@ -47,7 +49,7 @@ func _process(delta: float) -> void:
 		if not is_instance_valid(e) or e.dead or _hit.has(e):
 			continue
 		if global_position.distance_to(e.global_position) < radius + e.radius:
-			e.take_damage(damage, velocity.normalized() * 120.0)
+			e.take_damage(damage, velocity.normalized() * 120.0, src)
 			_hit[e] = true
 			if pierce <= 0:
 				queue_free()

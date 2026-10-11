@@ -54,14 +54,17 @@ func absorb(i: int) -> void:
 	var w: Dictionary = walls[i]
 	w["hp"] -= 1.0
 	w["flash"] = 0.15
+	if not w["src"].is_empty():
+		w["src"]["wall_blocks"] += 1
 	if w["hp"] <= 0.0:
 		var mid: float = (w["a0"] + w["a1"]) / 2.0
 		game.spawn_burst(point_at(mid), Color(0.7, 0.65, 0.55), 20.0)
 		walls.remove_at(i)
 
 
-func add_wall(seg: Vector2) -> void:
-	walls.append({"a0": seg.x, "a1": seg.y, "hp": wall_max_hp, "max": wall_max_hp, "flash": 0.0})
+## src = 建てた築城兵の戦績カード（防いだ回数を記録する）
+func add_wall(seg: Vector2, src: Dictionary = {}) -> void:
+	walls.append({"a0": seg.x, "a1": seg.y, "hp": wall_max_hp, "max": wall_max_hp, "flash": 0.0, "src": src})
 
 
 ## 耐久回数アップ（建っている壁にも反映）

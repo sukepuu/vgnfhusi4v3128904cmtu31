@@ -175,9 +175,14 @@ func stun(seconds: float) -> void:
 	knock = Vector2.ZERO
 
 
-func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO) -> void:
+## src = 攻撃した味方の戦績カード（記録しないときは空）
+func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictionary = {}) -> void:
 	if dead:
 		return
+	if not src.is_empty():
+		src["dealt"] += minf(amount, hp)
+		if hp - amount <= 0.0:
+			src["kills"] += 1
 	hp -= amount
 	_flash = 0.1
 	# 大型は吹き飛びにくい

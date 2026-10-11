@@ -19,6 +19,7 @@ var dead := false
 var respawn_left := 0.0
 var facing := Vector2.UP
 var target: Node2D = null
+var record: Dictionary
 
 var _spear_cd := 0.0
 var _thrust := 0.0
@@ -29,6 +30,7 @@ var _retarget_cd := 0.0
 
 
 func _ready() -> void:
+	record = game.new_record("guard", "迎撃兵%d" % (index + 1))
 	hp = game.guard_stats.max_hp
 
 
@@ -132,7 +134,7 @@ func _try_thrust() -> bool:
 	if hits.is_empty():
 		return false
 	for e in hits:
-		e.take_damage(st.spear_damage, facing * 260.0)
+		e.take_damage(st.spear_damage, facing * 260.0, record)
 	_thrust = 0.18
 	return true
 
@@ -145,7 +147,9 @@ func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 		var dir := (from_pos - global_position).normalized()
 		if absf(facing.angle_to(dir)) <= game.guard_stats.shield_arc / 2.0:
 			_block_flash = 0.15
+			record["blocked"] += amount
 			return
+	record["taken"] += minf(amount, hp)
 	hp -= amount
 	_hurt_flash = 0.15
 	_invuln = 0.25

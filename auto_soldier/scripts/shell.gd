@@ -9,6 +9,8 @@ var blast_radius := 90.0
 var flight_time := 0.7
 ## true なら投石器の岩（大きく、高く飛ぶ）
 var boulder := false
+## 撃った設備の戦績カード
+var src: Dictionary = {}
 
 var _t := 0.0
 var _height := 0.0
@@ -31,7 +33,7 @@ func _explode() -> void:
 			continue
 		var to: Vector2 = e.global_position - target
 		if to.length() < blast_radius + e.radius:
-			e.take_damage(damage, to.normalized() * 300.0)
+			e.take_damage(damage, to.normalized() * 300.0, src)
 	var col := Color(0.75, 0.65, 0.5) if boulder else Color(1.0, 0.6, 0.2)
 	game.spawn_burst(target, col, blast_radius / 2.2)
 	queue_free()

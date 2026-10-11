@@ -54,7 +54,22 @@ var frost_radius := 0.0
 var frost_slow := 0.0
 
 var _flash := 0.0
+## 戦績カード（城の本体と、設備1基ずつ）
+var record: Dictionary
+var _equip_records := {}
 var _t := 0.0
+
+
+func _ready() -> void:
+	record = game.new_record("castle", "城（本体）")
+
+
+## 設備1基ごとの戦績カード（最初に使うときに作る）
+func _equip_record(key: String, label: String, i: int) -> Dictionary:
+	var k := "%s%d" % [key, i]
+	if not _equip_records.has(k):
+		_equip_records[k] = game.new_record("castle", "%s%d" % [label, i + 1])
+	return _equip_records[k]
 
 
 func _process(delta: float) -> void:
@@ -98,6 +113,7 @@ func slow_factor_at(p: Vector2) -> float:
 func take_damage(amount: float) -> void:
 	if hp <= 0.0:
 		return
+	record["taken"] += minf(amount, hp)
 	hp -= amount
 	_flash = 0.15
 	game.spawn_damage_text(global_position + Vector2(randf_range(-60, 60), -HALF.y), amount, Color(1.0, 0.5, 0.2))
@@ -133,6 +149,7 @@ func _update_towers(delta: float) -> void:
 		b.damage = tower_damage
 		b.radius = 4.0
 		b.color = Color(0.95, 0.8, 0.55)
+		b.src = _equip_record("tower", "矢倉", i)
 		b.life = tower_range / 760.0 + 0.2
 		b.position = from
 		game.world.add_child(b)
@@ -149,7 +166,7 @@ func _update_cannon(delta: float) -> void:
 			continue
 		var from := global_position + _cannon_local_pos(i)
 		_cannon_aims[i] = (best.global_position - from).normalized()
-		_fire_shell(from, best.global_position, cannon_damage, cannon_radius, false)
+		_fire_shell(from, best.global_position, cannon_damage, cannon_radius, false, _equip_record("cannon", "大砲", i))
 		_cannon_cds[i] = cannon_interval
 
 
@@ -163,7 +180,7 @@ func _update_catapult(delta: float) -> void:
 		if best == null:
 			continue
 		var from := global_position + _catapult_local_pos(i) + Vector2(0, -20)
-		_fire_shell(from, best.global_position, catapult_damage, catapult_radius, true)
+		_fire_shell(from, best.global_position, catapult_damage, catapult_radius, true, _equip_record("catapult", "投石器", i))
 		_catapult_cds[i] = catapult_interval
 		_catapult_swings[i] = 0.4
 
@@ -186,6 +203,7 @@ func _update_ballista(delta: float) -> void:
 		b.pierce = 1000000
 		b.radius = 7.0
 		b.bolt = true
+		b.src = _equip_record("ballista", "バリスタ", i)
 		b.life = 2.5
 		b.position = from
 		game.world.add_child(b)
@@ -214,8 +232,9 @@ func _best_pierce_dir(from: Vector2) -> Vector2:
 	return best
 
 
-func _fire_shell(from: Vector2, to: Vector2, dmg: float, area: float, boulder: bool) -> void:
+func _fire_shell(from: Vector2, to: Vector2, dmg: float, area: float, boulder: bool, src: Dictionary) -> void:
 	var s := ShellScript.new()
+	s.src = src
 	s.game = game
 	s.start = from
 	s.target = to

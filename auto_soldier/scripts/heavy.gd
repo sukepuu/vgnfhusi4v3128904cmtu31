@@ -15,6 +15,7 @@ var dead := false
 var respawn_left := 0.0
 var facing := Vector2.UP
 var target: Node2D = null
+var record: Dictionary
 
 # --- ステータス
 var max_hp := 1350.0
@@ -32,6 +33,10 @@ var _slash_cd := 0.0
 var _hurt_flash := 0.0
 var _invuln := 0.0
 var _retarget_cd := 0.0
+
+
+func _ready() -> void:
+	record = game.new_record("heavy", "重装兵")
 
 
 ## 持ち場：壁の中央の、少し外側
@@ -112,7 +117,7 @@ func _try_slash() -> bool:
 			continue
 		if slash_arc < TAU and absf(dir.angle_to(rel)) > slash_arc / 2.0 + 0.2:
 			continue
-		e.take_damage(slash_damage, rel.normalized() * 420.0)
+		e.take_damage(slash_damage, rel.normalized() * 420.0, record)
 	# 斬撃で敵の弾もかき消す
 	for b in get_tree().get_nodes_in_group("enemy_bullets"):
 		var to_b: Vector2 = b.global_position - global_position
@@ -130,6 +135,7 @@ func _try_slash() -> bool:
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 	if dead or _invuln > 0.0:
 		return
+	record["taken"] += minf(amount, hp)
 	hp -= amount
 	_hurt_flash = 0.15
 	_invuln = 0.2

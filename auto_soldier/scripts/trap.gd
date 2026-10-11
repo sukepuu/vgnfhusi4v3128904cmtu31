@@ -8,6 +8,8 @@ const FUSE := 1.0
 
 var game: Node2D
 var kind := "bomb"
+## 仕掛けた工兵の戦績カード
+var src: Dictionary = {}
 
 var _fuse_left := -1.0
 var _t := 0.0
@@ -66,9 +68,9 @@ func _activate() -> void:
 			continue
 		if kind == "pit":
 			e.stun(game.engineer_stats.stun_time)
-			e.take_damage(damage)
+			e.take_damage(damage, Vector2.ZERO, src)
 		else:
-			e.take_damage(damage, rel.normalized() * 350.0)
+			e.take_damage(damage, rel.normalized() * 350.0, src)
 	if kind == "pit":
 		game.spawn_burst(global_position, Color(0.45, 0.32, 0.2), blast_radius / 2.2)
 		remove_from_group("traps")

@@ -9,12 +9,17 @@ var game: Node2D
 var owner_soldier: Node2D
 var index := 0
 var damage := 7.0
+var record: Dictionary
 var interval := 0.8
 var attack_range := 420.0
 
 var _cd := 0.5
 var _t := 0.0
 var _aim := Vector2.RIGHT
+
+
+func _ready() -> void:
+	record = game.new_record("pet", "遊撃兵%dのペット%d" % [owner_soldier.index + 1, index + 1])
 
 
 func _process(delta: float) -> void:
@@ -40,6 +45,7 @@ func _process(delta: float) -> void:
 			b.color = Color(0.5, 1.0, 0.7)
 			b.life = attack_range / 520.0 + 0.2
 			b.position = global_position
+			b.src = record
 			game.world.add_child(b)
 			_cd = interval
 	queue_redraw()

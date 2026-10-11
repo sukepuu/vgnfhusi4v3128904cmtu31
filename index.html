@@ -27,6 +27,20 @@
         .history-red { color: red; font-weight: bold; }
         .recent-games { margin-top: 30px; }
         .current-medals { font-size: 20px; font-weight: bold; margin: 10px; }
+
+        /* スマホ（Androidアプリ）向け */
+        @media (max-width: 500px) {
+            body { margin: 8px; }
+            h1 { font-size: 22px; }
+            h2 { font-size: 18px; }
+            .roulette-container { gap: 16px; }
+            .roulette { width: 42vw; height: 42vw; }
+            .roulette canvas { width: 100%; height: 100%; box-sizing: border-box; }
+            .results { gap: 16px; font-size: 14px; }
+            .current-medals { font-size: 16px; }
+            table { width: 100%; font-size: 12px; }
+            th, td { padding: 4px 2px; }
+        }
     </style>
 </head>
 <body>

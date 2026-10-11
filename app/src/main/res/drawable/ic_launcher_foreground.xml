@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 魚のアイコン（108dp のアダプティブアイコン用、中央 72dp が表示領域） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 尾びれ -->
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M30,54 L18,40 L18,68 Z" />
+    <!-- 胴体 -->
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M28,54 C40,34 70,32 86,54 C70,76 40,74 28,54 Z" />
+    <!-- 目 -->
+    <path
+        android:fillColor="#1B2631"
+        android:pathData="M74,50 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+</vector>

@@ -1,0 +1,45 @@
+plugins {
+    id 'com.android.application'
+}
+
+// リポジトリ直下の index.html をそのままアプリの assets として同梱する
+def webAssetsDir = layout.buildDirectory.dir('generated/webassets').get().asFile
+
+def copyWebAssets = tasks.register('copyWebAssets', Copy) {
+    from rootProject.file('index.html')
+    into webAssetsDir
+}
+
+android {
+    namespace 'com.sukepuu.fishingrush'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.sukepuu.fishingrush'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += webAssetsDir
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+tasks.named('preBuild') {
+    dependsOn copyWebAssets
+}

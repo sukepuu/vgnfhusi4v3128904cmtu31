@@ -195,12 +195,14 @@ func _process(delta: float) -> void:
 		_contact_cd = 0.6
 	if is_boss:
 		# ボスは壁を壊して進み、城に着いたら殴り続ける
-		# ボスは壁に触れると壁の耐久を7減らし、少しだけ押し戻される
+		# ボスは壁に触れると壁の耐久を7減らし、上側のランダムな方向へ弾かれる
 		_wall_cd -= delta
 		var wi: int = game.walls.hit_test(global_position, radius)
 		if wi >= 0 and _wall_cd <= 0.0:
 			game.walls.damage_wall(wi, 7.0)
-			knock = -dir * 70.0
+			# 上側のランダムな方向へ、ボスの体0.5体分（半径ぶん）くらい弾かれる
+			# （knock は毎秒1400ずつ弱まるので、進む距離 = 速さ² ÷ 2800）
+			knock = Vector2.from_angle(randf_range(PI + 0.25, TAU - 0.25)) * sqrt(2800.0 * radius)
 			_wall_cd = 1.0
 		if castle.distance_to_point(global_position) < radius:
 			move = Vector2.ZERO

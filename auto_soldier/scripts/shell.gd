@@ -23,6 +23,8 @@ var mines := 0
 var mine_damage := 0.0
 ## 転がり岩：着弾後に城と反対側へ転がっていく岩の威力（0なら無し）
 var roll_damage := 0.0
+## 隕石落とし（投石器の必殺）：大きく燃える岩として描く
+var meteor := false
 
 var _t := 0.0
 var _height := 0.0
@@ -54,6 +56,9 @@ func _explode() -> void:
 			near.take_damage(direct_bonus, Vector2.ZERO, src)
 	var col := Color(0.75, 0.65, 0.5) if boulder else Color(1.0, 0.6, 0.2)
 	game.spawn_burst(target, col, blast_radius / 2.2)
+	if meteor:
+		game.spawn_burst(target, Color(1.0, 0.4, 0.1), blast_radius)
+		game.ultimates._flash(Color(1.0, 0.6, 0.3))
 	if fire_time > 0.0:
 		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), src)
 	for i in mines:
@@ -73,6 +78,18 @@ func _explode() -> void:
 
 
 func _draw() -> void:
+	if meteor:
+		var k := _t / flight_time
+		draw_arc(target - position, blast_radius, 0.0, TAU, 48, Color(1.0, 0.3, 0.1, 0.4 + 0.4 * k), 4.0)
+		draw_circle(target - position, blast_radius * k, Color(1.0, 0.3, 0.1, 0.15))
+		# 炎の尾
+		var back := (start - target).normalized()
+		for i in 6:
+			draw_circle(back * (20.0 + i * 16.0), 30.0 - i * 4.0, Color(1.0, 0.5 - i * 0.06, 0.1, 0.5 - i * 0.07))
+		draw_circle(Vector2.ZERO, 32.0, Color(0.35, 0.2, 0.15))
+		draw_circle(Vector2(-8, -8), 12.0, Color(0.6, 0.35, 0.2))
+		draw_arc(Vector2.ZERO, 32.0, 0.0, TAU, 32, Color(1.0, 0.6, 0.2), 4.0)
+		return
 	if boulder:
 		# 着弾予定地を表示
 		draw_arc(target - position, blast_radius, 0.0, TAU, 40, Color(1.0, 0.8, 0.5, 0.35), 2.0)

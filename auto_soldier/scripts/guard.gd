@@ -30,6 +30,8 @@ var _retarget_cd := 0.0
 var _bash_cd := 0.0
 var _whirl_cd := 3.0
 var _spike_cd := 2.0
+## 城へ飛んでくる敵の弾を受け止めに行っているとき、その弾
+var block_bullet: Node2D = null
 
 
 func _ready() -> void:
@@ -69,6 +71,12 @@ func _process(delta: float) -> void:
 		desired = castle_pos + dir * clampf(td - st.spear_reach * 0.8, MIN_DIST, LEASH)
 	else:
 		desired = _post_position(castle_pos)
+		# 待機中：城へ飛んでくる敵の弾があれば、その通り道に立って盾で受け止める
+		block_bullet = _incoming_bullet(castle_pos)
+		if block_bullet != null:
+			desired = _block_point(block_bullet, castle_pos)
+	if _target_valid():
+		block_bullet = null
 	var to := desired - global_position
 	if to.length() > 6.0:
 		position += to.normalized() * minf(st.move_speed * delta, to.length())
@@ -86,6 +94,9 @@ func _process(delta: float) -> void:
 	if look == null and _target_valid():
 		look = target
 	var want: Vector2 = (look.global_position - global_position).normalized() if look != null else (global_position - castle_pos).normalized()
+	if block_bullet != null and is_instance_valid(block_bullet):
+		# 弾の方へ盾を向ける
+		want = (block_bullet.global_position - global_position).normalized()
 	facing = Vector2.from_angle(rotate_toward(facing.angle(), want.angle(), 7.0 * delta))
 
 	# 大旋風槍
@@ -124,6 +135,40 @@ func _choose_target(castle_pos: Vector2) -> Node2D:
 			best_score = score
 			best = e
 	return best
+
+
+## 城に当たりそうな敵の弾のうち、城に一番近いもの（ほかの迎撃兵が受け止めに行っている弾は除く）
+func _incoming_bullet(castle_pos: Vector2) -> Node2D:
+	var best: Node2D = null
+	var best_d := 520.0
+	var half: Vector2 = game.castle.HALF
+	for b in get_tree().get_nodes_in_group("enemy_bullets"):
+		if not is_instance_valid(b) or b.is_queued_for_deletion():
+			continue
+		var taken := false
+		for g in game.guards:
+			if g != self and not g.dead and g.block_bullet == b:
+				taken = true
+		if taken:
+			continue
+		var vn: Vector2 = b.velocity.normalized()
+		var rel: Vector2 = castle_pos - b.global_position
+		# 城の方へ向かっていて、そのまま進めば城に当たる弾だけ
+		if rel.dot(vn) <= 0.0 or absf(rel.dot(vn.orthogonal())) > half.x + 10.0:
+			continue
+		var d := rel.length()
+		if d < best_d:
+			best_d = d
+			best = b
+	return best
+
+
+## 弾の通り道の、城の少し手前の地点（まだ弾が通り過ぎていない所）
+func _block_point(b: Node2D, castle_pos: Vector2) -> Vector2:
+	var vn: Vector2 = b.velocity.normalized()
+	var along := (castle_pos - b.global_position).dot(vn)
+	var p: Vector2 = b.global_position + vn * maxf(along - 120.0, 30.0)
+	return p
 
 
 ## 敵がいないときの持ち場（城の上側に扇状に並ぶ）

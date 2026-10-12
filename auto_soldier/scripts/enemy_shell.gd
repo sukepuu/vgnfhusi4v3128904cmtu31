@@ -27,6 +27,11 @@ func _process(delta: float) -> void:
 
 
 func _land() -> void:
+	# 鉄壁の陣のドームに当たったら、ダメージなしで消える
+	if game.ultimates.dome_blocks(target):
+		game.spawn_burst(target, Color(0.6, 1.0, 0.7), blast_radius / 2.0)
+		queue_free()
+		return
 	if game.castle.distance_to_point(target) < blast_radius:
 		game.castle.take_damage(damage)
 	for a in game.allies():

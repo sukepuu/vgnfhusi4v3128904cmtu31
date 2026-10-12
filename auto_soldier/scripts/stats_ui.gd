@@ -2,12 +2,13 @@ extends CanvasLayer
 ## 部隊戦績画面。各部隊の個体ごとに、与ダメージ・撃破数・被ダメージを一覧表示する。
 ## 開いているあいだはゲームを一時停止する。
 
-const CAT_ORDER := ["soldier", "pet", "guard", "heavy", "engineer", "builder", "castle"]
+const CAT_ORDER := ["soldier", "pet", "guard", "sniper", "heavy", "engineer", "builder", "castle"]
 const CAT_LABEL := {
-	"soldier": "遊撃部隊", "pet": "ペット", "guard": "迎撃部隊", "heavy": "重装部隊",
+	"soldier": "遊撃部隊", "pet": "ペット", "guard": "迎撃部隊", "sniper": "狙撃部隊", "heavy": "重装部隊",
 	"engineer": "工兵部隊", "builder": "築城部隊", "castle": "城"}
 const CAT_COLOR := {
 	"soldier": Color(0.6, 0.85, 1.0), "pet": Color(0.55, 1.0, 0.75), "guard": Color(0.6, 1.0, 0.65),
+	"sniper": Color(0.75, 0.95, 0.45),
 	"heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), "builder": Color(1.0, 0.88, 0.45),
 	"castle": Color(1.0, 0.7, 0.45)}
 const COL_WIDTHS := [230, 130, 80, 130, 260]

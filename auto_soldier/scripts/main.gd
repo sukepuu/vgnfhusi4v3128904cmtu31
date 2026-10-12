@@ -25,6 +25,9 @@ const BlastScript := preload("res://scripts/blast.gd")
 const MissileScript := preload("res://scripts/missile.gd")
 const PlacedScript := preload("res://scripts/placed.gd")
 const LightningScript := preload("res://scripts/lightning.gd")
+const SniperScript := preload("res://scripts/sniper.gd")
+const SniperStats := preload("res://scripts/sniper_stats.gd")
+const UltimatesScript := preload("res://scripts/ultimates.gd")
 ## このレベルごとに特別強化の3択が出る
 const SPECIAL_EVERY := 5
 
@@ -67,6 +70,12 @@ var heavy: Node2D = null
 ## 工兵部隊
 var engineers: Array = []
 var engineer_stats := EngineerStats.new()
+## 狙撃部隊（弓）
+var snipers: Array = []
+var sniper_stats := SniperStats.new()
+const MAX_SNIPERS := 3
+## 15秒ごとの必殺技（6つ目の特別強化）をまとめて管理する
+var ultimates: Node2D
 var pets: Array = []
 ## 遊撃兵1人あたりのペットの数（「ペットの仲間」を取るたびに+1）
 var pets_per_soldier := 0
@@ -117,6 +126,10 @@ func _ready() -> void:
 	walls.game = self
 	walls.position = castle.position
 	world.add_child(walls)
+
+	ultimates = UltimatesScript.new()
+	ultimates.game = self
+	effects.add_child(ultimates)
 
 	ground = Node2D.new()
 	ground.name = "Ground"
@@ -340,6 +353,23 @@ func add_engineer() -> void:
 	e.position = castle.gate_position()
 	world.add_child(e)
 	engineers.append(e)
+
+
+func add_sniper() -> void:
+	if snipers.size() >= MAX_SNIPERS:
+		return
+	var s := SniperScript.new()
+	s.game = self
+	s.index = snipers.size()
+	s.position = castle.gate_position()
+	world.add_child(s)
+	snipers.append(s)
+
+
+## 通常速度 ⇔ 2倍速 の切り替え
+func toggle_speed() -> void:
+	Engine.time_scale = 1.0 if Engine.time_scale > 1.0 else 2.0
+	hud.update_speed_button()
 
 
 func add_builder() -> void:

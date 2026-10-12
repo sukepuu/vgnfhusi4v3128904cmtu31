@@ -3,7 +3,7 @@ extends CanvasLayer
 ## 項目をクリックすると、右側に詳しい内容を表示する。開いているあいだはゲームを一時停止する。
 
 const Upgrades := preload("res://scripts/upgrades.gd")
-const CAT_ORDER := ["soldier", "guard", "heavy", "builder", "engineer", "castle"]
+const CAT_ORDER := ["soldier", "guard", "sniper", "heavy", "builder", "engineer", "castle"]
 
 var game: Node2D
 var _list: VBoxContainer

@@ -18,6 +18,7 @@ var _boss_label: Label
 var _banner: Label
 var _banner_left := 0.0
 var _auto_btn: Button
+var _speed_btn: Button
 var _notice: Label
 var _notice_left := 0.0
 var _result_label: Label
@@ -136,6 +137,19 @@ func _ready() -> void:
 	up_btn.pressed.connect(func() -> void: game.toggle_upgrades())
 	root.add_child(up_btn)
 
+	# 速度切り替えボタン（画面右下）
+	_speed_btn = Button.new()
+	_speed_btn.add_theme_font_size_override("font_size", 18)
+	_speed_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_speed_btn.offset_left = -216
+	_speed_btn.offset_right = -16
+	_speed_btn.offset_top = -56
+	_speed_btn.offset_bottom = -16
+	_speed_btn.focus_mode = Control.FOCUS_NONE
+	_speed_btn.pressed.connect(func() -> void: game.toggle_speed())
+	root.add_child(_speed_btn)
+	update_speed_button()
+
 	# オート選択で何を選んだかのお知らせ（画面下）
 	_notice = _make_label(18)
 	_notice.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -184,6 +198,17 @@ func update_auto_button() -> void:
 		_auto_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1))
 
 
+func update_speed_button() -> void:
+	if Engine.time_scale > 1.0:
+		_speed_btn.text = "▶▶ 2倍速中（F）"
+		_speed_btn.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+		_speed_btn.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.6))
+	else:
+		_speed_btn.text = "▶ 通常速度中（F）"
+		_speed_btn.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+		_speed_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+
+
 func show_notice(text: String) -> void:
 	_notice.text = text
 	_notice.visible = true
@@ -230,6 +255,8 @@ func refresh() -> void:
 	lines_r.append("遊撃 %d / %d" % [_alive(game.soldiers), game.soldiers.size()])
 	if not game.guards.is_empty():
 		lines_r.append("迎撃 %d / %d" % [_alive(game.guards), game.guards.size()])
+	if not game.snipers.is_empty():
+		lines_r.append("狙撃 %d人" % game.snipers.size())
 	if game.heavy != null:
 		lines_r.append("重装 %s" % ("復活待ち" if game.heavy.dead else "戦闘中"))
 	if not game.engineers.is_empty():
@@ -310,3 +337,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_A and not _game_over.visible:
 		get_viewport().set_input_as_handled()
 		game.set_auto_pick(not game.auto_pick)
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F and not _game_over.visible:
+		get_viewport().set_input_as_handled()
+		game.toggle_speed()

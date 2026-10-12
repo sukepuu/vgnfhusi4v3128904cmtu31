@@ -36,6 +36,14 @@ const LIST := [
 	{"id": "guard_speed", "cat": "guard", "name": "機動訓練", "desc": "迎撃部隊の移動速度 +15%", "max": 3, "req": "guard"},
 	{"id": "spear_reach", "cat": "guard", "name": "長槍", "desc": "槍のリーチ +25", "max": 4, "req": "guard"},
 	{"id": "spear_dmg", "cat": "guard", "name": "槍術", "desc": "槍の攻撃力 +35%", "max": 5, "req": "guard"},
+	# 【狙撃】
+	{"id": "sniper", "cat": "sniper", "name": "狙撃部隊", "desc": "迎撃部隊の後ろに立ち、遠距離型の敵（弓兵・迫撃砲）を優先して弓で狙い撃つ狙撃兵が加わる",
+		"desc_up": "狙撃部隊の狙撃兵が1人増える（最大3人）", "max": 3, "weight": 1.6},
+	{"id": "sniper_rate", "cat": "sniper", "name": "早撃ち", "desc": "狙撃兵が矢を放つ間隔 -15%", "max": 4, "req": "sniper"},
+	{"id": "sniper_multi", "cat": "sniper", "name": "多連矢", "desc": "一度に放つ矢 +1本", "max": 3, "req": "sniper"},
+	{"id": "sniper_dmg", "cat": "sniper", "name": "強弓", "desc": "矢の威力 +35%", "max": 5, "req": "sniper"},
+	{"id": "sniper_range", "cat": "sniper", "name": "遠矢", "desc": "射程 +20%、矢の速さ +15%", "max": 3, "req": "sniper"},
+	{"id": "sniper_pierce", "cat": "sniper", "name": "貫き矢", "desc": "矢が敵をもう1体貫通する", "max": 3, "req": "sniper"},
 	# ---- 重装部隊
 	{"id": "heavy", "cat": "heavy", "name": "重装部隊", "desc": "足は遅いが耐久力と攻撃力が高い重装兵が加わる。壁の中央の前に陣取り、近づく敵を斬撃で迎え撃つ", "max": 1, "weight": 1.5},
 	{"id": "heavy_dmg", "cat": "heavy", "name": "剛剣", "desc": "重装兵の斬撃の威力 +35%", "max": 5, "req": "heavy"},
@@ -130,10 +138,29 @@ const SPECIAL := [
 	{"id": "sp_blizzard", "cat": "castle", "special": true, "name": "結界・吹雪", "desc": "結界の中の敵にずっとダメージを与え続ける", "max": 1, "req": "frost"},
 	{"id": "sp_ice_lance", "cat": "castle", "special": true, "name": "結界・氷槍", "desc": "3秒ごとに、結界内で一番HPの多い敵へ大ダメージの氷の槍", "max": 1, "req": "frost"},
 	{"id": "sp_snowman", "cat": "castle", "special": true, "name": "結界・雪だるま", "desc": "5秒ごとに結界のふちへ雪だるまを置く（最大6体）。敵が近づくと爆発して周りを凍らせる", "max": 1, "req": "frost"},
+	# ---- 狙撃
+	{"id": "sp_counter_battery", "cat": "sniper", "special": true, "name": "対砲兵狙撃", "desc": "迫撃砲を最優先で狙う。遠くの敵ほど矢が痛い（100離れるごとに威力 +10%）", "max": 1, "req": "sniper"},
+	{"id": "sp_headshot", "cat": "sniper", "special": true, "name": "急所狙い", "desc": "25%の確率で急所に当たり、ダメージ4倍", "max": 1, "req": "sniper"},
+	{"id": "sp_pin", "cat": "sniper", "special": true, "name": "縫い止め矢", "desc": "当たった敵を1.5秒間その場に縫い止める（動けない・攻撃できない）", "max": 1, "req": "sniper"},
+	{"id": "sp_ricochet", "cat": "sniper", "special": true, "name": "跳弾矢", "desc": "当たった矢が近くの別の敵へ最大3回跳ねる（跳ねるたびに威力70%）", "max": 1, "req": "sniper"},
+	{"id": "sp_mark", "cat": "sniper", "special": true, "name": "弱点看破", "desc": "矢が当たった敵に赤い印。6秒間、味方全員から受けるダメージ +35%", "max": 1, "req": "sniper"},
+	# ---- 15秒ごとの必殺技（各種類の6つ目）
+	{"id": "sp_ult_storm", "cat": "soldier", "special": true, "name": "必殺・剣の大嵐", "desc": "15秒ごとに、遊撃兵全員が周りを巻き込む巨大な回転斬り（剣の5倍の威力・大きく吹き飛ばす）", "max": 1},
+	{"id": "sp_ult_dome", "cat": "guard", "special": true, "name": "必殺・鉄壁の陣", "desc": "15秒ごとに、城をドームで6秒間包む。ドームに入った敵の弾・砲弾は消える。迎撃兵のHPも全回復", "max": 1, "req": "guard"},
+	{"id": "sp_ult_sky_arrow", "cat": "sniper", "special": true, "name": "必殺・天穿つ一矢", "desc": "15秒ごとに、狙撃兵が敵が一番多く並ぶ方向へ巨大な矢を放つ（12倍の威力で全部貫く）", "max": 1, "req": "sniper"},
+	{"id": "sp_ult_leap", "cat": "heavy", "special": true, "name": "必殺・大地砕き", "desc": "15秒ごとに、重装兵が近くの敵の群れへ飛び込み、地面を叩き割る（斬撃4倍の範囲攻撃＋2秒気絶）", "max": 1, "req": "heavy"},
+	{"id": "sp_ult_wall_burst", "cat": "builder", "special": true, "name": "必殺・城壁の大号令", "desc": "15秒ごとに、すべての壁が全回復し、全部の壁が外側へ大爆発する", "max": 1, "req": "builder"},
+	{"id": "sp_ult_carpet", "cat": "engineer", "special": true, "name": "必殺・絨毯爆撃", "desc": "15秒ごとに、敵が密集した所へ一直線に13個の爆弾が降りそそぐ", "max": 1, "req": "engineer"},
+	{"id": "sp_ult_thousand", "cat": "castle", "special": true, "name": "矢倉・必殺・千本矢", "desc": "15秒ごとに、フィールド中の敵30か所へ一斉に矢の雨が降る（矢倉の3倍の威力）", "max": 1, "req": "tower"},
+	{"id": "sp_ult_barrage", "cat": "castle", "special": true, "name": "大砲・必殺・一斉砲撃", "desc": "15秒ごとに、12発の砲弾を一気に撃ち込む（大砲の2倍の威力）", "max": 1, "req": "cannon"},
+	{"id": "sp_ult_meteor", "cat": "castle", "special": true, "name": "投石器・必殺・隕石落とし", "desc": "15秒ごとに、敵の群れへ巨大な燃える隕石を落とす（投石器の6倍の威力・超広範囲、跡が燃える）", "max": 1, "req": "catapult"},
+	{"id": "sp_ult_thunder", "cat": "castle", "special": true, "name": "バリスタ・必殺・雷神の大槍", "desc": "15秒ごとに、敵が一番多く並ぶ方向へ雷の大槍を放つ（バリスタの6倍の威力＋1秒しびれる）", "max": 1, "req": "ballista"},
+	{"id": "sp_ult_ice_age", "cat": "castle", "special": true, "name": "結界・必殺・氷河期", "desc": "15秒ごとに、結界の2倍以上の広さの敵をまとめて3秒凍らせてダメージ", "max": 1, "req": "frost"},
 ]
 
-const CAT_LABEL := {"soldier": "遊撃", "builder": "築城", "guard": "迎撃", "heavy": "重装", "engineer": "工兵", "castle": "城"}
+const CAT_LABEL := {"soldier": "遊撃", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "heavy": "重装", "engineer": "工兵", "castle": "城"}
 const CAT_COLOR := {
+	"sniper": Color(0.75, 0.95, 0.45),
 	"soldier": Color(0.6, 0.85, 1.0), "builder": Color(1.0, 0.88, 0.45),
 	"guard": Color(0.6, 1.0, 0.65), "heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), "castle": Color(1.0, 0.7, 0.45)}
 
@@ -398,6 +425,53 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.lightning = true
 		"sp_snowman":
 			castle.snowman = true
+		# ---- 狙撃部隊
+		"sniper":
+			game.add_sniper()
+		"sniper_rate":
+			game.sniper_stats.interval *= 0.85
+		"sniper_multi":
+			game.sniper_stats.shots += 1
+		"sniper_dmg":
+			game.sniper_stats.damage *= 1.35
+		"sniper_range":
+			game.sniper_stats.fire_range *= 1.2
+			game.sniper_stats.arrow_speed *= 1.15
+		"sniper_pierce":
+			game.sniper_stats.pierce += 1
+		"sp_counter_battery":
+			game.sniper_stats.counter_battery = true
+		"sp_headshot":
+			game.sniper_stats.headshot = true
+		"sp_pin":
+			game.sniper_stats.pin = true
+		"sp_ricochet":
+			game.sniper_stats.bounces = 3
+		"sp_mark":
+			game.sniper_stats.mark = true
+		# ---- 必殺技（中身は ultimates.gd）
+		"sp_ult_storm":
+			game.ultimates.storm = true
+		"sp_ult_dome":
+			game.ultimates.dome = true
+		"sp_ult_sky_arrow":
+			game.ultimates.sky_arrow = true
+		"sp_ult_leap":
+			game.ultimates.leap = true
+		"sp_ult_wall_burst":
+			game.ultimates.wall_burst = true
+		"sp_ult_carpet":
+			game.ultimates.carpet = true
+		"sp_ult_thousand":
+			game.ultimates.thousand = true
+		"sp_ult_barrage":
+			game.ultimates.barrage = true
+		"sp_ult_meteor":
+			game.ultimates.meteor = true
+		"sp_ult_thunder":
+			game.ultimates.thunder_spear = true
+		"sp_ult_ice_age":
+			game.ultimates.ice_age = true
 		"tower":
 			castle.tower_count = new_level
 			if new_level > 1:

@@ -59,6 +59,8 @@ var _strafe_sign := 1.0
 var speed_mult := 1.0
 ## 落とし穴で動けない残り時間
 var stun_left := 0.0
+## 弱点看破（狙撃部隊）：この時間のあいだ受けるダメージ +35%
+var mark_left := 0.0
 
 
 func setup(k: String, hp_mult: float) -> void:
@@ -106,7 +108,7 @@ func setup(k: String, hp_mult: float) -> void:
 			max_hp = 40.0; speed = 0.0; damage = 6.0; castle_damage = 6.0; radius = 16.0; xp_value = 3
 			color = Color(0.45, 0.42, 0.3)
 		"boss2":
-			max_hp = 550.0 * (1.0 + 0.3 * (boss_rank - 1)); speed = 0.0; damage = 20.0
+			max_hp = 275.0 * (1.0 + 0.3 * (boss_rank - 1)); speed = 0.0; damage = 20.0
 			castle_damage = 0.0; radius = 50.0; xp_value = 60
 			color = Color(0.3, 0.32, 0.4)
 			is_boss = true
@@ -127,6 +129,7 @@ func _process(delta: float) -> void:
 		return
 	_flash -= delta
 	_contact_cd -= delta
+	mark_left -= delta
 	if stun_left > 0.0:
 		# 落とし穴にはまって動けない（攻撃もできない）
 		stun_left -= delta
@@ -460,6 +463,8 @@ func stun(seconds: float) -> void:
 func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictionary = {}) -> void:
 	if dead:
 		return
+	if mark_left > 0.0:
+		amount *= 1.35
 	if not src.is_empty():
 		src["dealt"] += minf(amount, hp)
 		if hp - amount <= 0.0:
@@ -581,6 +586,12 @@ func _draw() -> void:
 		for i in 3:
 			var a := stun_left * 4.0 + TAU * i / 3.0
 			draw_circle(Vector2(cos(a) * radius * 0.7, -radius - 6.0 + sin(a) * 3.0), 3.0, Color(1.0, 0.9, 0.3))
+	if mark_left > 0.0:
+		# 弱点看破：赤い照準マーク
+		draw_arc(Vector2.ZERO, radius + 7.0, 0.0, TAU, 24, Color(1.0, 0.25, 0.2, 0.8), 2.0)
+		for i in 4:
+			var d := Vector2.from_angle(TAU * i / 4.0)
+			draw_line(d * (radius + 3.0), d * (radius + 11.0), Color(1.0, 0.25, 0.2, 0.8), 2.0)
 	if speed_mult < 1.0:
 		draw_arc(Vector2.ZERO, radius + 3.0, 0.0, TAU, 20, Color(0.6, 0.9, 1.0, 0.8), 2.0)
 	# HPバー

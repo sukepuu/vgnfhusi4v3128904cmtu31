@@ -2,12 +2,17 @@ extends CanvasLayer
 ## レベルアップ時の強化3択画面（ゲームは一時停止中）
 
 signal chosen(id: String)
+## リロールボタンが押された（候補の引き直しは main.gd がやる）
+signal reroll_requested
 
 const Upgrades := preload("res://scripts/upgrades.gd")
 
 var _box: VBoxContainer
 var _title: Label
 var _ids: Array = []
+var _reroll_btn: Button
+## この画面でリロールをもう使ったか（1画面につき1回まで）
+var _rerolled := false
 
 
 func _ready() -> void:
@@ -39,8 +44,24 @@ func _ready() -> void:
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_box.add_child(hint)
 
+	# リロールボタン（画面の中央下）
+	_reroll_btn = Button.new()
+	_reroll_btn.add_theme_font_size_override("font_size", 22)
+	_reroll_btn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_reroll_btn.offset_left = -150
+	_reroll_btn.offset_right = 150
+	_reroll_btn.offset_top = -80
+	_reroll_btn.offset_bottom = -26
+	_reroll_btn.focus_mode = Control.FOCUS_NONE
+	_reroll_btn.pressed.connect(_on_reroll)
+	add_child(_reroll_btn)
 
-func show_choices(choices: Array, levels: Dictionary, player_level: int, special: bool = false) -> void:
+
+## rerolled = true ならリロール後の表示（リロールボタンは使用済みになる）
+func show_choices(choices: Array, levels: Dictionary, player_level: int, special: bool = false, rerolled: bool = false) -> void:
+	_rerolled = rerolled
+	_reroll_btn.disabled = rerolled
+	_reroll_btn.text = "リロール済み" if rerolled else "🎲 リロール（R）"
 	if special:
 		_title.text = "★ 特別強化 ★  Lv %d" % player_level
 		_title.add_theme_color_override("font_color", Color(1.0, 0.55, 0.9))
@@ -71,6 +92,13 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int, special
 	visible = true
 
 
+func _on_reroll() -> void:
+	if not visible or _rerolled:
+		return
+	_rerolled = true
+	reroll_requested.emit()
+
+
 func _pick(id: String) -> void:
 	if not visible:
 		return
@@ -87,6 +115,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_1: idx = 0
 			KEY_2: idx = 1
 			KEY_3: idx = 2
+			KEY_R:
+				get_viewport().set_input_as_handled()
+				_on_reroll()
+				return
 		if idx >= 0 and idx < _ids.size():
 			get_viewport().set_input_as_handled()
 			_pick(_ids[idx])

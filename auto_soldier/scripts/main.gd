@@ -97,6 +97,10 @@ var _pending_levels: Array = []
 var game_over := false
 ## オート選択モード：レベルアップの強化をランダムで自動的に選ぶ
 var auto_pick := false
+## 今出ている強化の候補（リロール用）
+var _shown_choices: Array = []
+var _shown_special := false
+var _shown_level := 1
 
 var _spawn_acc := 0.0
 var _next_wave := 50.0
@@ -152,6 +156,7 @@ func _ready() -> void:
 	level_up_ui = LevelUpScript.new()
 	add_child(level_up_ui)
 	level_up_ui.chosen.connect(_on_upgrade_chosen)
+	level_up_ui.reroll_requested.connect(_on_reroll)
 
 	stats_ui = StatsScript.new()
 	stats_ui.game = self
@@ -590,7 +595,30 @@ func _open_level_up() -> void:
 		return
 	hud.refresh()
 	get_tree().paused = true
+	_shown_choices = choices
+	_shown_special = special
+	_shown_level = for_level
 	level_up_ui.show_choices(choices, upgrade_levels, for_level, special)
+
+
+## リロール：今出ている候補とはなるべく別のものを3つ引き直す（1画面1回まで）
+func _on_reroll() -> void:
+	var pool: Array
+	if _shown_special:
+		pool = Upgrades.roll_special(upgrade_levels, 999)
+	else:
+		pool = Upgrades.roll(upgrade_levels, 999, self)
+	var old_ids: Array = _shown_choices.map(func(u: Dictionary) -> String: return u["id"])
+	var fresh: Array = pool.filter(func(u: Dictionary) -> bool: return not u["id"] in old_ids)
+	var choices: Array = fresh.slice(0, 3)
+	# 新しい候補が3つに足りなければ、前の候補から埋める
+	for u in pool:
+		if choices.size() >= 3:
+			break
+		if not choices.has(u):
+			choices.append(u)
+	_shown_choices = choices
+	level_up_ui.show_choices(choices, upgrade_levels, _shown_level, _shown_special, true)
 
 
 func _on_upgrade_chosen(id: String) -> void:

@@ -361,9 +361,12 @@ func _update_new_specials(delta: float) -> void:
 				b.game = game
 				b.velocity = dir * 1100.0
 				b.damage = cannon_damage * 8.0
-				b.radius = 9.0
-				b.color = Color(0.3, 0.3, 0.35)
+				b.radius = 10.0
+				b.color = Color(1.0, 0.45, 0.2)
 				b.life = 2.0
+				b.only_target = big
+				b.first_blast_radius = 50.0
+				b.first_blast_damage = cannon_damage
 				b.position = from
 				b.src = _equip_record("cannon", "大砲", i)
 				game.world.add_child(b)

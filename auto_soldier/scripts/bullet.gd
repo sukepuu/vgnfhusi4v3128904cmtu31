@@ -23,6 +23,8 @@ var first_blast_radius := 0.0
 var first_blast_damage := 0.0
 ## 敵の弾が城に当たったときのダメージ倍率（ボスの弾幕は城には弱め）
 var castle_ratio := 1.0
+## 徹甲榴弾：この敵だけを追いかけて当たる（ほかの敵はすり抜ける）。null なら普通の弾
+var only_target: Node2D = null
 
 var _hit := {}
 
@@ -33,6 +35,13 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if only_target != null:
+		if is_instance_valid(only_target) and not only_target.dead:
+			# 狙った敵が動いても外れないように、まっすぐ追いかける
+			velocity = (only_target.global_position - global_position).normalized() * velocity.length()
+		else:
+			# 先に倒されたら、そこから先は普通の弾として飛ぶ
+			only_target = null
 	position += velocity * delta
 	life -= delta
 	if life <= 0.0:
@@ -57,6 +66,8 @@ func _process(delta: float) -> void:
 		return
 	for e in game.enemies_near(position, radius + 26.0):
 		if not is_instance_valid(e) or e.dead or _hit.has(e):
+			continue
+		if only_target != null and e != only_target:
 			continue
 		if global_position.distance_to(e.global_position) < radius + e.radius:
 			e.take_damage(damage, velocity.normalized() * 120.0, src)

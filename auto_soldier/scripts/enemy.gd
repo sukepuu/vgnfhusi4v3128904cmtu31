@@ -299,9 +299,13 @@ func _update_stationary(delta: float) -> void:
 	if touching != null and _contact_cd <= 0.0:
 		touching.take_damage(damage, global_position)
 		_contact_cd = 0.6
-	# 吹き飛ばされても少しだけ。基本は動かない
-	position += knock * delta * 0.3
-	knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
+	if kind == "boss2":
+		# 砲台要塞はノックバック無効（押されて城に弾が届かなくなるのを防ぐ）
+		knock = Vector2.ZERO
+	else:
+		# 迫撃砲は吹き飛ばされても少しだけ
+		position += knock * delta * 0.3
+		knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
 	position = game.clamp_to_map(position, radius)
 	queue_redraw()
 

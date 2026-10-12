@@ -73,6 +73,15 @@ var ap_shell := false
 var direct_hit := false
 var blast_bolt := false
 var ice_lance := false
+## 5つ目の特別強化（新しい物を飛ばす・置く）
+var homing_arrow := false
+var cannon_mines := false
+var rolling_rock := false
+var lightning := false
+var snowman := false
+var _homing_cd := 2.0
+var _lightning_cd := 2.0
+var _snowman_cd := 2.0
 var _rain_cd := 4.0
 var _ap_cd := 3.0
 var _lance_cd := 2.0
@@ -205,6 +214,10 @@ func _update_cannon(delta: float) -> void:
 		_cannon_aims[i] = (best.global_position - from).normalized()
 		var rec := _equip_record("cannon", "大砲", i)
 		var shells: Array = [_fire_shell(from, best.global_position, cannon_damage, cannon_radius, false, rec)]
+		# 機雷散布：本命の砲弾が着弾地点に機雷をばらまく
+		if cannon_mines:
+			shells[0].mines = 3
+			shells[0].mine_damage = cannon_damage * 1.2
 		# 散弾砲：着弾地点の周りにも落ちる
 		for k in scatter_level * 2:
 			var off := Vector2.from_angle(randf() * TAU) * randf_range(60.0, 110.0)
@@ -232,6 +245,8 @@ func _update_catapult(delta: float) -> void:
 			s.split_count = 2 + 2 * split_level
 		if direct_hit:
 			s.direct_bonus = catapult_damage * 4.0
+		if rolling_rock:
+			s.roll_damage = catapult_damage * 1.2
 		# 岩雨：ランダムな敵2体の頭上にも岩が落ちる
 		if rock_rain:
 			var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool: return is_instance_valid(e) and not e.dead)
@@ -352,6 +367,7 @@ func _update_new_specials(delta: float) -> void:
 				b.position = from
 				b.src = _equip_record("cannon", "大砲", i)
 				game.world.add_child(b)
+	_update_fifth_specials(delta)
 	if ice_lance and frost_radius > 0.0:
 		_lance_cd -= delta
 		if _lance_cd <= 0.0:
@@ -360,6 +376,41 @@ func _update_new_specials(delta: float) -> void:
 			if big != null:
 				var dmg: float = 300.0 * (1.0 + game.elapsed / 120.0)
 				game.spawn_blast(big.global_position, 0.4, 30.0, dmg, _equip_record("frost", "氷結の結界", 0), Color(0.6, 0.9, 1.0), "ice")
+
+
+## 5つ目の特別強化（追尾火矢・雷撃・雪だるま）
+func _update_fifth_specials(delta: float) -> void:
+	if homing_arrow and tower_count > 0:
+		_homing_cd -= delta
+		if _homing_cd <= 0.0 and game.nearest_enemy(global_position, tower_range * 1.5) != null:
+			_homing_cd = 3.0
+			for i in tower_count:
+				var from := global_position + _tower_local_pos(i)
+				for k in 2:
+					var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(-PI / 2.0 + (k - 0.5) * 1.6) * 420.0,
+						tower_damage * 1.5, 8.0, 4.0, _equip_record("tower", "矢倉", i))
+					m.target = game.nearest_enemy(from, tower_range * 1.5)
+	if lightning and ballista_level > 0:
+		_lightning_cd -= delta
+		if _lightning_cd <= 0.0:
+			_lightning_cd = 5.0
+			for i in mini(ballista_level, MAX_GUNS):
+				var from := global_position + _ballista_local_pos(i)
+				# なるべく別々の敵から連鎖を始める
+				var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool:
+					return is_instance_valid(e) and not e.dead and from.distance_to(e.global_position) < 700.0)
+				if pool.is_empty():
+					break
+				var first: Node2D = pool.pick_random()
+				game.chain_lightning(from, first, 7, ballista_damage * 0.8, 200.0, _equip_record("ballista", "バリスタ", i))
+	if snowman and frost_radius > 0.0:
+		_snowman_cd -= delta
+		if _snowman_cd <= 0.0:
+			_snowman_cd = 5.0
+			if game.get_tree().get_nodes_in_group("placed_snowman").size() < 6:
+				var p := global_position + Vector2.from_angle(randf_range(PI + 0.2, TAU - 0.2)) * frost_radius * randf_range(0.75, 1.0)
+				var dmg: float = 150.0 * (1.0 + game.elapsed / 120.0)
+				game.spawn_placed("snowman", p, dmg, 40.0, 40.0, _equip_record("frost", "氷結の結界", 0))
 
 
 ## 範囲内で一番HPの多い敵

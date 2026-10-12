@@ -8,9 +8,13 @@ extends Node2D
 ## 治癒師（healer）は後方にとどまり、周りの敵を定期的に回復する。
 ## 自爆兵（bomber）は兵士・壁・城にぶつかると爆発する（壁は3発分削る）。
 ## 隠密兵（stealth）は右下・左下から現れて城を狙う。半透明で見えにくい。
-## ボス（boss）は Lv10 ごとに出現。壁に触れると壁の耐久を7削り、城に着いても消えずに攻撃し続ける。
+## 迫撃砲（mortar）はマップの端から動かず、壁を飛び越える砲弾で城を撃ってくる。
+## ボスは Lv10 ごとに2種類が交互に出現。
+##   破城の魔王（boss）：壁に触れると壁の耐久を7削り、城に着いても消えずに攻撃し続ける。
+##   砲台要塞（boss2）：その場から動かず、いろんな弾幕と城狙いの砲撃をしてくる。
 
 const BulletScript := preload("res://scripts/bullet.gd")
+const EnemyShellScript := preload("res://scripts/enemy_shell.gd")
 
 var game: Node2D
 var kind := "grunt"
@@ -28,6 +32,17 @@ var hunter := false
 var is_boss := false
 ## 何体目のボスか（1始まり。強さに使う）
 var boss_rank := 1
+## ボスの名前（HPバーに表示）
+var boss_title := ""
+## 砲台要塞の攻撃パターン
+var _pattern := 0
+var _pattern_left := 0.0
+var _pattern_tick := 0.0
+var _pattern_count := 0
+var _spiral_angle := 0.0
+var _castle_shot_cd := 4.0
+## 迫撃砲・砲台要塞の砲身の反動
+var _recoil := 0.0
 var _hp_mult := 1.0
 var _skill_cd := 3.0
 var _summon_cd := 8.0
@@ -79,20 +94,31 @@ func setup(k: String, hp_mult: float) -> void:
 			max_hp = 25.0; speed = 120.0; damage = 30.0; castle_damage = 30.0; radius = 13.0; xp_value = 2
 			color = Color(0.35, 0.1, 0.1)
 		"stealth":
-			max_hp = 30.0; speed = 80.0; damage = 8.0; castle_damage = 10.0; radius = 12.0; xp_value = 2
+			max_hp = 15.0; speed = 80.0; damage = 8.0; castle_damage = 10.0; radius = 12.0; xp_value = 2
 			color = Color(0.3, 0.35, 0.45)
 		"boss":
-			max_hp = 1100.0 * (1.0 + 0.3 * (boss_rank - 1)); speed = 20.0; damage = 30.0
+			max_hp = 770.0 * (1.0 + 0.3 * (boss_rank - 1)); speed = 20.0; damage = 30.0
 			castle_damage = 40.0; radius = 46.0; xp_value = 60
 			color = Color(0.4, 0.12, 0.5)
 			is_boss = true
+			boss_title = "破城の魔王"
+		"mortar":
+			max_hp = 40.0; speed = 0.0; damage = 6.0; castle_damage = 6.0; radius = 16.0; xp_value = 3
+			color = Color(0.45, 0.42, 0.3)
+		"boss2":
+			max_hp = 550.0 * (1.0 + 0.3 * (boss_rank - 1)); speed = 0.0; damage = 20.0
+			castle_damage = 0.0; radius = 50.0; xp_value = 60
+			color = Color(0.3, 0.32, 0.4)
+			is_boss = true
+			boss_title = "砲台要塞"
+			_pattern_left = 2.0
 	_hp_mult = hp_mult
 	max_hp *= hp_mult
 	hp = max_hp
 	if not is_boss:
 		speed *= randf_range(0.9, 1.1)
 	_strafe_sign = 1.0 if randf() < 0.5 else -1.0
-	_shoot_cd = randf_range(1.0, 2.5)
+	_shoot_cd = randf_range(2.0, 4.0) if k == "mortar" else randf_range(1.0, 2.5)
 	add_to_group("enemies")
 
 
@@ -107,6 +133,9 @@ func _process(delta: float) -> void:
 		position += knock * delta
 		knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
 		queue_redraw()
+		return
+	if kind == "mortar" or kind == "boss2":
+		_update_stationary(delta)
 		return
 	var castle: Node2D = game.castle
 	var move := Vector2.ZERO
@@ -248,6 +277,112 @@ func _boss_skills(delta: float) -> void:
 			game.spawn_enemy_at("grunt", global_position + Vector2.from_angle(TAU * i / 5.0) * (radius + 30.0))
 
 
+## 動かない敵（迫撃砲・砲台要塞）：その場で城の方を向いて撃ち続ける
+func _update_stationary(delta: float) -> void:
+	var castle: Node2D = game.castle
+	_facing = (castle.global_position - global_position).normalized()
+	_recoil -= delta
+	if kind == "mortar":
+		_shoot_cd -= delta
+		if _shoot_cd <= 0.0:
+			_shoot_cd = randf_range(6.0, 8.0)
+			_lob_at_castle(damage, 45.0, 8.0)
+	else:
+		_fortress_skills(delta)
+	# 触れた兵士にはダメージ
+	var touching: Node2D = game.nearest_ally(global_position, radius + 16.0)
+	if touching != null and _contact_cd <= 0.0:
+		touching.take_damage(damage, global_position)
+		_contact_cd = 0.6
+	# 吹き飛ばされても少しだけ。基本は動かない
+	position += knock * delta * 0.3
+	knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
+	position = game.clamp_to_map(position, radius)
+	queue_redraw()
+
+
+## 城のどこかへ山なりの砲弾を撃つ（壁を飛び越える）
+func _lob_at_castle(dmg: float, area: float, size: float) -> void:
+	var castle: Node2D = game.castle
+	var s := EnemyShellScript.new()
+	s.game = game
+	var muzzle := global_position + _facing * (radius + 6.0)
+	s.start = muzzle
+	s.position = muzzle
+	var half: Vector2 = castle.HALF
+	s.target = castle.global_position + Vector2(randf_range(-half.x, half.x), randf_range(-half.y, half.y) * 0.6)
+	s.damage = dmg
+	s.blast_radius = area
+	s.size = size
+	s.flight_time = clampf(muzzle.distance_to(s.target) / 320.0, 1.5, 3.2)
+	game.effects.add_child(s)
+	_recoil = 0.3
+
+
+## 砲台要塞の技：いろんな弾幕を順番に。合間に城への砲撃
+func _fortress_skills(delta: float) -> void:
+	var rm := 1.0 + 0.3 * (boss_rank - 1)
+	var dmg := 10.0 * rm
+	_castle_shot_cd -= delta
+	if _castle_shot_cd <= 0.0:
+		# 城狙いの砲撃は、出るたびに少しずつ強くなる
+		var crm := 1.0 + 0.15 * (boss_rank - 1)
+		# 城狙い：山なりの砲弾3発と、まっすぐ飛ぶ大砲弾
+		_castle_shot_cd = 9.0
+		for i in 3:
+			_lob_at_castle(6.0 * crm, 55.0, 11.0)
+		var to_castle: Vector2 = (game.castle.global_position - global_position).normalized()
+		var cannonball: Node2D = _shoot(to_castle, 14.0 * crm, 200.0, 15.0, Color(1.0, 0.3, 0.2), 6.0)
+		cannonball.castle_ratio = 1.0
+	_pattern_left -= delta
+	_pattern_tick -= delta
+	if _pattern_left <= 0.0:
+		# 次の攻撃パターンへ（少し休んでから）
+		_pattern = (_pattern + 1) % 4
+		_pattern_left = 3.6
+		_pattern_tick = 0.6
+		_pattern_count = 0
+		return
+	if _pattern_tick > 0.0:
+		return
+	match _pattern:
+		0:
+			# うずまき弾（2本の腕）
+			_pattern_tick = 0.08
+			_spiral_angle += 0.42
+			for arm in 2:
+				_shoot(Vector2.from_angle(_spiral_angle + PI * arm), dmg, 230.0, 7.0, Color(0.95, 0.5, 1.0), 4.0)
+			if _pattern_count > 30:
+				_pattern_left = 0.0
+		1:
+			# 一番近い兵士（いなければ城）へ扇状の狙い撃ち×3回
+			_pattern_tick = 0.45
+			var t: Node2D = game.nearest_ally(global_position, INF)
+			var aim: Vector2 = ((t.global_position if t != null else game.castle.global_position) - global_position).normalized()
+			for k in 7:
+				_shoot(aim.rotated((k - 3) * 0.13), dmg, 300.0, 6.0, Color(1.0, 0.75, 0.3), 3.5)
+			if _pattern_count >= 2:
+				_pattern_left = 0.0
+		2:
+			# 全方位リング（交互にずらして3回）
+			_pattern_tick = 0.6
+			var n := 26
+			for k in n:
+				_shoot(Vector2.from_angle(TAU * (k + 0.5 * (_pattern_count % 2)) / n), dmg, 200.0, 8.0, Color(0.6, 0.85, 1.0), 4.5)
+			if _pattern_count >= 2:
+				_pattern_left = 0.0
+		3:
+			# 乱れ撃ち：城の方へ大小の弾をばらまく
+			_pattern_tick = 0.1
+			var a := _facing.angle() + randf_range(-1.0, 1.0)
+			var big := randf() < 0.3
+			_shoot(Vector2.from_angle(a), dmg * (1.6 if big else 1.0), randf_range(180.0, 320.0), 11.0 if big else 6.0, Color(1.0, 0.4, 0.4), 4.5)
+			if _pattern_count > 22:
+				_pattern_left = 0.0
+	_pattern_count += 1
+	_recoil = 0.15
+
+
 ## 治癒師：3秒ごとに周りの敵を回復
 func _heal_skill(delta: float) -> void:
 	_heal_fx -= delta
@@ -260,7 +395,8 @@ func _heal_skill(delta: float) -> void:
 		if e == self or not is_instance_valid(e) or e.dead or e.hp >= e.max_hp:
 			continue
 		if global_position.distance_to(e.global_position) < 150.0:
-			e.hp = minf(e.max_hp, e.hp + e.max_hp * 0.25)
+			# ボスは回復しにくい（2%だけ）
+			e.hp = minf(e.max_hp, e.hp + e.max_hp * (0.02 if e.is_boss else 0.25))
 			healed = true
 	if healed:
 		_heal_fx = 0.5
@@ -295,17 +431,21 @@ func _separate() -> void:
 	position += push * 0.5
 
 
-func _shoot(dir: Vector2, dmg: float) -> void:
+func _shoot(dir: Vector2, dmg: float, spd: float = 260.0, r: float = 7.0, col: Color = Color(0.85, 0.45, 1.0), life: float = 3.0) -> Node2D:
 	var b := BulletScript.new()
 	b.game = game
 	b.from_enemy = true
-	b.velocity = dir * 260.0
+	b.velocity = dir * spd
 	b.damage = dmg
-	b.radius = 7.0
-	b.color = Color(0.85, 0.45, 1.0)
-	b.life = 3.0
+	b.radius = r
+	b.color = col
+	b.life = life
 	b.position = global_position + dir * (radius + 4.0)
+	# 砲台要塞の弾幕は兵士向け。城に当たったときは2割のダメージ
+	if kind == "boss2":
+		b.castle_ratio = 0.2
 	game.world.add_child(b)
+	return b
 
 
 func stun(seconds: float) -> void:
@@ -398,6 +538,32 @@ func _draw() -> void:
 			draw_circle(Vector2.ZERO, radius, c)
 			draw_arc(Vector2.ZERO, radius, 0.0, TAU, 48, Color(0.15, 0.05, 0.2), 4.0)
 			var crown_y := -radius - 4.0
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(-22, crown_y), Vector2(-22, crown_y - 14), Vector2(-11, crown_y - 6), Vector2(0, crown_y - 18),
+				Vector2(11, crown_y - 6), Vector2(22, crown_y - 14), Vector2(22, crown_y)]), Color(1.0, 0.82, 0.25))
+		"mortar":
+			# 土台と、城の方へ斜め上に向いた太い砲身
+			draw_rect(Rect2(Vector2(-radius, -radius * 0.3), Vector2(radius * 2.0, radius * 1.1)), Color(0.35, 0.25, 0.15))
+			draw_circle(Vector2.ZERO, radius * 0.8, c)
+			var tube := (_facing + Vector2(0, -1.2)).normalized()
+			var back := tube * (-4.0 if _recoil > 0.0 else 0.0)
+			draw_line(back, back + tube * (radius + 12.0), Color(0.2, 0.2, 0.22), 11.0)
+			draw_circle(back + tube * (radius + 12.0), 6.0, Color(0.1, 0.1, 0.1))
+		"boss2":
+			# 石の要塞：城壁のギザギザと、回る砲台
+			var r := radius
+			draw_rect(Rect2(Vector2(-r, -r * 0.8), Vector2(r * 2.0, r * 1.6)), c.darkened(0.2))
+			for i in 5:
+				draw_rect(Rect2(Vector2(-r + i * r * 0.45, -r * 0.8 - 10.0), Vector2(r * 0.25, 10.0)), c.darkened(0.2))
+			draw_rect(Rect2(Vector2(-r, -r * 0.8), Vector2(r * 2.0, r * 1.6)), Color(0.1, 0.1, 0.15), false, 3.0)
+			draw_circle(Vector2.ZERO, r * 0.62, c)
+			var spin := Time.get_ticks_msec() / 700.0
+			for i in 4:
+				var d := Vector2.from_angle(spin + TAU * i / 4.0)
+				draw_line(d * r * 0.4, d * (r * 0.95 - (5.0 if _recoil > 0.0 else 0.0)), Color(0.15, 0.15, 0.18), 9.0)
+			draw_line(_facing * (r * 0.4), _facing * (r + 18.0 - (6.0 if _recoil > 0.0 else 0.0)), Color(0.1, 0.1, 0.12), 14.0)
+			draw_circle(Vector2.ZERO, r * 0.3, Color(0.9, 0.25, 0.3))
+			var crown_y := -r * 0.8 - 12.0
 			draw_colored_polygon(PackedVector2Array([
 				Vector2(-22, crown_y), Vector2(-22, crown_y - 14), Vector2(-11, crown_y - 6), Vector2(0, crown_y - 18),
 				Vector2(11, crown_y - 6), Vector2(22, crown_y - 14), Vector2(22, crown_y)]), Color(1.0, 0.82, 0.25))

@@ -47,6 +47,9 @@ var _exec_cd := 2.0
 var _pending_slashes := 0
 var _followup_cd := 0.0
 var _quake_cd := 3.0
+## 鉄球投げ：5秒ごとに転がる鉄球を投げる
+var iron_ball := false
+var _ball_cd := 2.0
 
 
 func _ready() -> void:
@@ -69,6 +72,7 @@ func _process(delta: float) -> void:
 	_followup_cd -= delta
 	_quake_cd -= delta
 	_exec_cd -= delta
+	_ball_cd -= delta
 	_hurt_flash -= delta
 	_invuln -= delta
 	_retarget_cd -= delta
@@ -118,6 +122,12 @@ func _process(delta: float) -> void:
 			fx.position = big.global_position - d * 30.0
 			game.effects.add_child(fx)
 			game.spawn_burst(big.global_position, Color(1.0, 0.9, 0.6), 20.0)
+	if iron_ball and _ball_cd <= 0.0:
+		var far: Node2D = game.nearest_enemy(global_position, 450.0)
+		if far != null:
+			_ball_cd = 5.0
+			var bd := (far.global_position - global_position).normalized()
+			game.spawn_missile("ball", global_position + bd * 30.0, bd * 560.0, slash_damage * 1.5, 24.0, 3.0, record)
 	if quake_level > 0 and _quake_cd <= 0.0 and game.nearest_enemy(global_position, 140.0) != null:
 		_quake()
 		_quake_cd = 5.0

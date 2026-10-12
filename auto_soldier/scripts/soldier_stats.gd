@@ -33,3 +33,5 @@ var volley_level := 0
 var sword_wave := false
 ## 影分身（横に分身が現れて一緒に撃つ）
 var shadow := false
+## ブーメラン（定期的にブーメランを投げる）
+var boomerang := false

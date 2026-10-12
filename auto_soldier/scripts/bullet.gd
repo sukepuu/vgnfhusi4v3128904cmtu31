@@ -21,6 +21,8 @@ var wave := false
 ## 炸裂大矢：最初に当たった敵の場所で大爆発（0なら無し）
 var first_blast_radius := 0.0
 var first_blast_damage := 0.0
+## 敵の弾が城に当たったときのダメージ倍率（ボスの弾幕は城には弱め）
+var castle_ratio := 1.0
 
 var _hit := {}
 
@@ -50,7 +52,7 @@ func _process(delta: float) -> void:
 			queue_free()
 			return
 		if game.castle.distance_to_point(global_position) < radius:
-			game.castle.take_damage(damage)
+			game.castle.take_damage(damage * castle_ratio)
 			queue_free()
 		return
 	for e in game.enemies_near(position, radius + 26.0):

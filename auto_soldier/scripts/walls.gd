@@ -26,6 +26,9 @@ var repair_level := 0
 var explode_on_block := false
 ## 黄金の壁（防ぐたびに経験値）
 var golden := false
+## 見張り櫓（築城兵が壁の外に矢を撃つ櫓を建てる）
+var watchtower := false
+const MAX_WATCHTOWERS := 4
 
 const BulletScript := preload("res://scripts/bullet.gd")
 

@@ -6,10 +6,13 @@ extends Node2D
 var game: Node2D
 var index := 0
 ## idle（城の前で待機）/ walking（現場へ移動）/ building（建設中）
+## 見張り櫓を建てるときは tower_job = true（plan の代わりに tower_spot へ行く）
 var state := "idle"
 ## 建設予定の壁 Vector2(開始角, 終了角)
 var plan := Vector2.ZERO
 var progress := 0.0
+var tower_job := false
+var tower_spot := Vector2.ZERO
 var record: Dictionary
 
 const SPEED := 120.0
@@ -28,15 +31,32 @@ func _process(delta: float) -> void:
 		"idle":
 			var home: Vector2 = game.castle.gate_position() + Vector2(60.0 + index * 30.0, 10.0)
 			_move_to(home, delta)
+			# 見張り櫓が足りなければ先に建てる
+			if walls.watchtower and _towers_planned() < walls.MAX_WATCHTOWERS:
+				tower_job = true
+				tower_spot = walls.point_at(randf_range(PI + 0.35, TAU - 0.35), walls.RADIUS + 55.0)
+				state = "walking"
+				queue_redraw()
+				return
 			var spot = walls.find_build_spot(_reserved_by_others())
 			if spot != null:
+				tower_job = false
 				plan = spot
 				state = "walking"
 		"walking":
-			if _move_to(_site(), delta):
+			if _move_to(tower_spot if tower_job else _site(), delta):
 				state = "building"
 				progress = 0.0
 		"building":
+			if tower_job:
+				# 見張り櫓は6秒で完成
+				progress += delta / 6.0
+				if progress >= 1.0:
+					game.spawn_placed("watchtower", tower_spot + Vector2(0, -26), 20.0, 0.0, 0.0, record)
+					tower_job = false
+					state = "idle"
+				queue_redraw()
+				return
 			_facing = (walls.point_at((plan.x + plan.y) / 2.0) - global_position).normalized()
 			progress += delta / walls.build_time
 			if progress >= 1.0:
@@ -51,10 +71,19 @@ func _site() -> Vector2:
 	return game.walls.point_at((plan.x + plan.y) / 2.0, game.walls.RADIUS - 24.0)
 
 
+## 建っている櫓と、ほかの築城兵が建てに行っている櫓の数
+func _towers_planned() -> int:
+	var n: int = game.get_tree().get_nodes_in_group("placed_watchtower").size()
+	for b in game.builders:
+		if b != self and b.state != "idle" and b.tower_job:
+			n += 1
+	return n
+
+
 func _reserved_by_others() -> Array:
 	var res: Array = []
 	for b in game.builders:
-		if b != self and b.state != "idle":
+		if b != self and b.state != "idle" and not b.tower_job:
 			res.append(b.plan)
 	return res
 

@@ -36,6 +36,7 @@ var _hurt_flash := 0.0
 var _invuln := 0.0
 var _retarget_cd := 0.0
 var _volley_cd := 3.0
+var _boomerang_cd := 2.0
 var _strafe_sign := 1.0
 var _strafe_cd := 2.0
 
@@ -56,6 +57,7 @@ func _process(delta: float) -> void:
 	var st = game.stats
 	_fire_cd -= delta
 	_volley_cd -= delta
+	_boomerang_cd -= delta
 	_sword_cd -= delta
 	_dash_cd -= delta
 	_hurt_flash -= delta
@@ -90,6 +92,11 @@ func _process(delta: float) -> void:
 	if st.volley_level > 0 and _volley_cd <= 0.0 and game.nearest_enemy(global_position, 500.0) != null:
 		_volley()
 		_volley_cd = 6.0
+	# ブーメラン：狙っている敵の方へ投げる（行きと帰りで貫く）
+	if st.boomerang and _boomerang_cd <= 0.0 and shoot_at != null:
+		_boomerang_cd = 3.5
+		var m: Node2D = game.spawn_missile("boomerang", global_position, aim_dir * 750.0, st.sword_damage * 1.3, 16.0, 4.0, record)
+		m.thrower = self
 	if _sword_cd <= 0.0 and _try_slash():
 		_sword_cd = st.sword_interval
 	if st.dash_level > 0 and _dash_cd <= 0.0 and _dash_time <= 0.0:

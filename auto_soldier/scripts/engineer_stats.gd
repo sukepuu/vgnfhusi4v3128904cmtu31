@@ -25,3 +25,5 @@ var poison_level := 0
 var double_plant := false
 ## 徹甲地雷（真上の敵1体に追加ダメージ）
 var ap_mine := false
+## 自動砲台（罠と一緒に、しばらく敵を撃つ砲台も置く）
+var sentry := false

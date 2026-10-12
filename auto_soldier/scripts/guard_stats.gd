@@ -20,3 +20,5 @@ var trident_level := 0
 var taunt := false
 ## 大旋風槍（定期的に周りへ大ダメージ）
 var whirl := false
+## 拒馬の柵（定期的に前に柵を置く）
+var spikes := false

@@ -22,8 +22,11 @@ const StatsScript := preload("res://scripts/stats_ui.gd")
 const UpgradesUIScript := preload("res://scripts/upgrades_ui.gd")
 const HazardScript := preload("res://scripts/hazard.gd")
 const BlastScript := preload("res://scripts/blast.gd")
+const MissileScript := preload("res://scripts/missile.gd")
+const PlacedScript := preload("res://scripts/placed.gd")
+const LightningScript := preload("res://scripts/lightning.gd")
 ## このレベルごとに特別強化の3択が出る
-const SPECIAL_EVERY := 7
+const SPECIAL_EVERY := 5
 
 ## フィールドの範囲。城は一番下の中央に置く
 const MAP_RECT := Rect2(-700, -780, 1400, 840)
@@ -387,7 +390,12 @@ func _update_spawning(delta: float) -> void:
 		_spawn_acc -= 1.0
 		if enemies_cache.size() < MAX_ENEMIES:
 			var k := _pick_kind()
-			_spawn_enemy(k, _stealth_spawn_pos() if k == "stealth" else _random_spawn_pos())
+			var pos := _random_spawn_pos()
+			if k == "stealth":
+				pos = _stealth_spawn_pos()
+			elif k == "mortar":
+				pos = _mortar_spawn_pos()
+			_spawn_enemy(k, pos)
 	# 定期的に横一列の大群
 	if elapsed >= _next_wave:
 		_next_wave += 50.0
@@ -415,6 +423,9 @@ func _pick_kind() -> String:
 		pool.append(["bomber", 1.0 + elapsed / 240.0])
 	if elapsed > 90.0:
 		pool.append(["stealth", 1.5 + elapsed / 200.0])
+	# 迫撃砲は同時に出すぎないように上限つき
+	if elapsed > 180.0 and _count_kind("mortar") < 2 + int(elapsed / 300.0):
+		pool.append(["mortar", 0.6 + elapsed / 400.0])
 	var total := 0.0
 	for entry in pool:
 		total += entry[1]
@@ -424,6 +435,23 @@ func _pick_kind() -> String:
 		if r <= 0.0:
 			return entry[0]
 	return "grunt"
+
+
+func _count_kind(k: String) -> int:
+	var n := 0
+	for e in enemies_cache:
+		if is_instance_valid(e) and not e.dead and e.kind == k:
+			n += 1
+	return n
+
+
+## 迫撃砲：マップの上端か左右の端（城より上の方）に陣取る
+func _mortar_spawn_pos() -> Vector2:
+	var m := 30.0
+	if randf() < 0.5:
+		return Vector2(randf_range(MAP_RECT.position.x + m, MAP_RECT.end.x - m), MAP_RECT.position.y + m)
+	var x := MAP_RECT.position.x + m if randf() < 0.5 else MAP_RECT.end.x - m
+	return Vector2(x, randf_range(MAP_RECT.position.y + m, MAP_RECT.end.y - 260.0))
 
 
 ## 隠密兵：右下か左下の隅から出てくる
@@ -462,17 +490,18 @@ func spawn_enemy_at(kind: String, pos: Vector2, hp_mult: float = -1.0) -> Node2D
 	return e
 
 
-## ボス出現（Lv10ごと）
+## ボス出現（Lv10ごと）。破城の魔王と砲台要塞が交互に来る
 func _spawn_boss() -> void:
 	bosses_spawned += 1
 	var e := EnemyScript.new()
 	e.game = self
 	e.boss_rank = bosses_spawned
-	e.setup("boss", _hp_mult())
-	e.position = Vector2(MAP_RECT.get_center().x, MAP_RECT.position.y + 60.0)
+	var walker := bosses_spawned % 2 == 1
+	e.setup("boss" if walker else "boss2", _hp_mult())
+	e.position = Vector2(MAP_RECT.get_center().x, MAP_RECT.position.y + (60.0 if walker else 110.0))
 	world.add_child(e)
 	boss = e
-	hud.show_banner("⚠ BOSS 出現！ ⚠", Color(1.0, 0.4, 0.5))
+	hud.show_banner("⚠ BOSS「%s」出現！ ⚠" % e.boss_title, Color(1.0, 0.4, 0.5))
 
 
 # ---------------------------------------------------------------- 経験値・レベルアップ
@@ -511,7 +540,7 @@ func _open_level_up() -> void:
 	var for_level: int = _pending_levels[0] if not _pending_levels.is_empty() else level
 	var special := false
 	var choices: Array = []
-	# Lv7ごとに特別強化（候補がなければ通常の強化）
+	# Lv5ごとに特別強化（候補がなければ通常の強化）
 	if for_level % SPECIAL_EVERY == 0:
 		choices = Upgrades.roll_special(upgrade_levels, 3)
 		special = not choices.is_empty()
@@ -595,6 +624,63 @@ func spawn_hazard(pos: Vector2, radius: float, dps: float, duration: float, col:
 	h.src = src
 	h.position = pos
 	ground.add_child(h)
+
+
+## 特別強化で飛ぶ物（kind: "boomerang" / "ball" / "homing"）
+func spawn_missile(kind: String, pos: Vector2, velocity: Vector2, dmg: float, radius: float, life: float, src: Dictionary) -> Node2D:
+	var m := MissileScript.new()
+	m.game = self
+	m.kind = kind
+	m.velocity = velocity
+	m.damage = dmg
+	m.radius = radius
+	m.life = life
+	m.src = src
+	m.position = pos
+	world.add_child(m)
+	return m
+
+
+## 特別強化で置かれる物（kind: "spikes" / "watchtower" / "sentry" / "mine" / "snowman"）。life <= 0 ならずっと残る
+func spawn_placed(kind: String, pos: Vector2, dmg: float, radius: float, life: float, src: Dictionary) -> Node2D:
+	var p := PlacedScript.new()
+	p.game = self
+	p.kind = kind
+	p.damage = dmg
+	p.radius = radius
+	p.life = life
+	p.src = src
+	p.position = clamp_to_map(pos, 20.0)
+	ground.add_child(p)
+	return p
+
+
+## 連鎖する雷：first から近くの敵へ次々に飛び移ってダメージ
+func chain_lightning(from: Vector2, first: Node2D, jumps: int, dmg: float, jump_range: float, src: Dictionary) -> void:
+	var pts := PackedVector2Array([from])
+	var hit := {}
+	var cur: Node2D = first
+	for i in jumps:
+		if cur == null:
+			break
+		hit[cur] = true
+		var p: Vector2 = cur.global_position
+		pts.append(p)
+		cur.take_damage(dmg, Vector2.ZERO, src)
+		cur.stun(0.3)
+		var next: Node2D = null
+		var best := jump_range
+		for e in enemies_near(p, jump_range):
+			if not is_instance_valid(e) or e.dead or hit.has(e):
+				continue
+			var d: float = p.distance_to(e.global_position)
+			if d < best:
+				best = d
+				next = e
+		cur = next
+	var fx := LightningScript.new()
+	fx.points = pts
+	effects.add_child(fx)
 
 
 ## 少し遅れて起きる爆発（look: "bomb" / "rock" / "ice"）

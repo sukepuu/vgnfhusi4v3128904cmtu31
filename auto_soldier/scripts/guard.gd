@@ -29,6 +29,7 @@ var _invuln := 0.0
 var _retarget_cd := 0.0
 var _bash_cd := 0.0
 var _whirl_cd := 3.0
+var _spike_cd := 2.0
 
 
 func _ready() -> void:
@@ -48,6 +49,7 @@ func _process(delta: float) -> void:
 	_spear_cd -= delta
 	_bash_cd -= delta
 	_whirl_cd -= delta
+	_spike_cd -= delta
 	_thrust -= delta
 	_hurt_flash -= delta
 	_block_flash -= delta
@@ -91,6 +93,10 @@ func _process(delta: float) -> void:
 		_whirl_cd = 6.0
 		game.explode(global_position, st.spear_reach * 1.2, st.spear_damage * 3.0, record, Color(0.7, 1.0, 0.7), 0.0, 320.0)
 		game.spawn_burst(global_position, Color(1, 1, 1), st.spear_reach / 1.8)
+	# 拒馬の柵：敵が近いとき、盾の前に柵を置く
+	if st.spikes and _spike_cd <= 0.0 and game.nearest_enemy(global_position, 260.0) != null:
+		_spike_cd = 8.0
+		game.spawn_placed("spikes", global_position + facing * 70.0, st.spear_damage * 0.8, 55.0, 14.0, record)
 	if _spear_cd <= 0.0 and _try_thrust():
 		_spear_cd = st.spear_interval
 	queue_redraw()

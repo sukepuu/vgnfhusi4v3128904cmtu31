@@ -218,7 +218,7 @@ func refresh() -> void:
 	if has_boss:
 		_boss_bar.max_value = b.max_hp
 		_boss_bar.value = b.hp
-		_boss_label.text = "BOSS（%d体目）  %d / %d" % [b.boss_rank, ceili(b.hp), int(b.max_hp)]
+		_boss_label.text = "BOSS「%s」（%d体目）  %d / %d" % [b.boss_title, b.boss_rank, ceili(b.hp), int(b.max_hp)]
 	var castle: Node2D = game.castle
 	_xp_bar.max_value = game.xp_to_next
 	_xp_bar.value = game.xp

@@ -39,3 +39,5 @@ var boomerang := false
 var fireworks := false
 ## 触爆（触れた敵が爆発して、周りに射撃の3倍ダメージ）
 var touch_blast := false
+## 魔王狩り：ボスを最優先で狙い、ボスへのダメージ +10%
+var boss_hunt := false

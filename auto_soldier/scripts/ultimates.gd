@@ -276,8 +276,12 @@ func _do_thunder_spear() -> void:
 func _do_flock() -> void:
 	# ペット1匹につき6羽の青い鳥。当たった敵が生き残っていたら、くっついて2回つつく（伝書鳩と同じ）
 	for p in game.pets:
+		# 合体中は巨大ペットの体から飛び立つ
+		var from: Vector2 = p.global_position
+		if not p.visible and game.pet_fusion != null:
+			from = game.pet_fusion.global_position
 		for i in 6:
-			var m: Node2D = game.spawn_missile("homing", p.global_position,
+			var m: Node2D = game.spawn_missile("homing", from,
 				Vector2.from_angle(TAU * i / 6.0) * 300.0, game.pet_damage * 3.0, 10.0, 6.0, p.record)
 			m.look = "bird"
 			m.bird_color = Color(0.3, 0.55, 1.0)

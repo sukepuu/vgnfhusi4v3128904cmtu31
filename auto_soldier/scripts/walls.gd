@@ -33,6 +33,10 @@ var counter := false
 ## 見張り櫓（築城兵が壁の外に矢を撃つ櫓を建てる）
 var watchtower := false
 const MAX_WATCHTOWERS := 4
+## 剣山の壁（敵が壁に触れると、トゲが飛び出して周りに大ダメージ。壁1枚につき6秒に1回）
+var spike := false
+const SPIKE_COOLDOWN := 6.0
+const SPIKE_RADIUS := 120.0
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
@@ -117,6 +121,20 @@ func absorb(i: int, pos: Vector2 = Vector2.INF, amount: float = 1.0) -> void:
 		var mid: float = (w["a0"] + w["a1"]) / 2.0
 		game.spawn_burst(point_at(mid), Color(0.7, 0.65, 0.55), 20.0)
 		walls.remove_at(i)
+
+
+## 剣山の壁：敵が壁 i に触れたら、その場所からトゲが飛び出す（壁ごとにクールタイムあり）
+func spike_hit(i: int, pos: Vector2) -> void:
+	if not spike or i < 0 or i >= walls.size():
+		return
+	var w: Dictionary = walls[i]
+	if game.elapsed < w.get("spike_next", 0.0):
+		return
+	w["spike_next"] = game.elapsed + SPIKE_COOLDOWN
+	# 敵の硬さに合わせて威力も上がる（ふつうの雑魚のHPの2倍くらい）
+	var dmg: float = 40.0 * game._hp_mult()
+	game.explode(pos, SPIKE_RADIUS, dmg, w["src"], Color(0.8, 0.8, 0.85), 0.0, 260.0)
+	game.spawn_fun_fx("spikes", pos)
 
 
 ## 反撃壁：pos から一番近い敵へ弾を撃つ

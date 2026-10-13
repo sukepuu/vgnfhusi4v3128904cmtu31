@@ -26,6 +26,8 @@ var _dance_cd := 6.0
 var _orb_cd := 3.0
 ## 工兵：巨大からくり兵（20秒ごとに設置、10秒で消える）
 var automaton := false
+## からくり兵団：からくり兵が15秒残り、一度に2体置く
+var automaton_squad := false
 var _auto_cd := 5.0
 
 
@@ -108,6 +110,9 @@ func _throw_snowball() -> void:
 func _do_dance() -> void:
 	# 全部のペットが、全方位へ虹色の玉を12発ずつ撃つ
 	for p in game.pets:
+		# 合体中で隠れているペットは撃たない
+		if not p.visible:
+			continue
 		for i in 12:
 			var dir := Vector2.from_angle(TAU * i / 12.0 + p._t)
 			var b := BulletScript.new()
@@ -130,5 +135,10 @@ func _place_automaton() -> void:
 	if best != null:
 		pos = best.global_position + (castle.global_position - best.global_position).normalized() * 160.0
 	var dmg: float = game.engineer_stats.bomb_damage
-	game.spawn_placed("automaton", pos, dmg, 92.0, 10.0, game.engineers[0].record)
+	var life := 15.0 if automaton_squad else 10.0
+	game.spawn_placed("automaton", pos, dmg, 92.0, life, game.engineers[0].record)
+	if automaton_squad:
+		# 2体目は横に並べて置く
+		var side: Vector2 = (pos - castle.global_position).normalized().orthogonal() * 200.0
+		game.spawn_placed("automaton", game.clamp_to_map(pos + side, 92.0), dmg, 92.0, life, game.engineers[0].record)
 	game.spawn_burst(pos, Color(1.0, 0.8, 0.4), 50.0)

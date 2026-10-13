@@ -10,6 +10,10 @@ var game: Node2D
 var kind := "bomb"
 ## 仕掛けた工兵の戦績カード
 var src: Dictionary = {}
+## 大砲・置き土産の爆弾（威力・範囲は大砲が決める。工兵の強化は効かない）
+var from_cannon := false
+var fixed_damage := 0.0
+var fixed_radius := 0.0
 
 var _fuse_left := -1.0
 var _t := 0.0
@@ -18,15 +22,20 @@ var _hole_left := 0.0
 
 
 func _ready() -> void:
-	add_to_group("traps")
+	# 大砲の爆弾は、工兵の罠の上限に数えない
+	add_to_group("cannon_bombs" if from_cannon else "traps")
 
 
 ## 威力・範囲は工兵部隊の強化に合わせて、その時点の値を使う
 func _damage() -> float:
+	if from_cannon:
+		return fixed_damage
 	return game.engineer_stats.pit_damage if kind == "pit" else game.engineer_stats.bomb_damage
 
 
 func _blast_radius() -> float:
+	if from_cannon:
+		return fixed_radius
 	return game.engineer_stats.pit_radius if kind == "pit" else game.engineer_stats.bomb_radius
 
 
@@ -84,6 +93,9 @@ func _activate() -> void:
 	else:
 		game.spawn_burst(global_position, Color(1.0, 0.45, 0.15), blast_radius / 2.2)
 		game.spawn_burst(global_position, Color(1.0, 0.85, 0.3), blast_radius / 3.5)
+		if from_cannon:
+			queue_free()
+			return
 		# 徹甲地雷：一番近い敵1体に追加の大ダメージ
 		if st.ap_mine:
 			var near: Node2D = game.nearest_enemy(global_position, blast_radius)

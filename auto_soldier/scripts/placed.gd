@@ -38,14 +38,17 @@ var max_hp := 0.0
 var dead := false
 var _hurt := 0.0
 ## 耐久を持つ物の耐久
-const DURABILITY := {"watchtower": 50.0, "scarecrow": 60.0}
+const DURABILITY := {"watchtower": 50.0, "scarecrow": 60.0, "ice_statue": 5.0}
 ## 修理玉の大きさ（ボスの半径46の7割くらい）
 const ORB_RADIUS := 32.0
+## 置いたときの持続時間（残り時間バーの表示用）
+var _life0 := 0.0
 
 
 func _ready() -> void:
 	add_to_group("placed_" + kind)
 	_forever = life <= 0.0
+	_life0 = life
 	if kind == "repair_orb":
 		_heal_start = game.castle.healed_total
 	if DURABILITY.has(kind):
@@ -178,9 +181,13 @@ func _update_automaton(delta: float) -> void:
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 	if dead or max_hp <= 0.0:
 		return
+	# 氷像は威力に関係なく、1回攻撃されるごとに耐久が1減る
+	if kind == "ice_statue":
+		amount = 1.0
 	hp -= amount
 	_hurt = 0.15
-	game.spawn_damage_text(global_position, amount, Color(1.0, 0.6, 0.4))
+	if kind != "ice_statue":
+		game.spawn_damage_text(global_position, amount, Color(1.0, 0.6, 0.4))
 	if hp <= 0.0:
 		dead = true
 		game.spawn_burst(global_position, Color(0.6, 0.45, 0.3), 30.0)
@@ -309,8 +316,20 @@ func _draw() -> void:
 			draw_line(_aim * r * 0.4, _aim * (r + 16.0), Color(0.25, 0.25, 0.28), 10.0)
 			# 残り時間のバー
 			draw_rect(Rect2(Vector2(-30, -r - 14), Vector2(60, 5)), Color(0, 0, 0, 0.6))
-			draw_rect(Rect2(Vector2(-30, -r - 14), Vector2(60 * clampf(life / 10.0, 0.0, 1.0), 5)), Color(1.0, 0.8, 0.3))
+			draw_rect(Rect2(Vector2(-30, -r - 14), Vector2(60 * clampf(life / maxf(_life0, 0.01), 0.0, 1.0), 5)), Color(1.0, 0.8, 0.3))
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		"ice_statue":
+			# 倒された敵の形の氷像（叩かれるとヒビが増える）
+			var shake := Vector2(sin(_t * 50.0) * 2.0, 0.0) if _hurt > 0.0 else Vector2.ZERO
+			draw_circle(Vector2(0, 10), 15.0, Color(0, 0, 0, 0.25))
+			draw_circle(shake, 16.0, Color(0.7, 0.9, 1.0, 0.75))
+			draw_circle(shake + Vector2(0, -16), 10.0, Color(0.75, 0.93, 1.0, 0.75))
+			draw_arc(shake, 16.0, 0.0, TAU, 24, Color(0.9, 0.98, 1.0), 2.0)
+			draw_circle(shake + Vector2(-5, -6), 4.0, Color(1, 1, 1, 0.7))
+			var cracks := int(max_hp - hp)
+			for i in cracks:
+				var a := TAU * i / 5.0 + 0.4
+				draw_line(shake, shake + Vector2.from_angle(a) * 14.0, Color(0.3, 0.5, 0.7), 1.5)
 		"scarecrow":
 			# 揺れるかかし（叩かれると大きく揺れる）
 			var sway := sin(_t * 3.0) * 0.12 + (sin(_t * 40.0) * 0.3 if _hurt > 0.0 else 0.0)

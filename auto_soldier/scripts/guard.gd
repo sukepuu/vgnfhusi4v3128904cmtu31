@@ -32,6 +32,7 @@ var _retarget_cd := 0.0
 var _bash_cd := 0.0
 var _whirl_cd := 3.0
 var _spike_cd := 2.0
+var _giant_cd := 4.0
 ## 城へ飛んでくる敵の弾を受け止めに行っているとき、その弾
 var block_bullet: Node2D = null
 
@@ -54,6 +55,7 @@ func _process(delta: float) -> void:
 	_bash_cd -= delta
 	_whirl_cd -= delta
 	_spike_cd -= delta
+	_giant_cd -= delta
 	_thrust -= delta
 	_hurt_flash -= delta
 	_block_flash -= delta
@@ -107,6 +109,23 @@ func _process(delta: float) -> void:
 		game.explode(global_position, st.spear_reach * 1.2, st.spear_damage * 3.0, record, Color(0.7, 1.0, 0.7), 0.0, 320.0)
 		game.spawn_burst(global_position, Color(1, 1, 1), st.spear_reach / 1.8)
 	# 拒馬の柵：敵が近いとき、盾の前に柵を置く
+	# 神槍投擲：一番近い敵の方へ、ゆっくり進む巨大な槍を投げる
+	if st.giant_spear and _giant_cd <= 0.0:
+		var t: Node2D = game.nearest_enemy(global_position, 900.0)
+		if t != null:
+			_giant_cd = 8.0
+			var dir: Vector2 = (t.global_position - global_position).normalized()
+			var b := BulletScript.new()
+			b.game = game
+			b.velocity = dir * 230.0
+			b.damage = st.spear_damage * 5.0
+			b.pierce = 1000000
+			b.radius = 26.0
+			b.spear = true
+			b.life = 5.0
+			b.position = global_position + dir * 20.0
+			b.src = record
+			game.world.add_child(b)
 	if st.spikes and _spike_cd <= 0.0 and game.nearest_enemy(global_position, 260.0) != null:
 		_spike_cd = 8.0
 		game.spawn_placed("spikes", global_position + facing * 70.0, st.spear_damage * 0.8, 33.0, 8.0, record)

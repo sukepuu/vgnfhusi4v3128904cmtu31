@@ -2,6 +2,7 @@ extends Node2D
 ## 大砲の砲弾・投石器の岩。放物線を描いて飛び、着弾地点の周りにまとめてダメージ。
 
 const MissileScript := preload("res://scripts/missile.gd")
+const TrapScript := preload("res://scripts/trap.gd")
 
 var game: Node2D
 var start := Vector2.ZERO
@@ -34,6 +35,11 @@ var bounces := 0
 var cow := false
 ## 居座り岩（投石器）：着弾地点に岩が5秒残る
 var stay_rock := false
+## 大砲・置き土産：着弾地点に置く爆弾の威力（0なら置かない）
+var leave_bomb := 0.0
+## 投石器・鉄塊投げ：鉄塊の見た目。chase の敵を追いかけて落ち、その敵に direct_bonus のダメージ
+var iron := false
+var chase: Node2D = null
 
 var _t := 0.0
 var _height := 0.0
@@ -41,6 +47,8 @@ var _height := 0.0
 
 func _process(delta: float) -> void:
 	_t += delta
+	if chase != null and is_instance_valid(chase) and not chase.dead:
+		target = chase.global_position
 	var k := minf(_t / flight_time, 1.0)
 	position = start.lerp(target, k)
 	_height = sin(k * PI) * (240.0 if boulder else 140.0)
@@ -59,7 +67,11 @@ func _explode() -> void:
 			if stun > 0.0:
 				e.stun(stun)
 			e.take_damage(damage, to.normalized() * 300.0, src)
-	if direct_bonus > 0.0:
+	if direct_bonus > 0.0 and chase != null and is_instance_valid(chase) and not chase.dead:
+		# 鉄塊：追いかけた敵に直撃
+		chase.take_damage(direct_bonus, Vector2.ZERO, src)
+		game.spawn_burst(target, Color(0.75, 0.8, 0.9), 40.0)
+	elif direct_bonus > 0.0:
 		var near: Node2D = game.nearest_enemy(target, blast_radius)
 		if near != null:
 			near.take_damage(direct_bonus, Vector2.ZERO, src)
@@ -85,6 +97,16 @@ func _explode() -> void:
 			break
 		var mp := target + Vector2.from_angle(TAU * i / mines + randf() * 0.8) * randf_range(50.0, 110.0)
 		game.spawn_placed("mine", mp, mine_damage, 26.0, 20.0, src)
+	if leave_bomb > 0.0 and game.get_tree().get_nodes_in_group("cannon_bombs").size() < 24:
+		var b := TrapScript.new()
+		b.game = game
+		b.kind = "bomb"
+		b.from_cannon = true
+		b.fixed_damage = leave_bomb
+		b.fixed_radius = blast_radius
+		b.src = src
+		b.position = target
+		game.ground.add_child(b)
 	if stay_rock:
 		game.spawn_placed("boulder", target, damage * 0.3, blast_radius * 0.6, 5.0, src)
 	if roll_damage > 0.0:
@@ -116,6 +138,16 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, 32.0, Color(0.35, 0.2, 0.15))
 		draw_circle(Vector2(-8, -8), 12.0, Color(0.6, 0.35, 0.2))
 		draw_arc(Vector2.ZERO, 32.0, 0.0, TAU, 32, Color(1.0, 0.6, 0.2), 4.0)
+		return
+	if iron:
+		# 鉄塊（重そうな黒い四角）
+		draw_arc(target - position, blast_radius, 0.0, TAU, 32, Color(0.8, 0.85, 1.0, 0.45), 2.0)
+		draw_circle(Vector2.ZERO, 14.0, Color(0, 0, 0, 0.3))
+		draw_set_transform(Vector2(0, -_height), _t * 6.0, Vector2.ONE)
+		draw_rect(Rect2(Vector2(-16, -16), Vector2(32, 32)), Color(0.25, 0.26, 0.3))
+		draw_rect(Rect2(Vector2(-16, -16), Vector2(32, 32)), Color(0.55, 0.57, 0.62), false, 3.0)
+		draw_rect(Rect2(Vector2(-10, -10), Vector2(8, 8)), Color(0.6, 0.62, 0.68))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		return
 	if boulder:
 		# 着弾予定地を表示

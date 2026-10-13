@@ -40,6 +40,10 @@ var bounce_target: Node2D = null
 var crit := false
 ## 修理玉の弾（水色の大きな玉として描く。半透明じゃない）
 var orb := false
+## 神槍投擲の巨大な槍の見た目
+var spear := false
+## 当たるたびに威力が増える割合（破竹の大矢：0.1 で +10%ずつ）
+var grow_on_hit := 0.0
 ## 虹の矢（バリスタのおもしろ強化）：虹色の尾＋当たった敵が混乱する秒数
 var rainbow := false
 var confuse_on_hit := 0.0
@@ -128,6 +132,8 @@ func _process(delta: float) -> void:
 			if explode_radius > 0.0:
 				game.explode(global_position, explode_radius, damage * explode_ratio, src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
 			_hit[e] = true
+			if grow_on_hit > 0.0:
+				damage *= 1.0 + grow_on_hit
 			# 跳弾矢：狙った敵に当たったら、近くの別の敵へ跳ねる（威力は7割に）
 			# 途中で当たったほかの敵は、ふつうに貫通するだけ
 			if bounces > 0 and is_instance_valid(bounce_target) and e == bounce_target:
@@ -176,6 +182,18 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, radius * 0.6, Color(0.75, 0.98, 1.0))
 		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 48, Color(0.85, 1.0, 1.0), 3.0)
 		draw_circle(Vector2(-radius * 0.35, -radius * 0.35), radius * 0.22, Color(1, 1, 1))
+	elif spear:
+		# 巨大な槍（柄・穂先・房飾り）。radius が大きいほど長く太い
+		var dir := velocity.normalized()
+		var side := dir.orthogonal()
+		var shaft := radius * 3.2
+		draw_line(-dir * shaft, dir * radius * 0.6, Color(0.5, 0.33, 0.16), radius * 0.35)
+		draw_colored_polygon(PackedVector2Array([dir * radius * 1.6, dir * radius * 0.4 + side * radius * 0.55,
+			dir * radius * 0.6, dir * radius * 0.4 - side * radius * 0.55]), Color(0.88, 0.92, 1.0))
+		draw_colored_polygon(PackedVector2Array([dir * radius * 1.6, dir * radius * 0.4 + side * radius * 0.25,
+			dir * radius * 0.4 - side * radius * 0.25]), Color(1.0, 1.0, 1.0, 0.7))
+		draw_circle(dir * radius * 0.3, radius * 0.22, Color(0.85, 0.2, 0.2))
+		draw_circle(Vector2.ZERO, radius * 1.2, Color(0.7, 1.0, 0.75, 0.12))
 	elif wave:
 		var a := velocity.angle()
 		draw_arc(Vector2.ZERO, radius, a - 1.1, a + 1.1, 16, Color(color, 0.85), 5.0)

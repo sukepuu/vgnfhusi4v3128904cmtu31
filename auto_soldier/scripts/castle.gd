@@ -17,6 +17,8 @@ var regen := 1.0
 var healed_total := 0.0
 ## 受けるダメージの倍率（修理部隊の「鉄壁補強」で下がる）
 var damage_taken_mult := 1.0
+## 背水の修繕：城のHPが毎秒この量ずつ減る（HP1より下にはならない）
+var drain := 0.0
 
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0
@@ -100,6 +102,19 @@ var mega_bolt := false
 var _mega_cd := 4.0
 ## 結界：凍てつく大地（結界の中にずっとダメージ）
 var frost_ground := false
+## 9つ目の特別強化
+## 矢倉・執念の矢（倒せなかった敵を狙い続け、続けるほど強くなる）
+var tower_lock := false
+var _tower_locks: Array = [null, null, null, null]
+var _tower_stacks: Array = [0, 0, 0, 0]
+## 大砲・置き土産（着弾地点に爆弾を置く）
+var cannon_bomb := false
+## 投石器・鉄塊投げ（4発に1回、HPが一番多い敵へ鉄塊）
+var iron_chunk := false
+## バリスタ・破竹の大矢（当たるたびに矢の威力 +10%）
+var bolt_momentum := false
+## 結界・氷像の囮（結界の中で倒された敵が氷像になる）
+var ice_statue := false
 var _ground_tick := 0.0
 var _homing_cd := 2.0
 var _lightning_cd := 2.0
@@ -136,6 +151,9 @@ func _process(delta: float) -> void:
 	# 自然回復（毎秒 regen ずつ）。修理玉がためる「回復した量」にも入る
 	if regen > 0.0 and hp > 0.0 and hp < max_hp:
 		heal(regen * delta)
+	# 背水の修繕：城のHPが少しずつ減る（これで城が落ちることはない）
+	if drain > 0.0 and hp > 1.0:
+		hp = maxf(1.0, hp - drain * delta)
 	_update_towers(delta)
 	_update_cannon(delta)
 	_update_catapult(delta)
@@ -208,6 +226,18 @@ func _update_towers(delta: float) -> void:
 			continue
 		var from := global_position + _tower_local_pos(i)
 		var target: Node2D = game.nearest_enemy(from, tower_range)
+		# 執念の矢：前に狙った敵がまだ生きていて射程内なら、また同じ敵を狙う
+		var power := 1.0
+		if tower_lock:
+			var prev = _tower_locks[i]
+			if prev != null and is_instance_valid(prev) and not prev.dead and from.distance_to(prev.global_position) < tower_range:
+				target = prev
+				_tower_stacks[i] = mini(_tower_stacks[i] + 1, 10)
+			else:
+				_tower_stacks[i] = 0
+			_tower_locks[i] = target
+			# 1回ごとに +20%、最大3倍
+			power = 1.0 + 0.2 * _tower_stacks[i]
 		if target == null:
 			continue
 		var aim := (target.global_position - from).normalized()
@@ -218,14 +248,21 @@ func _update_towers(delta: float) -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 760.0
-			b.damage = tower_damage
+			b.damage = tower_damage * power
 			# 会心の一矢：25%でダメージ3倍
 			if tower_crit and randf() < 0.25:
-				b.damage = tower_damage * 3.0
+				b.damage = tower_damage * power * 3.0
 				b.radius = 6.0
 			b.pierce = tower_pierce
 			b.radius = 4.0
 			b.color = Color(0.95, 0.8, 0.55)
+			if tower_lock and power > 1.0:
+				# 執念がたまるほど赤く太い矢に
+				b.color = Color(1.0, 0.8, 0.55).lerp(Color(1.0, 0.25, 0.2), (power - 1.0) / 2.0)
+				b.radius = 4.0 + (power - 1.0) * 1.5
+				if tower_shots == 1:
+					# 狙った敵だけに当たる（手前の敵に吸われない）
+					b.only_target = target
 			if tower_blast:
 				b.explode_radius = 70.0
 				b.explode_ratio = 3.0
@@ -248,6 +285,9 @@ func _update_cannon(delta: float) -> void:
 		_cannon_aims[i] = (best.global_position - from).normalized()
 		var rec := _equip_record("cannon", "大砲", i)
 		var shells: Array = [_fire_shell(from, best.global_position, cannon_damage, cannon_radius, false, rec)]
+		# 置き土産：着弾地点に爆弾を置く
+		if cannon_bomb:
+			shells[0].leave_bomb = cannon_damage * 1.5
 		# ビリヤード砲弾：着弾後に2回跳ねる
 		if billiard:
 			shells[0].bounces = 2
@@ -291,6 +331,14 @@ func _update_catapult(delta: float) -> void:
 			s.stay_rock = true
 		# 牛投げ：3回に1回、岩のかわりに牛を投げる
 		_catapult_shots += 1
+		# 鉄塊投げ：4発に1回、HPが一番多い敵へ鉄塊も投げる
+		if iron_chunk and _catapult_shots % 4 == 0:
+			var big := _toughest_enemy_in(global_position, INF)
+			if big != null:
+				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_damage * 0.5, 50.0, true, s.src)
+				iron.iron = true
+				iron.chase = big
+				iron.direct_bonus = catapult_damage * 8.0
 		if cow_throw and _catapult_shots % 3 == 0:
 			s.cow = true
 		if rolling_rock:
@@ -332,6 +380,9 @@ func _update_ballista(delta: float) -> void:
 				b.radius = 16.0
 				b.scale = Vector2(1.8, 1.8)
 			b.bolt = true
+			# 破竹の大矢：当たるたびに威力 +10%
+			if bolt_momentum:
+				b.grow_on_hit = 0.1
 			# 虹の矢：虹色の尾を引き、当たった敵を混乱させる
 			if rainbow_bolt:
 				b.rainbow = true

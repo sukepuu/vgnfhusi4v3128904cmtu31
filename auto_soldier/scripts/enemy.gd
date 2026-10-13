@@ -198,6 +198,16 @@ func _process(delta: float) -> void:
 		var g := _nearest_guard(230.0)
 		if g != null:
 			soldier = g
+	# 仁王立ち：近くに重装兵がいればそちらを狙う（ボスは引きつけられない）
+	if game.heavy_provoke and not is_boss:
+		var h: Node2D = game.heavy
+		if h != null and not h.dead and global_position.distance_to(h.global_position) < game.PROVOKE_RANGE:
+			soldier = h
+	# 氷像の囮：近くに氷像があれば、何よりも先にそちらを狙う
+	if game.castle.ice_statue and not is_boss:
+		var st: Node2D = _nearest_statue(320.0)
+		if st != null:
+			soldier = st
 	var target_pos: Vector2 = soldier.global_position if soldier != null else castle.closest_point(global_position)
 	if hunter and soldier == null:
 		# 狙える兵士がいなければ城の前で待ち伏せ
@@ -240,6 +250,7 @@ func _process(delta: float) -> void:
 		_wall_cd -= delta
 		var wi: int = game.walls.hit_test(global_position, radius)
 		if wi >= 0 and _wall_cd <= 0.0:
+			game.walls.spike_hit(wi, global_position)
 			game.walls.damage_wall(wi, 7.0)
 			# ボス自身はダメージを受けず、ランダムな方向へ大きく弾かれる（だいたい200くらい・気絶はしない）
 			# 下側（城の方）へは弾かれない
@@ -282,6 +293,19 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+func _nearest_statue(max_dist: float) -> Node2D:
+	var best: Node2D = null
+	var best_d := max_dist
+	for s in get_tree().get_nodes_in_group("placed_ice_statue"):
+		if s.dead:
+			continue
+		var d: float = global_position.distance_to(s.global_position)
+		if d < best_d:
+			best_d = d
+			best = s
+	return best
+
+
 func _nearest_guard(max_dist: float) -> Node2D:
 	var best: Node2D = null
 	var best_d := max_dist
@@ -300,7 +324,11 @@ func _check_wall() -> bool:
 	var wi: int = game.walls.hit_test(global_position, radius)
 	if wi < 0:
 		return true
+	# 剣山の壁：トゲが飛び出す（壁が壊れる前に）
+	game.walls.spike_hit(wi, global_position)
 	# 体当たりした敵は壁の耐久を5削る（自爆兵はその3倍）
+	if wi >= game.walls.walls.size():
+		return false
 	game.walls.absorb(wi, global_position, 15.0 if kind == "bomber" else 5.0)
 	if kind == "bomber":
 		# 自爆兵はその場で爆発して消える
@@ -626,6 +654,9 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 		return
 	if mark_left > 0.0:
 		amount *= 1.35
+	# 魔王狩り：遊撃兵からボスへのダメージ +10%
+	if is_boss and game.stats.boss_hunt and src.get("cat", "") == "soldier":
+		amount *= 1.1
 	if not src.is_empty():
 		src["dealt"] += minf(amount, hp)
 		if hp - amount <= 0.0:

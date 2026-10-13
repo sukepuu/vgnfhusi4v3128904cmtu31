@@ -24,6 +24,9 @@ var _dash_left := 0.0
 var _dash_dir := Vector2.UP
 var _dash_hit := {}
 var _chain_left := 0
+## 疾風怒濤：残りの連鎖回数と、今の突進で敵を倒したか
+var _kill_chain_left := 0
+var _dash_killed := false
 var _star_cd := 0.0
 var _hurt_flash := 0.0
 var _invuln := 0.0
@@ -77,6 +80,7 @@ func _process(delta: float) -> void:
 		if d < DASH_START and _cd <= 0.0:
 			_start_dash(facing, st)
 			_chain_left = st.chain
+			_kill_chain_left = 5
 		elif d > DASH_START * 0.8:
 			position += facing * st.move_speed * delta
 	else:
@@ -106,10 +110,12 @@ func _lowest_enemy() -> Node2D:
 	return best
 
 
-func _start_dash(dir: Vector2, st) -> void:
+## dist = 突進する距離（省略すると通常の突進距離）
+func _start_dash(dir: Vector2, st, dist: float = -1.0) -> void:
 	_dash_dir = dir
-	_dash_left = st.dash_distance / DASH_SPEED
+	_dash_left = maxf(st.dash_distance, dist) / DASH_SPEED
 	_dash_hit.clear()
+	_dash_killed = false
 	_cd = st.interval
 
 
@@ -138,6 +144,8 @@ func _update_dash(delta: float, st) -> void:
 			if st.stun_hit:
 				e.stun(1.0)
 			e.take_damage(hit_dmg, _dash_dir * 350.0, record)
+			if e.dead:
+				_dash_killed = true
 			if st.carry and not e.is_boss and not e.dead and e.speed > 0.0:
 				_carried.append(e)
 			if st.heal_on_hit:
@@ -158,6 +166,15 @@ func _update_dash(delta: float, st) -> void:
 		# 突撃の衝撃：止まった所で爆発
 		if st.quake:
 			game.explode(global_position, 90.0, dmg * 0.6, record, Color(1.0, 0.85, 0.4), 0.0, 300.0)
+		# 疾風怒濤：敵を倒していたら、すぐ次の敵へ突進し直す（最大5連鎖）
+		if st.kill_chain and _dash_killed and _kill_chain_left > 0:
+			var nk := _nearest_unhit(450.0)
+			if nk != null:
+				_kill_chain_left -= 1
+				var to_k: Vector2 = nk.global_position - global_position
+				facing = to_k.normalized()
+				_start_dash(facing, st, to_k.length() + 40.0)
+				return
 		# 連続突撃：すぐ次の敵へ
 		if _chain_left > 0:
 			var next := _nearest_unhit(320.0)

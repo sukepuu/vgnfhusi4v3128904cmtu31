@@ -50,6 +50,9 @@ var _ball_cd := 2.0
 var rage_enabled := false
 var rage := 0.0
 var _rage_timer := 0.0
+## 仁王立ち：近くにいる敵の数（与ダメージ +5% ずつ）
+var _near_count := 0
+var _count_cd := 0.0
 
 
 func _ready() -> void:
@@ -74,6 +77,14 @@ func _process(delta: float) -> void:
 	_exec_cd -= delta
 	_ball_cd -= delta
 	_rage_timer -= delta
+	if game.heavy_provoke:
+		_count_cd -= delta
+		if _count_cd <= 0.0:
+			_count_cd = 0.25
+			_near_count = 0
+			for e in game.enemies_near(global_position, game.PROVOKE_RANGE):
+				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < game.PROVOKE_RANGE:
+					_near_count += 1
 	if _rage_timer <= 0.0:
 		rage = 0.0
 	_hurt_flash -= delta
@@ -210,7 +221,8 @@ func _quake() -> void:
 
 ## 今の攻撃力（怒りの闘志の上乗せ込み）
 func dmg() -> float:
-	return slash_damage * (1.0 + rage)
+	var provoke := 0.05 * _near_count if game.heavy_provoke else 0.0
+	return slash_damage * (1.0 + rage) * (1.0 + provoke)
 
 
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:

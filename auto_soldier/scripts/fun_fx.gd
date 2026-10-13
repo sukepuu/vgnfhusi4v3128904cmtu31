@@ -3,6 +3,7 @@ extends Node2D
 ## firework：start から打ち上がって end で弾ける花火（弾けた所の敵に小ダメージ）
 ## jack    ：ビックリ箱（バネでピエロが飛び出す）
 ## roar    ：雄叫びの広がる輪
+## spikes  ：剣山の壁から飛び出すトゲ
 
 var game: Node2D
 var kind := "firework"
@@ -87,6 +88,15 @@ func _draw() -> void:
 			draw_circle(top + Vector2(-4, -3), 1.8, Color(0, 0, 0, a))
 			draw_circle(top + Vector2(4, -3), 1.8, Color(0, 0, 0, a))
 			draw_colored_polygon(PackedVector2Array([top + Vector2(-10, -7), top + Vector2(0, -24), top + Vector2(10, -7)]), Color(0.3, 0.6, 1.0, a))
+		"spikes":
+			# 全方位にトゲがシャキーンと伸びて、引っこむ
+			var k := minf(_t / 0.12, 1.0) * clampf((0.7 - _t) / 0.3, 0.0, 1.0)
+			for i in 14:
+				var d := Vector2.from_angle(TAU * i / 14.0 + 0.2)
+				var tip := d * (30.0 + 90.0 * k)
+				var side := d.orthogonal() * 7.0
+				draw_colored_polygon(PackedVector2Array([d * 12.0 + side, tip, d * 12.0 - side]), Color(0.78, 0.8, 0.85, k))
+				draw_line(d * 12.0, tip, Color(1, 1, 1, 0.6 * k), 1.5)
 		"roar":
 			var k := _t / 0.7
 			draw_arc(Vector2.ZERO, radius * k, 0.0, TAU, 48, Color(1.0, 0.6, 0.3, 1.0 - k), 8.0)

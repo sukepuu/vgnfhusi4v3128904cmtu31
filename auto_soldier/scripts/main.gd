@@ -13,6 +13,7 @@ const WallsScript := preload("res://scripts/walls.gd")
 const CastleScript := preload("res://scripts/castle.gd")
 const EnemyScript := preload("res://scripts/enemy.gd")
 const PetScript := preload("res://scripts/pet.gd")
+const PetFusionScript := preload("res://scripts/pet_fusion.gd")
 const HudScript := preload("res://scripts/hud.gd")
 const LevelUpScript := preload("res://scripts/level_up_ui.gd")
 const DamageTextScript := preload("res://scripts/damage_text.gd")
@@ -76,6 +77,10 @@ var guards: Array = []
 var builders: Array = []
 ## 重装部隊（最大1体）
 var heavy: Node2D = null
+## 仁王立ち（重装の特別強化）：近くの敵が重装兵を狙う。重装兵がいなくても取った状態を覚えておく
+var heavy_provoke := false
+## 仁王立ちで敵を引きつける距離
+const PROVOKE_RANGE := 260.0
 ## 工兵部隊
 var engineers: Array = []
 var engineer_stats := EngineerStats.new()
@@ -316,6 +321,20 @@ func allies() -> Array:
 	return list
 
 
+## 生きているボス（分裂の魔獣の分身も含む）のうち pos に一番近いもの
+func nearest_boss(pos: Vector2) -> Node2D:
+	var best: Node2D = null
+	var best_d := INF
+	for e in enemies_cache:
+		if not is_instance_valid(e) or e.dead or not e.is_boss:
+			continue
+		var d: float = pos.distance_to(e.global_position)
+		if d < best_d:
+			best_d = d
+			best = e
+	return best
+
+
 ## 生きている味方のうち pos に一番近いもの
 func nearest_ally(pos: Vector2, max_dist: float) -> Node2D:
 	var best: Node2D = null
@@ -455,6 +474,18 @@ func add_builder() -> void:
 	b.position = castle.gate_position()
 	world.add_child(b)
 	builders.append(b)
+
+
+## ペット大合体（ペットの特別強化）を始める
+var pet_fusion: Node2D = null
+
+
+func start_pet_fusion() -> void:
+	if pet_fusion != null:
+		return
+	pet_fusion = PetFusionScript.new()
+	pet_fusion.game = self
+	world.add_child(pet_fusion)
 
 
 ## 全遊撃兵にペットを1匹ずつ追加する
@@ -635,6 +666,11 @@ func on_enemy_killed(e: Node2D) -> void:
 			hud.show_banner("BOSS 撃破！", Color(1.0, 0.85, 0.3))
 		spawn_burst(e.global_position, Color(1.0, 0.85, 0.3), 60.0)
 	spawn_burst(e.global_position, e.color, e.radius)
+	# 氷像の囮：結界の中で倒された敵（ボス以外）が氷像になる（同時に12体まで）
+	if castle.ice_statue and not e.is_boss and castle.frost_radius > 0.0 \
+			and castle.global_position.distance_to(e.global_position) < castle.frost_radius \
+			and get_tree().get_nodes_in_group("placed_ice_statue").size() < 12:
+		spawn_placed("ice_statue", e.global_position, 0.0, 16.0, 20.0, castle.record)
 	add_xp(e.xp_value)
 
 

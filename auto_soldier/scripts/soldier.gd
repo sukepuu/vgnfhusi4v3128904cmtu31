@@ -140,6 +140,11 @@ func _target_valid() -> bool:
 
 ## 常に自分から一番近い敵を狙う
 func _choose_target() -> Node2D:
+	# 魔王狩り：ボスがいれば一番近いボスを狙う
+	if game.stats.boss_hunt:
+		var b: Node2D = game.nearest_boss(global_position)
+		if b != null:
+			return b
 	return game.nearest_enemy(global_position, INF)
 
 

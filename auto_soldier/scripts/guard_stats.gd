@@ -26,3 +26,5 @@ var spikes := false
 var reflect := false
 ## 捨て身の構え：HPが半分、盾で防いでも半分くらう。そのかわり槍が当たった敵が爆発（槍の3倍）
 var berserk := false
+## 神槍投擲：8秒ごとに巨大な槍を投げる
+var giant_spear := false

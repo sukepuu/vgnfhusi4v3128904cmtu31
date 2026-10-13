@@ -128,9 +128,12 @@ func _rebuild() -> void:
 		if lv > 0:
 			var g := _group_of_upgrade(u)
 			normal[g] = normal.get(g, 0) + lv
+	# 特別強化の数（取った数 / 全部の数）
+	var special_total := {}
 	for u in Upgrades.SPECIAL:
+		var g := _group_of_upgrade(u)
+		special_total[g] = special_total.get(g, 0) + 1
 		if game.upgrade_levels.get(u["id"], 0) > 0:
-			var g := _group_of_upgrade(u)
 			special[g] = special.get(g, 0) + 1
 
 	var head_col := Color(0.8, 0.8, 0.8)
@@ -150,7 +153,7 @@ func _rebuild() -> void:
 		_grid.add_child(_cell(_fmt(d), col, 18, true))
 		_grid.add_child(_cell("%d" % normal.get(key, 0), col, 18, true))
 		# 城（本体）には特別強化がない
-		_grid.add_child(_cell("-" if key == "castle" else "%d / 8" % special.get(key, 0), col, 18, true))
+		_grid.add_child(_cell("-" if key == "castle" else "%d / %d" % [special.get(key, 0), special_total.get(key, 0)], col, 18, true))
 
 
 func _fmt(v: float) -> String:

@@ -217,6 +217,21 @@ const SPECIAL := [
 	{"id": "sp_ult_meteor", "cat": "castle", "special": true, "name": "投石器・必殺・隕石落とし", "desc": "15秒ごとに、敵の群れへ巨大な燃える隕石を落とす（投石器の6倍の威力・超広範囲、跡が燃える）", "max": 1, "req": "catapult"},
 	{"id": "sp_ult_thunder", "cat": "castle", "special": true, "name": "バリスタ・必殺・雷神の大槍", "desc": "15秒ごとに、敵が一番多く並ぶ方向へ雷の大槍を放つ（バリスタの6倍の威力＋1秒しびれる）", "max": 1, "req": "ballista"},
 	{"id": "sp_ult_ice_age", "cat": "castle", "special": true, "name": "結界・必殺・氷河期", "desc": "15秒ごとに、結界の2倍以上の広さの敵をまとめて3秒凍らせてダメージ", "max": 1, "req": "frost"},
+	# --- 9つ目の特別強化（面白くてしっかり強いもの）
+	{"id": "sp_boss_hunt", "cat": "soldier", "special": true, "name": "魔王狩り", "desc": "遊撃兵がボスを最優先で狙うようになる。遊撃兵のボスへのダメージ +10%", "max": 1},
+	{"id": "sp_giant_spear", "cat": "guard", "special": true, "name": "神槍投擲", "desc": "8秒ごとに、迎撃兵が一番近い敵の方へ巨大な槍を投げる。槍はゆっくり進み、通った敵を全部貫く（槍の5倍の威力）", "max": 1, "req": "guard"},
+	{"id": "sp_rapid_snipe", "cat": "sniper", "special": true, "name": "速射の極意", "desc": "狙撃兵の攻撃力が1/3になるかわりに、攻撃速度が4倍になる", "max": 1, "req": "sniper"},
+	{"id": "sp_kill_chain", "cat": "knight", "special": true, "name": "疾風怒濤", "desc": "突進で敵を倒すたびに、すぐ次の敵へ突進し直す（最大5連鎖）", "max": 1, "req": "knight"},
+	{"id": "sp_provoke", "cat": "heavy", "special": true, "name": "仁王立ち", "desc": "近くの敵が重装兵を狙うようになる。近くの敵1体につき、重装兵の与ダメージ +5%", "max": 1, "req": "heavy"},
+	{"id": "sp_spike_wall", "cat": "builder", "special": true, "name": "剣山の壁", "desc": "敵が壁に触れると、壁からトゲが飛び出して周りの敵に大ダメージ（壁1枚につき6秒に1回）", "max": 1, "req": "builder"},
+	{"id": "sp_automaton_squad", "cat": "engineer", "special": true, "name": "からくり兵団", "desc": "巨大からくり兵が15秒（+5秒）残るようになり、一度に2体置くようになる", "max": 1, "req": "sp_automaton"},
+	{"id": "sp_overwork", "cat": "repair", "special": true, "name": "背水の修繕", "desc": "城のHPが毎秒2ずつ減るようになる（HP1より下にはならない）。かわりに修理兵1人の回復量 +1/秒", "max": 1, "req": "repairer"},
+	{"id": "sp_pet_fusion", "cat": "pet", "special": true, "name": "ペット大合体", "desc": "20秒ごとに、全ペットが合体して10秒間巨大ペットになる。特大弾を連射しながら体当たりする。\n合体したペットが多いほど、強く大きくなる", "max": 1, "req": "pet"},
+	{"id": "sp_tower_lock", "cat": "castle", "special": true, "name": "矢倉・執念の矢", "desc": "狙った敵を倒せなかったら、次も同じ敵を狙う。同じ敵を狙い続けるほど矢が強くなる（1回ごとに+20%、最大3倍）", "max": 1, "req": "tower"},
+	{"id": "sp_cannon_bomb", "cat": "castle", "special": true, "name": "大砲・置き土産", "desc": "砲弾が着弾した場所に爆弾を置く。近くに敵が来ると爆発する（大砲の1.5倍の威力）", "max": 1, "req": "cannon"},
+	{"id": "sp_iron_chunk", "cat": "castle", "special": true, "name": "投石器・鉄塊投げ", "desc": "4発に1回、ふつうの岩と一緒に、HPが一番多い敵へ鉄塊を投げる（投石器の8倍の威力）", "max": 1, "req": "catapult"},
+	{"id": "sp_bolt_momentum", "cat": "castle", "special": true, "name": "バリスタ・破竹の大矢", "desc": "バリスタの矢が敵に当たるたびに、その矢の威力が +10% ずつ増えていく", "max": 1, "req": "ballista"},
+	{"id": "sp_ice_statue", "cat": "castle", "special": true, "name": "結界・氷像の囮", "desc": "結界の中で倒された敵が氷像になる。氷像はほかの敵に最優先で狙われる（5回攻撃されると砕ける）", "max": 1, "req": "frost"},
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",
@@ -654,6 +669,36 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.ultimates.thunder_spear = true
 		"sp_ult_ice_age":
 			game.ultimates.ice_age = true
+		"sp_boss_hunt":
+			st.boss_hunt = true
+		"sp_giant_spear":
+			game.guard_stats.giant_spear = true
+		"sp_rapid_snipe":
+			game.sniper_stats.damage /= 3.0
+			game.sniper_stats.interval /= 4.0
+		"sp_kill_chain":
+			game.knight_stats.kill_chain = true
+		"sp_provoke":
+			game.heavy_provoke = true
+		"sp_spike_wall":
+			game.walls.spike = true
+		"sp_automaton_squad":
+			game.fun.automaton_squad = true
+		"sp_overwork":
+			castle.drain += 2.0
+			game.repair_stats.heal_per_sec += 1.0
+		"sp_pet_fusion":
+			game.start_pet_fusion()
+		"sp_tower_lock":
+			castle.tower_lock = true
+		"sp_cannon_bomb":
+			castle.cannon_bomb = true
+		"sp_iron_chunk":
+			castle.iron_chunk = true
+		"sp_bolt_momentum":
+			castle.bolt_momentum = true
+		"sp_ice_statue":
+			castle.ice_statue = true
 		"tower":
 			castle.tower_count = new_level
 			if new_level > 1:

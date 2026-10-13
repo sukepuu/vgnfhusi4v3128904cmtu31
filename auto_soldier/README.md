@@ -186,7 +186,7 @@ auto_soldier/
 
 ## 調整しやすい値
 
-- 難易度：`main.gd` の `_update_spawning()`（出現ペース）、`_hp_mult()`（敵のHP倍率：t = 秒×1.5 として `1 + t/75 + (t/170)²`。5分で約×14、10分で約×41）
+- 難易度：`main.gd` の `_update_spawning()`（出現ペース）、`_hp_mult()`（敵のHP倍率：t = 秒×1.3 として `1 + t/75 + (t/170)²`。5分で約×11.5、10分で約×32.5）
 - 必要経験値：`main.gd` の `xp_needed()`
 - 城のHP：`castle.gd` の `max_hp`
 - 遊撃部隊の初期ステータス：`soldier_stats.gd`

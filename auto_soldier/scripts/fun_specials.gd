@@ -26,7 +26,7 @@ var _dance_cd := 6.0
 var _orb_cd := 3.0
 ## 工兵：巨大からくり兵（20秒ごとに設置、10秒で消える）
 var automaton := false
-## からくり兵団：からくり兵が15秒残り、一度に2体置く
+## からくり兵団：からくり兵を一度に2体置く
 var automaton_squad := false
 var _auto_cd := 5.0
 
@@ -135,7 +135,7 @@ func _place_automaton() -> void:
 	if best != null:
 		pos = best.global_position + (castle.global_position - best.global_position).normalized() * 160.0
 	var dmg: float = game.engineer_stats.bomb_damage
-	var life := 15.0 if automaton_squad else 10.0
+	var life := 10.0
 	game.spawn_placed("automaton", pos, dmg, 92.0, life, game.engineers[0].record)
 	if automaton_squad:
 		# 2体目は横に並べて置く

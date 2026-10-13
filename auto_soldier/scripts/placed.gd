@@ -8,7 +8,7 @@ extends Node2D
 ## scarecrow ：工兵のかかし。敵の気を引いて、代わりに殴られてくれる
 ## boulder   ：投石器の居座り岩。上にいる敵にダメージを与え続け、足を30%遅くする
 ## repair_orb：修理玉。置いてから10秒間に城が回復した量をためて、最後にHPが一番多い敵へ撃つ
-## automaton ：工兵の巨大からくり兵。ゆっくり歩き、全方位斬り→高速連射をくり返す。消えるときに大爆発
+## automaton ：工兵の巨大からくり兵。ゆっくり歩き、全方位斬り1回→高速連射をくり返す。消えるときに大爆発
 ## 見張り櫓とかかしには耐久があり、敵に攻撃される（味方と同じあつかい）
 
 const BulletScript := preload("res://scripts/bullet.gd")
@@ -159,8 +159,9 @@ func _update_automaton(delta: float) -> void:
 		fx.duration = 0.25
 		fx.position = global_position
 		game.effects.add_child(fx)
+		# 近距離攻撃1回 → 射撃 → 近距離攻撃1回 → … をくり返す
 		_mode_count += 1
-		if _mode_count >= 3:
+		if _mode_count >= 1:
 			_mode = "fire"
 			_mode_count = 0
 	else:

@@ -241,9 +241,23 @@ func refresh() -> void:
 	_boss_bar.visible = has_boss
 	_boss_label.visible = has_boss
 	if has_boss:
-		_boss_bar.max_value = b.max_hp
-		_boss_bar.value = b.hp
-		_boss_label.text = "BOSS「%s」（%d体目）  %d / %d" % [b.boss_title, b.boss_rank, ceili(b.hp), int(b.max_hp)]
+		if b.kind == "boss3":
+			# 分裂の魔獣：分かれた体ぜんぶのHPの合計
+			var total := 0.0
+			var total_max := 0.0
+			var n := 0
+			for x in get_tree().get_nodes_in_group("enemies"):
+				if x.kind == "boss3" and not x.dead:
+					total += x.hp
+					total_max += x.max_hp
+					n += 1
+			_boss_bar.max_value = maxf(total_max, 1.0)
+			_boss_bar.value = total
+			_boss_label.text = "BOSS「%s」（%d体目）  残り%d体  %d / %d" % [b.boss_title, b.boss_rank, n, ceili(total), int(total_max)]
+		else:
+			_boss_bar.max_value = b.max_hp
+			_boss_bar.value = b.hp
+			_boss_label.text = "BOSS「%s」（%d体目）  %d / %d" % [b.boss_title, b.boss_rank, ceili(b.hp), int(b.max_hp)]
 	var castle: Node2D = game.castle
 	_xp_bar.max_value = game.xp_to_next
 	_xp_bar.value = game.xp

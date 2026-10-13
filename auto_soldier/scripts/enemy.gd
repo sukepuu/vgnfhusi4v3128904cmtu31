@@ -3,7 +3,7 @@ extends Node2D
 ## 近接型（grunt / runner / brute）は城に触れると消滅して城にダメージ、近くの兵士には体当たり。
 ## 遠距離型（archer）は近くの兵士か城を狙って弾を撃つ。
 ## 刺客（hunter）は城を無視して兵士（遊撃部隊・迎撃部隊）だけを狙う。壁もすり抜ける。
-## 壁に触れると壁に1発分防がれて消滅する（ダメージの大きさに関係なし）。
+## 壁に触れると壁の耐久を5削って消滅する（敵の弾は1削る）。
 ## 分裂体（splitter）は倒すと小さな分裂体（splitling）3体に分かれる。
 ## 治癒師（healer）は後方にとどまり、周りの敵を定期的に回復する。
 ## 自爆兵（bomber）は兵士・壁・城にぶつかると爆発する（壁は3発分削る）。
@@ -32,6 +32,9 @@ var hunter := false
 var is_boss := false
 ## 何体目のボスか（1始まり。強さに使う）
 var boss_rank := 1
+## 分裂の魔獣：何回分裂したあとの体か（0〜4。4まで分裂すると16体）
+var split_gen := 0
+const MAX_SPLIT := 4
 ## ボスの名前（HPバーに表示）
 var boss_title := ""
 ## 砲台要塞の攻撃パターン
@@ -118,6 +121,16 @@ func setup(k: String, hp_mult: float) -> void:
 			is_boss = true
 			boss_title = "砲台要塞"
 			_pattern_left = 2.0
+		"boss3":
+			# 分裂するたびにHPは半分、体は小さく、足は速くなる
+			var shrink := pow(0.5, split_gen)
+			max_hp = 420.0 * (1.0 + 0.3 * (boss_rank - 1)) * shrink; speed = 22.0 * pow(1.18, split_gen); damage = 20.0 * pow(0.75, split_gen)
+			castle_damage = 36.0 * pow(0.6, split_gen); radius = 44.0 * pow(0.78, split_gen)
+			xp_value = [40, 20, 10, 6, 4][split_gen]
+			color = Color(0.35, 0.75, 0.4).lerp(Color(0.6, 0.95, 0.5), split_gen / 4.0)
+			is_boss = true
+			boss_title = "分裂の魔獣"
+			_skill_cd = randf_range(1.0, 3.0)
 	_hp_mult = hp_mult
 	max_hp *= hp_mult
 	hp = max_hp
@@ -147,7 +160,9 @@ func _process(delta: float) -> void:
 		return
 	var castle: Node2D = game.castle
 	var move := Vector2.ZERO
-	if is_boss:
+	if kind == "boss3":
+		_split_boss_skills(delta)
+	elif is_boss:
 		_boss_skills(delta)
 	elif kind == "healer":
 		_heal_skill(delta)
@@ -264,13 +279,9 @@ func _check_wall() -> bool:
 	var wi: int = game.walls.hit_test(global_position, radius)
 	if wi < 0:
 		return true
-	game.walls.absorb(wi, global_position)
+	# 体当たりした敵は壁の耐久を5削る（自爆兵はその3倍）
+	game.walls.absorb(wi, global_position, 15.0 if kind == "bomber" else 5.0)
 	if kind == "bomber":
-		# 自爆兵は壁を3発分削る
-		for k in 2:
-			wi = game.walls.hit_test(global_position, radius)
-			if wi >= 0:
-				game.walls.absorb(wi, global_position)
 		game.spawn_burst(global_position, Color(1.0, 0.4, 0.1), 40.0)
 	dead = true
 	remove_from_group("enemies")
@@ -404,6 +415,35 @@ func _fortress_skills(delta: float) -> void:
 	_recoil = 0.15
 
 
+## 分裂の魔獣の技：全方位へ弾を撃ちながら城へ進む（小さい体ほど弾は少なく弱い）
+func _split_boss_skills(delta: float) -> void:
+	_skill_cd -= delta
+	if _skill_cd > 0.0:
+		return
+	_skill_cd = 3.5
+	var n: int = [20, 14, 10, 8, 6][split_gen]
+	var dmg := 11.0 * (1.0 + 0.3 * (boss_rank - 1)) * pow(0.75, split_gen)
+	_spiral_angle += 0.5
+	for i in n:
+		_shoot(Vector2.from_angle(TAU * i / n + _spiral_angle), dmg, 230.0, 7.0 - split_gen, Color(0.55, 1.0, 0.5), 3.5)
+
+
+## 分裂の魔獣：倒されたら少し小さい体2体に分かれる
+func _split() -> void:
+	for i in 2:
+		var side := Vector2.from_angle(PI * i + randf_range(-0.4, 0.4)) * radius * 0.7
+		var child: Node2D = get_script().new()
+		child.game = game
+		child.boss_rank = boss_rank
+		child.split_gen = split_gen + 1
+		child.setup("boss3", _hp_mult)
+		child.position = game.clamp_to_map(global_position + side, 20.0)
+		child.knock = side.normalized() * 260.0
+		child.knock.y = minf(child.knock.y, 0.0)
+		game.world.add_child(child)
+	game.spawn_burst(global_position, Color(0.6, 1.0, 0.5), radius)
+
+
 ## 治癒師：3秒ごとに周りの敵を回復
 func _heal_skill(delta: float) -> void:
 	_heal_fx -= delta
@@ -504,6 +544,9 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	if hp <= 0.0:
 		dead = true
 		remove_from_group("enemies")
+		# 分裂の魔獣は、倒されたことを知らせる前に分かれる（残りの体がいるかの判定のため）
+		if kind == "boss3" and split_gen < MAX_SPLIT:
+			_split()
 		game.on_enemy_killed(self)
 		# 分裂体は小さな分裂体3体に分かれる
 		if kind == "splitter":
@@ -575,6 +618,20 @@ func _draw() -> void:
 			draw_colored_polygon(PackedVector2Array([
 				Vector2(-22, crown_y), Vector2(-22, crown_y - 14), Vector2(-11, crown_y - 6), Vector2(0, crown_y - 18),
 				Vector2(11, crown_y - 6), Vector2(22, crown_y - 14), Vector2(22, crown_y)]), Color(1.0, 0.82, 0.25))
+		"boss3":
+			# ぷるぷる揺れるスライム。分裂前の大きい体には王冠
+			var wob := sin(Time.get_ticks_msec() / 180.0 + radius) * radius * 0.06
+			draw_circle(Vector2(0, wob), radius + wob, c)
+			draw_circle(Vector2(-radius * 0.3, -radius * 0.3 + wob), radius * 0.25, Color(1, 1, 1, 0.35))
+			# 分かれる線（あと何回分裂できるか）
+			for i in MAX_SPLIT - split_gen:
+				var a := -PI / 2.0 + (i - (MAX_SPLIT - split_gen - 1) / 2.0) * 0.5
+				draw_line(Vector2.from_angle(a) * radius * 0.4, Vector2.from_angle(a) * radius * 0.9, Color(0.15, 0.4, 0.15, 0.6), 2.0)
+			if split_gen == 0:
+				var crown_y := -radius - 2.0
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(-18, crown_y), Vector2(-18, crown_y - 12), Vector2(-9, crown_y - 5), Vector2(0, crown_y - 15),
+					Vector2(9, crown_y - 5), Vector2(18, crown_y - 12), Vector2(18, crown_y)]), Color(1.0, 0.82, 0.25))
 		"mortar":
 			# 土台と、城の方へ斜め上に向いた太い砲身
 			draw_rect(Rect2(Vector2(-radius, -radius * 0.3), Vector2(radius * 2.0, radius * 1.1)), Color(0.35, 0.25, 0.15))

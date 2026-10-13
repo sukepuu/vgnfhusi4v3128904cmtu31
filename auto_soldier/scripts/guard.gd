@@ -109,7 +109,7 @@ func _process(delta: float) -> void:
 	# 拒馬の柵：敵が近いとき、盾の前に柵を置く
 	if st.spikes and _spike_cd <= 0.0 and game.nearest_enemy(global_position, 260.0) != null:
 		_spike_cd = 8.0
-		game.spawn_placed("spikes", global_position + facing * 70.0, st.spear_damage * 0.8, 55.0, 10.0, record)
+		game.spawn_placed("spikes", global_position + facing * 70.0, st.spear_damage * 0.8, 33.0, 8.0, record)
 	if _spear_cd <= 0.0 and _try_thrust():
 		_spear_cd = st.spear_interval
 	queue_redraw()

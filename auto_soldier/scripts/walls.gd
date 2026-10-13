@@ -97,14 +97,15 @@ func hit_test(p: Vector2, r: float) -> int:
 
 
 ## 壁 i で攻撃を1発防ぐ（ダメージの大きさに関係なく1回分）。pos = 防いだ場所
-func absorb(i: int, pos: Vector2 = Vector2.INF) -> void:
+## amount = 削る耐久（敵の弾は1、敵が体当たりしたら5）
+func absorb(i: int, pos: Vector2 = Vector2.INF, amount: float = 1.0) -> void:
 	var w: Dictionary = walls[i]
 	if explode_on_block and pos != Vector2.INF:
 		game.explode(pos, 75.0, 40.0 * (1.0 + game.elapsed / 180.0), w["src"], Color(0.9, 0.75, 0.5))
 	if jack and pos != Vector2.INF and randf() < 0.35:
 		game.spawn_fun_fx("jack", pos)
 		game.explode(pos, 70.0, 20.0 * (1.0 + game.elapsed / 180.0), w["src"], Color(1.0, 0.4, 0.6), 0.0, 600.0)
-	w["hp"] -= 1.0
+	w["hp"] -= amount
 	w["flash"] = 0.15
 	if golden:
 		game.add_xp(1)

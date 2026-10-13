@@ -582,15 +582,15 @@ func spawn_enemy_at(kind: String, pos: Vector2, hp_mult: float = -1.0) -> Node2D
 	return e
 
 
-## ボス出現（Lv10ごと）。破城の魔王と砲台要塞が交互に来る
+## ボス出現（Lv10ごと）。破城の魔王 → 砲台要塞 → 分裂の魔獣 の順に来る
 func _spawn_boss() -> void:
 	bosses_spawned += 1
 	var e := EnemyScript.new()
 	e.game = self
 	e.boss_rank = bosses_spawned
-	var walker := bosses_spawned % 2 == 1
-	e.setup("boss" if walker else "boss2", _hp_mult())
-	e.position = Vector2(MAP_RECT.get_center().x, MAP_RECT.position.y + (60.0 if walker else 110.0))
+	var kind: String = ["boss3", "boss", "boss2"][bosses_spawned % 3]
+	e.setup(kind, _hp_mult())
+	e.position = Vector2(MAP_RECT.get_center().x, MAP_RECT.position.y + (110.0 if kind == "boss2" else 60.0))
 	world.add_child(e)
 	boss = e
 	hud.show_banner("⚠ BOSS「%s」出現！ ⚠" % e.boss_title, Color(1.0, 0.4, 0.5))
@@ -602,10 +602,22 @@ func on_enemy_killed(e: Node2D) -> void:
 	kills += 1
 	if e == boss:
 		boss = null
-		hud.show_banner("BOSS 撃破！", Color(1.0, 0.85, 0.3))
+		# 分裂の魔獣は、分かれた体が全部いなくなるまで撃破にならない
+		if e.kind == "boss3":
+			boss = _alive_split_piece()
+		if boss == null:
+			hud.show_banner("BOSS 撃破！", Color(1.0, 0.85, 0.3))
 		spawn_burst(e.global_position, Color(1.0, 0.85, 0.3), 60.0)
 	spawn_burst(e.global_position, e.color, e.radius)
 	add_xp(e.xp_value)
+
+
+## まだ生きている分裂の魔獣の体（いなければ null）
+func _alive_split_piece() -> Node2D:
+	for x in get_tree().get_nodes_in_group("enemies"):
+		if x.kind == "boss3" and not x.dead:
+			return x
+	return null
 
 
 ## レベル lv から次のレベルまでに必要な経験値

@@ -36,7 +36,7 @@ var bounces := 0
 ## 跳弾矢：この敵（狙った敵）に当たったときだけ跳ねる。跳ねた先の敵が次の「狙った敵」になる
 var bounce_target: Node2D = null
 var crit := false
-## 修理玉の弾（水色の半透明の大きな玉として描く）
+## 修理玉の弾（水色の大きな玉として描く。半透明じゃない）
 var orb := false
 ## 虹の矢（バリスタのおもしろ強化）：虹色の尾＋当たった敵が混乱する秒数
 var rainbow := false
@@ -161,10 +161,12 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, radius, color)
 		draw_circle(Vector2.ZERO, radius * 0.5, Color(1, 1, 1, 0.8))
 	elif orb:
-		draw_circle(Vector2.ZERO, radius * 1.3, Color(color, 0.12))
-		draw_circle(Vector2.ZERO, radius, Color(color, 0.45))
-		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 48, Color(0.8, 0.97, 1.0, 0.7), 2.5)
-		draw_circle(Vector2(-radius * 0.35, -radius * 0.35), radius * 0.25, Color(1, 1, 1, 0.4))
+		draw_circle(Vector2.ZERO, radius * 1.35, Color(color, 0.18))
+		draw_circle(Vector2.ZERO, radius * 1.15, Color(color, 0.3))
+		draw_circle(Vector2.ZERO, radius, color)
+		draw_circle(Vector2.ZERO, radius * 0.6, Color(0.75, 0.98, 1.0))
+		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 48, Color(0.85, 1.0, 1.0), 3.0)
+		draw_circle(Vector2(-radius * 0.35, -radius * 0.35), radius * 0.22, Color(1, 1, 1))
 	elif wave:
 		var a := velocity.angle()
 		draw_arc(Vector2.ZERO, radius, a - 1.1, a + 1.1, 16, Color(color, 0.85), 5.0)

@@ -122,9 +122,9 @@ func _fire_orb() -> void:
 	b.game = game
 	b.velocity = (t.global_position - global_position).normalized() * 220.0
 	b.damage = dmg
-	# 撃った玉もボスの7割くらいの大きさの、水色の半透明の玉
-	b.radius = ORB_RADIUS
-	b.color = Color(0.55, 0.9, 1.0)
+	# 撃った玉は、置いた玉の1.5倍の大きさの、水色の玉（半透明じゃない）
+	b.radius = ORB_RADIUS * 1.5
+	b.color = Color(0.3, 0.85, 1.0)
 	b.orb = true
 	b.only_target = t
 	b.life = 12.0
@@ -270,12 +270,15 @@ func _draw() -> void:
 			draw_line(Vector2(-6, 4), Vector2(8, -2), Color(0.3, 0.28, 0.26), 2.0)
 			draw_line(Vector2(8, -2), Vector2(14, 8), Color(0.3, 0.28, 0.26), 2.0)
 		"repair_orb":
-			# 当たり判定のない、水色の半透明の玉。ふんわり少し光っている
+			# 当たり判定のない、水色の半透明の玉。水色にふわ〜っと光っている
 			var glow := 0.5 + 0.5 * sin(_t * 3.0)
-			draw_circle(Vector2.ZERO, ORB_RADIUS * 1.35, Color(0.6, 0.95, 1.0, 0.08 + 0.07 * glow))
-			draw_circle(Vector2.ZERO, ORB_RADIUS, Color(0.55, 0.9, 1.0, 0.35))
-			draw_arc(Vector2.ZERO, ORB_RADIUS, 0.0, TAU, 48, Color(0.75, 0.97, 1.0, 0.55), 2.0)
-			draw_circle(Vector2(-ORB_RADIUS * 0.35, -ORB_RADIUS * 0.35), ORB_RADIUS * 0.25, Color(1, 1, 1, 0.35))
+			for i in 4:
+				var rr := ORB_RADIUS * (1.15 + 0.22 * i + 0.08 * glow)
+				draw_circle(Vector2.ZERO, rr, Color(0.3, 0.9, 1.0, (0.16 + 0.1 * glow) / (i + 1)))
+			draw_circle(Vector2.ZERO, ORB_RADIUS, Color(0.35, 0.88, 1.0, 0.5 + 0.12 * glow))
+			draw_circle(Vector2.ZERO, ORB_RADIUS * 0.6, Color(0.7, 0.98, 1.0, 0.3 + 0.15 * glow))
+			draw_arc(Vector2.ZERO, ORB_RADIUS, 0.0, TAU, 48, Color(0.75, 1.0, 1.0, 0.85), 2.5)
+			draw_circle(Vector2(-ORB_RADIUS * 0.35, -ORB_RADIUS * 0.35), ORB_RADIUS * 0.25, Color(1, 1, 1, 0.5))
 			# 発射までの時間の輪と、たまった量
 			draw_arc(Vector2.ZERO, ORB_RADIUS + 7.0, -PI / 2.0, -PI / 2.0 + TAU * clampf(life / 10.0, 0.0, 1.0), 40, Color(0.8, 0.97, 1.0, 0.7), 2.0)
 			var font := ThemeDB.fallback_font

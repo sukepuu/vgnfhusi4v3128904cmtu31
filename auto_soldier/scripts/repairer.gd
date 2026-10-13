@@ -41,7 +41,7 @@ func _process(delta: float) -> void:
 	if castle.hp < castle.max_hp:
 		# 緊急修理：城が危ないときは2倍の速さで直す
 		var rate: float = st.heal_per_sec * (2.0 if st.emergency and castle.hp < castle.max_hp * 0.3 else 1.0)
-		castle.hp = minf(castle.max_hp, castle.hp + rate * delta)
+		castle.heal(rate * delta)
 		_spark_cd -= delta
 		if _working and _spark_cd <= 0.0:
 			_spark_cd = 0.25

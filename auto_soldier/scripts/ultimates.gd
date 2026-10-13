@@ -304,7 +304,7 @@ func _do_cavalry() -> void:
 
 func _do_overhaul() -> void:
 	var castle: Node2D = game.castle
-	castle.hp = minf(castle.max_hp, castle.hp + castle.max_hp * 0.10)
+	castle.heal(castle.max_hp * 0.10)
 	for s in game.soldiers:
 		if not s.dead:
 			s.hp = game.stats.max_hp

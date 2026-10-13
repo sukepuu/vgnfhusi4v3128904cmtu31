@@ -13,6 +13,8 @@ var max_hp := 600.0
 var hp := 600.0
 ## 城のHPの自然回復（毎秒）。自然回復はなし（回復は修理部隊がする）
 var regen := 0.0
+## これまでに回復したHPの合計（修理玉が「10秒で回復した量」を数えるのに使う）
+var healed_total := 0.0
 ## 受けるダメージの倍率（修理部隊の「鉄壁補強」で下がる）
 var damage_taken_mult := 1.0
 
@@ -166,6 +168,13 @@ func slow_factor_at(p: Vector2) -> float:
 	if frost_radius > 0.0 and p.distance_to(global_position) < frost_radius:
 		return 1.0 - frost_slow
 	return 1.0
+
+
+## 城のHPを回復する（回復した量は healed_total に足していく）
+func heal(amount: float) -> void:
+	var before := hp
+	hp = minf(max_hp, hp + amount)
+	healed_total += hp - before
 
 
 func take_damage(amount: float) -> void:

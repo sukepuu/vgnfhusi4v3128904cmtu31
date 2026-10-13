@@ -17,13 +17,14 @@ var snowball := false
 ## ペット：ペットの踊り（虹色に光ってくるくる回り、5秒ごとに全方位へ玉を撃つ）
 var pet_dance := false
 ## 修理：くす玉割り（12秒ごとにくす玉が割れて、城と味方が少し回復）
-var kusudama := false
+## 修理：修理玉（20秒ごとに城の前へ玉を置く。10秒で回復した城のHPぶんのダメージを、HPが一番多い敵へ撃つ）
+var repair_orb := false
 
 var _roar_cd := 5.0
 var _dove_cd := 3.0
 var _snow_cd := 1.0
 var _dance_cd := 6.0
-var _kusu_cd := 8.0
+var _orb_cd := 3.0
 ## 工兵：巨大からくり兵（20秒ごとに設置、10秒で消える）
 var automaton := false
 var _auto_cd := 5.0
@@ -60,11 +61,11 @@ func _process(delta: float) -> void:
 		if _auto_cd <= 0.0:
 			_auto_cd = 20.0
 			_place_automaton()
-	if kusudama and not game.repairers.is_empty():
-		_kusu_cd -= delta
-		if _kusu_cd <= 0.0:
-			_kusu_cd = 12.0
-			_do_kusudama()
+	if repair_orb and not game.repairers.is_empty():
+		_orb_cd -= delta
+		if _orb_cd <= 0.0:
+			_orb_cd = 20.0
+			game.spawn_placed("repair_orb", castle.global_position + Vector2(0, -castle.HALF.y - 70.0), 0.0, 16.0, 10.0, game.repairers[0].record)
 
 
 func _fx(kind: String, pos: Vector2) -> Node2D:
@@ -132,21 +133,3 @@ func _place_automaton() -> void:
 	var dmg: float = game.engineer_stats.bomb_damage
 	game.spawn_placed("automaton", pos, dmg, 46.0, 10.0, game.engineers[0].record)
 	game.spawn_burst(pos, Color(1.0, 0.8, 0.4), 50.0)
-
-
-func _do_kusudama() -> void:
-	var castle: Node2D = game.castle
-	game.effects.add_child(_fx("kusudama", castle.global_position + Vector2(0, -castle.HALF.y - 60.0)))
-	castle.hp = minf(castle.max_hp, castle.hp + 20.0)
-	# 味方も少し回復
-	for s in game.soldiers:
-		if not s.dead:
-			s.hp = minf(game.stats.max_hp, s.hp + 20.0)
-	for g in game.guards:
-		if not g.dead:
-			g.hp = minf(game.guard_stats.max_hp, g.hp + 20.0)
-	for k in game.knights:
-		if not k.dead:
-			k.hp = minf(game.knight_stats.max_hp, k.hp + 20.0)
-	if game.heavy != null and not game.heavy.dead:
-		game.heavy.hp = minf(game.heavy.max_hp, game.heavy.hp + 20.0)

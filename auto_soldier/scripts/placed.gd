@@ -7,6 +7,7 @@ extends Node2D
 ## snowman   ：結界の雪だるま。敵が近づくと爆発して周りを凍らせる
 ## scarecrow ：工兵のかかし。敵の気を引いて、代わりに殴られてくれる
 ## boulder   ：投石器の居座り岩。上にいる敵にダメージを与え続け、足を30%遅くする
+## repair_orb：修理玉。置いてから10秒間に城が回復した量をためて、最後にHPが一番多い敵へ撃つ
 ## automaton ：工兵の巨大からくり兵。ゆっくり歩き、全方位斬り→高速連射をくり返す。消えるときに大爆発
 ## 見張り櫓とかかしには耐久があり、敵に攻撃される（味方と同じあつかい）
 
@@ -29,6 +30,8 @@ var _forever := false
 var _mode := "slash"
 var _mode_count := 0
 var _gear := 0.0
+## 修理玉：置いたときの「城の回復量の合計」（ここからの増えた分がたまった量）
+var _heal_start := 0.0
 ## 耐久（見張り櫓・かかしだけ。0になったら壊れる）
 var hp := 0.0
 var max_hp := 0.0
@@ -41,6 +44,8 @@ const DURABILITY := {"watchtower": 50.0, "scarecrow": 60.0}
 func _ready() -> void:
 	add_to_group("placed_" + kind)
 	_forever = life <= 0.0
+	if kind == "repair_orb":
+		_heal_start = game.castle.healed_total
 	if DURABILITY.has(kind):
 		# 敵から味方として狙われる
 		max_hp = DURABILITY[kind]
@@ -57,6 +62,8 @@ func _process(delta: float) -> void:
 	if not _forever:
 		life -= delta
 		if life <= 0.0:
+			if kind == "repair_orb":
+				_fire_orb()
 			if kind == "automaton":
 				# 消えるときに大爆発
 				game.explode(global_position, 170.0, damage * 1.5, src, Color(1.0, 0.6, 0.2), 0.0, 450.0)
@@ -95,6 +102,31 @@ func _process(delta: float) -> void:
 				queue_free()
 				return
 	queue_redraw()
+
+
+## 修理玉のたまった量（10秒間に城が回復したHP）
+func _orb_charge() -> float:
+	return game.castle.healed_total - _heal_start
+
+
+## 修理玉：たまった量のダメージの弾を、HPが一番多い敵へゆっくり撃つ（ほかの敵はすり抜ける）
+func _fire_orb() -> void:
+	var dmg := _orb_charge()
+	var t: Node2D = game.castle._toughest_enemy_in(global_position, INF)
+	if dmg <= 0.0 or t == null:
+		game.spawn_burst(global_position, Color(0.5, 1.0, 0.6), 20.0)
+		return
+	var b := BulletScript.new()
+	b.game = game
+	b.velocity = (t.global_position - global_position).normalized() * 220.0
+	b.damage = dmg
+	b.radius = 8.0 + minf(dmg / 25.0, 14.0)
+	b.color = Color(0.45, 1.0, 0.6)
+	b.only_target = t
+	b.life = 12.0
+	b.position = global_position
+	b.src = src
+	game.world.add_child(b)
 
 
 ## からくり兵：一番近い敵へゆっくり歩きながら、全方位斬り3回 → 高速連射12発 をくり返す
@@ -233,6 +265,19 @@ func _draw() -> void:
 			draw_circle(Vector2(-8, -8), 9.0, Color(0.58, 0.55, 0.52))
 			draw_line(Vector2(-6, 4), Vector2(8, -2), Color(0.3, 0.28, 0.26), 2.0)
 			draw_line(Vector2(8, -2), Vector2(14, 8), Color(0.3, 0.28, 0.26), 2.0)
+		"repair_orb":
+			# ためた量が多いほど大きく光る緑の玉と、発射までの時間の輪
+			var charge := _orb_charge()
+			var r := 10.0 + minf(charge / 25.0, 14.0)
+			var pulse := 0.8 + 0.2 * sin(_t * 6.0)
+			draw_circle(Vector2.ZERO, r * 1.8, Color(0.4, 1.0, 0.55, 0.15 * pulse))
+			draw_circle(Vector2.ZERO, r, Color(0.45, 1.0, 0.6, 0.85))
+			draw_circle(Vector2(-r * 0.3, -r * 0.3), r * 0.35, Color(1, 1, 1, 0.6))
+			draw_arc(Vector2.ZERO, r + 6.0, -PI / 2.0, -PI / 2.0 + TAU * clampf(life / 10.0, 0.0, 1.0), 32, Color(0.8, 1.0, 0.8), 2.0)
+			var font := ThemeDB.fallback_font
+			var txt := str(int(charge))
+			var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+			draw_string(font, Vector2(-w / 2.0, -r - 10.0), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.8, 1.0, 0.8))
 		"automaton":
 			# ボスと同じくらい大きな、木と鉄のからくり兵
 			var r := 46.0

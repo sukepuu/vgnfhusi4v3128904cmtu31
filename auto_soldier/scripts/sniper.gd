@@ -15,6 +15,7 @@ var aim := Vector2.UP
 
 var _cd := 0.5
 var _draw_t := 0.0
+var _volleys := 0
 
 
 func _ready() -> void:
@@ -71,7 +72,10 @@ func _choose_target(st) -> Node2D:
 func _shoot(target: Node2D, st) -> void:
 	var dist: float = global_position.distance_to(target.global_position)
 	for k in st.shots:
-		var dir := aim.rotated((k - (st.shots - 1) / 2.0) * 0.06)
+		# 矢は少しずつ横にずらして放つが、どれも狙った敵の真ん中へ向かう
+		# （角度で広げると、遠くの小さい敵の左右をすり抜けてしまうため）
+		var offset: Vector2 = aim.orthogonal() * (k - (st.shots - 1) / 2.0) * 7.0
+		var dir: Vector2 = (target.global_position - (global_position + offset)).normalized()
 		var b := BulletScript.new()
 		b.game = game
 		b.velocity = dir * st.arrow_speed
@@ -93,9 +97,18 @@ func _shoot(target: Node2D, st) -> void:
 		b.stun_on_hit = 1.5 if st.pin else 0.0
 		b.mark_on_hit = st.mark
 		b.bounces = st.bounces
-		b.position = global_position + dir * 12.0
+		b.position = global_position + offset + dir * 12.0
 		game.world.add_child(b)
 	_draw_t = 0.15
+	# 花火矢：4回に1回、狙った敵の所へ花火を打ち込む
+	_volleys += 1
+	if st.firework_arrow and _volleys % 4 == 0:
+		var f: Node2D = game.spawn_fun_fx("firework", global_position)
+		f.end = target.global_position
+		f.rise_time = clampf(dist / 900.0, 0.2, 0.9)
+		f.damage = st.damage * 0.6
+		f.radius = 80.0
+		f.src = record
 
 
 func _draw() -> void:

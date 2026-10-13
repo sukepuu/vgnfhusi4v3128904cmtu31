@@ -61,6 +61,10 @@ var speed_mult := 1.0
 var stun_left := 0.0
 ## 弱点看破（狙撃部隊）：この時間のあいだ受けるダメージ +35%
 var mark_left := 0.0
+## 混乱（虹の矢・ペットの踊り）：この時間のあいだ、ふらふらと変な方向へ歩く
+var confuse_left := 0.0
+var _confuse_dir := Vector2.ZERO
+var _confuse_turn := 0.0
 
 
 func setup(k: String, hp_mult: float) -> void:
@@ -108,7 +112,7 @@ func setup(k: String, hp_mult: float) -> void:
 			max_hp = 40.0; speed = 0.0; damage = 6.0; castle_damage = 6.0; radius = 16.0; xp_value = 3
 			color = Color(0.45, 0.42, 0.3)
 		"boss2":
-			max_hp = 275.0 * (1.0 + 0.3 * (boss_rank - 1)); speed = 0.0; damage = 20.0
+			max_hp = 412.5 * (1.0 + 0.3 * (boss_rank - 1)); speed = 0.0; damage = 20.0
 			castle_damage = 0.0; radius = 50.0; xp_value = 60
 			color = Color(0.3, 0.32, 0.4)
 			is_boss = true
@@ -130,6 +134,7 @@ func _process(delta: float) -> void:
 	_flash -= delta
 	_contact_cd -= delta
 	mark_left -= delta
+	confuse_left -= delta
 	if stun_left > 0.0:
 		# 落とし穴にはまって動けない（攻撃もできない）
 		stun_left -= delta
@@ -177,7 +182,7 @@ func _process(delta: float) -> void:
 		else:
 			move = dir.orthogonal() * _strafe_sign * 0.5
 		_shoot_cd -= delta
-		if _shoot_cd <= 0.0 and d < 420.0:
+		if _shoot_cd <= 0.0 and d < 420.0 and confuse_left <= 0.0:
 			# 城への弾は少し弱い
 			_shoot(dir, damage if soldier != null else damage * 0.5)
 			_shoot_cd = randf_range(2.2, 3.0)
@@ -226,6 +231,13 @@ func _process(delta: float) -> void:
 		queue_free()
 		return
 
+	if confuse_left > 0.0:
+		# 混乱中：ときどき向きを変えながら、ふらふら歩く（攻撃はしない）
+		_confuse_turn -= delta
+		if _confuse_turn <= 0.0:
+			_confuse_turn = 0.4
+			_confuse_dir = Vector2.from_angle(randf() * TAU)
+		move = _confuse_dir
 	speed_mult = castle.slow_factor_at(global_position)
 	position += (move * speed * speed_mult + knock) * delta
 	knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
@@ -437,6 +449,9 @@ func _separate() -> void:
 		if dl < min_d * min_d and dl > 0.0001:
 			var l := sqrt(dl)
 			push += diff / l * (min_d - l)
+	# ボスは下側（城の方）には押されない
+	if is_boss and push.y > 0.0:
+		push.y = 0.0
 	position += push * 0.5
 
 
@@ -455,6 +470,11 @@ func _shoot(dir: Vector2, dmg: float, spd: float = 260.0, r: float = 7.0, col: C
 		b.castle_ratio = 0.2
 	game.world.add_child(b)
 	return b
+
+
+func confuse(seconds: float) -> void:
+	# ボスはほとんど混乱しない
+	confuse_left = maxf(confuse_left, seconds * (0.2 if is_boss else 1.0))
 
 
 func stun(seconds: float) -> void:
@@ -477,6 +497,9 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	_flash = 0.1
 	# 大型は吹き飛びにくい
 	knock += knockback * (0.05 if is_boss else (0.3 if kind == "brute" else 1.0))
+	# ボスは下側（城の方）には押されない
+	if is_boss and knock.y > 0.0:
+		knock.y = 0.0
 	game.spawn_damage_text(global_position, amount, Color(1, 1, 1))
 	if hp <= 0.0:
 		dead = true
@@ -590,6 +613,10 @@ func _draw() -> void:
 		for i in 3:
 			var a := stun_left * 4.0 + TAU * i / 3.0
 			draw_circle(Vector2(cos(a) * radius * 0.7, -radius - 6.0 + sin(a) * 3.0), 3.0, Color(1.0, 0.9, 0.3))
+	if confuse_left > 0.0:
+		# 混乱：頭の上でぐるぐる回る「？」
+		var qa := Time.get_ticks_msec() / 200.0
+		draw_string(ThemeDB.fallback_font, Vector2(cos(qa) * 6.0 - 4.0, -radius - 8.0), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1.0, 0.5, 1.0))
 	if mark_left > 0.0:
 		# 弱点看破：赤い照準マーク
 		draw_arc(Vector2.ZERO, radius + 7.0, 0.0, TAU, 24, Color(1.0, 0.25, 0.2, 0.8), 2.0)

@@ -14,6 +14,8 @@ var interval := 0.8
 var attack_range := 420.0
 
 var _cd := 0.5
+## ペットの踊り（おもしろ強化）：踊っている残り時間
+var dance_left := 0.0
 var _t := 0.0
 var _aim := Vector2.RIGHT
 
@@ -24,14 +26,19 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	dance_left -= delta
 	# 担当の兵士のまわりを回る。兵士が倒れているあいだは城の前で待つ
 	var center: Vector2 = game.castle.gate_position() if owner_soldier.dead else owner_soldier.position
 	# 同じ兵士のペット同士は等間隔に並んで回る
 	var n: int = maxi(game.pets_per_soldier, 1)
-	var ang := _t * 1.6 + TAU * index / n
+	var ang := _t * (9.0 if dance_left > 0.0 else 1.6) + TAU * index / n
 	var target_pos: Vector2 = center + Vector2.from_angle(ang) * 60.0
 	position = position.lerp(target_pos, 1.0 - exp(-10.0 * delta))
 
+	# ペットの強化は全ペット共通（game のペット用の値を使う）
+	interval = game.pet_interval
+	attack_range = game.pet_range
+	scale = Vector2(1.7, 1.7) if game.pet_giant else Vector2.ONE
 	_cd -= delta
 	if _cd <= 0.0:
 		var target := _nearest_enemy()
@@ -46,6 +53,15 @@ func _process(delta: float) -> void:
 			b.life = attack_range / 520.0 + 0.2
 			b.position = global_position
 			b.src = record
+			# 巨大ペット：弾も大きく、2体貫通して威力アップ
+			if game.pet_giant:
+				b.damage *= 1.4
+				b.radius = 7.0
+				b.pierce = 2
+			# 爆裂ペット弾：当たると小爆発
+			if game.pet_burst:
+				b.explode_radius = 45.0
+				b.explode_ratio = 0.6
 			game.world.add_child(b)
 			_cd = interval
 	queue_redraw()
@@ -68,7 +84,7 @@ func _draw() -> void:
 	# ふわふわ浮いている小鳥風
 	var bob := sin(_t * 6.0) * 2.0
 	draw_circle(Vector2(0, 10), 7.0, Color(0, 0, 0, 0.25))
-	var c := Vector2(0, bob)
+	var c := Vector2(0, bob - (absf(sin(_t * 14.0)) * 10.0 if dance_left > 0.0 else 0.0))
 	draw_circle(c, 9.0, Color(0.45, 0.95, 0.65))
 	var wing := sin(_t * 18.0) * 4.0
 	draw_colored_polygon(PackedVector2Array([c + Vector2(-6, 0), c + Vector2(-15, -4 - wing), c + Vector2(-8, 5)]), Color(0.3, 0.75, 0.5))

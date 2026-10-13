@@ -8,7 +8,7 @@ var damage := 30.0
 var stun := 0.0
 var color := Color(1.0, 0.6, 0.2)
 var src: Dictionary = {}
-## "bomb"（小さな爆弾）/ "rock"（岩）/ "ice"（氷柱）
+## "bomb"（小さな爆弾）/ "rock"（岩）/ "ice"（氷柱）/ "arrow"（矢の雨）/ "star"（流れ星の星）
 var look := "bomb"
 
 var _t := 0.0
@@ -37,5 +37,12 @@ func _draw() -> void:
 				draw_line(off, off + Vector2(0, 14), Color(1.0, 0.6, 0.2), 2.0)
 		"rock":
 			draw_circle(Vector2(0, -h), 8.0, Color(0.5, 0.47, 0.44))
+		"star":
+			# 流れ星の跡：キラキラ回る星
+			var star := PackedVector2Array()
+			for i in 10:
+				var rr := 9.0 if i % 2 == 0 else 4.0
+				star.append(Vector2.from_angle(-PI / 2.0 + TAU * i / 10.0 + _t * 6.0) * rr)
+			draw_colored_polygon(star, Color(1.0, 0.95, 0.4))
 		_:
 			draw_circle(Vector2(0, -h * 0.4), 6.0, Color(0.2, 0.2, 0.22))

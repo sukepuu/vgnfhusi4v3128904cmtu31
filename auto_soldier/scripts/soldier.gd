@@ -36,6 +36,7 @@ var _hurt_flash := 0.0
 var _invuln := 0.0
 var _retarget_cd := 0.0
 var _volley_cd := 3.0
+var _last_kills := 0
 var _boomerang_cd := 2.0
 var _strafe_sign := 1.0
 var _strafe_cd := 2.0
@@ -58,6 +59,15 @@ func _process(delta: float) -> void:
 	_fire_cd -= delta
 	_volley_cd -= delta
 	_boomerang_cd -= delta
+	# 勝利の花火：敵を倒したら30%で花火を打ち上げる（弾けた所に小ダメージ）
+	if st.fireworks and record["kills"] > _last_kills and randf() < 0.3:
+		var f: Node2D = game.spawn_fun_fx("firework", global_position)
+		f.end = global_position + Vector2(randf_range(-60, 60), randf_range(-160, -110))
+		f.rise_time = 0.6
+		f.damage = st.sword_damage * 0.4
+		f.radius = 70.0
+		f.src = record
+	_last_kills = record["kills"]
 	_sword_cd -= delta
 	_dash_cd -= delta
 	_hurt_flash -= delta

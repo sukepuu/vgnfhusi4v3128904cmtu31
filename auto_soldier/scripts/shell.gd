@@ -1,6 +1,8 @@
 extends Node2D
 ## 大砲の砲弾・投石器の岩。放物線を描いて飛び、着弾地点の周りにまとめてダメージ。
 
+const MissileScript := preload("res://scripts/missile.gd")
+
 var game: Node2D
 var start := Vector2.ZERO
 var target := Vector2.ZERO
@@ -9,6 +11,7 @@ var blast_radius := 90.0
 var flight_time := 0.7
 ## true なら投石器の岩（大きく、高く飛ぶ）
 var boulder := false
+
 ## 撃った設備の戦績カード
 var src: Dictionary = {}
 ## 特別強化：当たった敵の気絶時間・着弾地点の炎・砕けて周りに落ちる岩の数
@@ -25,6 +28,10 @@ var mine_damage := 0.0
 var roll_damage := 0.0
 ## 隕石落とし（投石器の必殺）：大きく燃える岩として描く
 var meteor := false
+## ビリヤード砲弾（大砲のおもしろ強化）：着弾したあと、同じ向きにあと何回跳ねるか
+var bounces := 0
+## 牛投げ（投石器のおもしろ強化）：岩のかわりに牛が飛んでいき、着地したら走り出す
+var cow := false
 
 var _t := 0.0
 var _height := 0.0
@@ -59,6 +66,19 @@ func _explode() -> void:
 	if meteor:
 		game.spawn_burst(target, Color(1.0, 0.4, 0.1), blast_radius)
 		game.ultimates._flash(Color(1.0, 0.6, 0.3))
+	if bounces > 0:
+		# ビリヤード：同じ向きにポーンと跳ねて、もう一度小さく爆発
+		var dir := (target - start).normalized()
+		var s: Node2D = game.castle._fire_shell(target, game.clamp_to_map(target + dir * 150.0, 20.0), damage * 0.5, blast_radius * 0.75, false, src)
+		s.flight_time = 0.45
+		s.bounces = bounces - 1
+		game.spawn_text(target + Vector2(0, -20), "コン！", Color(1.0, 1.0, 0.7), 16)
+	if cow:
+		# 着地した牛が、城と反対の方へ暴走する
+		var away: Vector2 = (target - game.castle.global_position).normalized()
+		var m: Node2D = game.spawn_missile("ball", target, away.rotated(randf_range(-0.4, 0.4)) * 330.0, damage * 0.5, 22.0, 3.5, src)
+		m.look = "cow"
+		game.spawn_text(target + Vector2(0, -30), "モー！", Color(1, 1, 1), 22)
 	if fire_time > 0.0:
 		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), src)
 	for i in mines:
@@ -78,6 +98,13 @@ func _explode() -> void:
 
 
 func _draw() -> void:
+	if cow:
+		# 空飛ぶ牛（くるくる回る）
+		draw_circle(Vector2.ZERO, 12.0, Color(0, 0, 0, 0.3))
+		draw_set_transform(Vector2(0, -_height), _t * 8.0, Vector2.ONE)
+		MissileScript.draw_cow(self, false, _t * 10.0)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		return
 	if meteor:
 		var k := _t / flight_time
 		draw_arc(target - position, blast_radius, 0.0, TAU, 48, Color(1.0, 0.3, 0.1, 0.4 + 0.4 * k), 4.0)

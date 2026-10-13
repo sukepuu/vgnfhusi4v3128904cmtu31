@@ -4,6 +4,8 @@ extends Node2D
 ## 槍はリーチが長いが、横の範囲はかなり狭い（直線上の敵をまとめて貫く）。
 ## ステータスは game.guard_stats を全員で共有している。
 
+const BulletScript := preload("res://scripts/bullet.gd")
+
 const RESPAWN_TIME := 12.0
 ## 城の中心からどこまで離れて戦うか
 const LEASH := 185.0
@@ -107,7 +109,7 @@ func _process(delta: float) -> void:
 	# 拒馬の柵：敵が近いとき、盾の前に柵を置く
 	if st.spikes and _spike_cd <= 0.0 and game.nearest_enemy(global_position, 260.0) != null:
 		_spike_cd = 8.0
-		game.spawn_placed("spikes", global_position + facing * 70.0, st.spear_damage * 0.8, 55.0, 14.0, record)
+		game.spawn_placed("spikes", global_position + facing * 70.0, st.spear_damage * 0.8, 55.0, 10.0, record)
 	if _spear_cd <= 0.0 and _try_thrust():
 		_spear_cd = st.spear_interval
 	queue_redraw()
@@ -135,6 +137,21 @@ func _choose_target(castle_pos: Vector2) -> Node2D:
 			best_score = score
 			best = e
 	return best
+
+
+func _reflect(from_pos: Vector2, amount: float) -> void:
+	var dir := (from_pos - global_position).normalized()
+	var b := BulletScript.new()
+	b.game = game
+	b.velocity = dir * 600.0
+	b.damage = maxf(amount, 8.0) * 1.5
+	b.radius = 6.0
+	b.color = Color.from_hsv(randf(), 0.7, 1.0)
+	b.life = 1.0
+	b.position = global_position + dir * 20.0
+	b.src = record
+	game.world.add_child(b)
+	game.spawn_text(global_position + Vector2(0, -24), "カキーン！", Color(1.0, 1.0, 0.6), 16)
 
 
 ## 城に当たりそうな敵の弾のうち、城に一番近いもの（ほかの迎撃兵が受け止めに行っている弾は除く）
@@ -222,6 +239,9 @@ func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 		if absf(facing.angle_to(dir)) <= game.guard_stats.shield_arc / 2.0:
 			_block_flash = 0.15
 			record["blocked"] += amount
+			# はね返し盾：防いだ弾を来た方へ打ち返す
+			if game.guard_stats.reflect:
+				_reflect(from_pos, amount)
 			# 盾撃：防いだ瞬間に周りへ衝撃波
 			var bash: int = game.guard_stats.bash_level
 			if bash > 0 and _bash_cd <= 0.0:

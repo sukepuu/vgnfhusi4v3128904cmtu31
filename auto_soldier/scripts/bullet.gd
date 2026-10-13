@@ -30,6 +30,9 @@ var stun_on_hit := 0.0
 var mark_on_hit := false
 var bounces := 0
 var crit := false
+## 虹の矢（バリスタのおもしろ強化）：虹色の尾＋当たった敵が混乱する秒数
+var rainbow := false
+var confuse_on_hit := 0.0
 
 var _hit := {}
 
@@ -84,6 +87,8 @@ func _process(delta: float) -> void:
 				e.stun(stun_on_hit)
 			if mark_on_hit:
 				e.mark_left = 6.0
+			if confuse_on_hit > 0.0:
+				e.confuse(confuse_on_hit)
 			e.take_damage(damage, velocity.normalized() * 120.0, src)
 			if first_blast_radius > 0.0:
 				game.explode(global_position, first_blast_radius, first_blast_damage, src, Color(1.0, 0.5, 0.2), 0.0, 300.0)
@@ -129,6 +134,12 @@ func _draw() -> void:
 		draw_arc(Vector2(-4, 0).rotated(a), radius * 0.8, a - 0.9, a + 0.9, 12, Color(1, 1, 1, 0.5), 2.0)
 	elif bolt:
 		var dir := velocity.normalized()
+		if rainbow:
+			# 虹色の尾
+			var side := dir.orthogonal()
+			for i in 6:
+				var off := side * (i - 2.5) * 3.0
+				draw_line(off - dir * 34.0, off - dir * 130.0, Color.from_hsv(i / 6.0, 0.8, 1.0, 0.6), 3.0)
 		draw_line(-dir * 34.0, dir * 6.0, Color(0.45, 0.3, 0.15), 4.0)
 		draw_colored_polygon(PackedVector2Array([
 			dir * 16.0, dir * 4.0 + dir.orthogonal() * 6.0, dir * 4.0 - dir.orthogonal() * 6.0]), Color(0.85, 0.88, 0.95))

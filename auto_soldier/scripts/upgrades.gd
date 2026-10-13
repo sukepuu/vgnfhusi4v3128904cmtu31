@@ -33,9 +33,22 @@ const LIST := [
 	{"id": "guard", "cat": "guard", "name": "迎撃部隊", "desc": "盾と槍を持ち、城の近くで敵を迎え撃つ兵士が加わる（前方からの攻撃は盾で無効）",
 		"desc_up": "迎撃部隊の兵士が1人増える（最大3人）", "max": 3, "weight": 2.0},
 	{"id": "shield_arc", "cat": "guard", "name": "大盾", "desc": "盾で防げる範囲 +20度", "max": 4, "req": "guard"},
-	{"id": "guard_speed", "cat": "guard", "name": "機動訓練", "desc": "迎撃部隊の移動速度 +15%", "max": 3, "req": "guard"},
 	{"id": "spear_reach", "cat": "guard", "name": "長槍", "desc": "槍のリーチ +25", "max": 4, "req": "guard"},
 	{"id": "spear_dmg", "cat": "guard", "name": "槍術", "desc": "槍の攻撃力 +35%", "max": 5, "req": "guard"},
+	# 【ペット】（ペットの仲間を取ると出る）
+	{"id": "pet_rate", "cat": "pet", "name": "早撃ちペット", "desc": "ペットの射撃の間隔 -15%", "max": 4, "req": "pet"},
+	{"id": "pet_fang", "cat": "pet", "name": "ペットの牙", "desc": "ペットの弾の威力 +30%", "max": 5, "req": "pet"},
+	{"id": "pet_eye", "cat": "pet", "name": "ペットの目", "desc": "ペットの射程 +20%", "max": 3, "req": "pet"},
+	# 【近衛】
+	{"id": "knight", "cat": "knight", "name": "近衛部隊", "desc": "フィールドの一番下にいる敵を最優先で狙い、近くから一直線に高速突進して貫く騎士が加わる（隠密兵を1発で倒せる威力）",
+		"desc_up": "近衛部隊の騎士が1人増える（最大3人）", "max": 3, "weight": 1.5},
+	{"id": "knight_dmg", "cat": "knight", "name": "剛突", "desc": "突進の威力 +35%", "max": 5, "req": "knight"},
+	{"id": "knight_rate", "cat": "knight", "name": "疾駆", "desc": "突進の間隔 -15%", "max": 4, "req": "knight"},
+	{"id": "knight_reach", "cat": "knight", "name": "長駆", "desc": "突進で進む距離 +25%", "max": 3, "req": "knight"},
+	# 【修理】
+	{"id": "repairer", "cat": "repair", "name": "修理部隊", "desc": "城のまわりで修理をして、城のHPを毎秒3回復する修理兵が加わる",
+		"desc_up": "修理兵が1人増える（最大3人）", "max": 3, "weight": 1.8},
+	{"id": "repair_skill", "cat": "repair", "name": "熟練工", "desc": "修理兵1人あたりの回復量 +1/秒", "max": 3, "req": "repairer"},
 	# 【狙撃】
 	{"id": "sniper", "cat": "sniper", "name": "狙撃部隊", "desc": "迎撃部隊の後ろに立ち、遠距離型の敵（弓兵・迫撃砲）を優先して弓で狙い撃つ狙撃兵が加わる",
 		"desc_up": "狙撃部隊の狙撃兵が1人増える（最大3人）", "max": 3, "weight": 1.6},
@@ -72,7 +85,6 @@ const LIST := [
 	{"id": "frost", "cat": "castle", "name": "氷結の結界", "desc": "城のまわりの敵の動きを遅くする",
 		"desc_up": "結界の範囲が広がり、さらに遅くなる", "max": 3},
 	{"id": "wall", "cat": "castle", "name": "城壁補強", "desc": "城の最大HP +100、城のHP全回復", "max": 5},
-	{"id": "repair", "cat": "castle", "name": "修理工", "desc": "城のHPが毎秒2回復する", "max": 3},
 ]
 
 ## Lv5ごとに出る特別強化。部隊・設備の種類ごとに5つずつ。どれも1回取れば完成（レベルなし）。
@@ -89,7 +101,7 @@ const SPECIAL := [
 	{"id": "sp_trident", "cat": "guard", "special": true, "name": "三叉槍", "desc": "槍の突きが3方向に出る", "max": 1, "req": "guard"},
 	{"id": "sp_taunt", "cat": "guard", "special": true, "name": "挑発", "desc": "近くの敵が城より迎撃兵を狙うようになる（正面から来れば盾で無効）", "max": 1, "req": "guard"},
 	{"id": "sp_whirl_spear", "cat": "guard", "special": true, "name": "大旋風槍", "desc": "6秒ごとに槍を振り回し、周りの敵へ槍の3倍の大ダメージ", "max": 1, "req": "guard"},
-	{"id": "sp_spikes", "cat": "guard", "special": true, "name": "拒馬の柵", "desc": "8秒ごとに盾の前へトゲの柵を置く。上を通る敵の足を止めてダメージ（14秒残る）", "max": 1, "req": "guard"},
+	{"id": "sp_spikes", "cat": "guard", "special": true, "name": "拒馬の柵", "desc": "8秒ごとに盾の前へトゲの柵を置く。上を通る敵の足を止めてダメージ（10秒残る）", "max": 1, "req": "guard"},
 	# ---- 重装部隊
 	{"id": "sp_multi_slash", "cat": "heavy", "special": true, "name": "連続斬り", "desc": "斬撃が3回連続で出る", "max": 1, "req": "heavy"},
 	{"id": "sp_quake", "cat": "heavy", "special": true, "name": "地割れ", "desc": "5秒ごとに地面を叩き、周りの敵に大ダメージ＋3.5秒気絶", "max": 1, "req": "heavy"},
@@ -144,6 +156,27 @@ const SPECIAL := [
 	{"id": "sp_pin", "cat": "sniper", "special": true, "name": "縫い止め矢", "desc": "当たった敵を1.5秒間その場に縫い止める（動けない・攻撃できない）", "max": 1, "req": "sniper"},
 	{"id": "sp_ricochet", "cat": "sniper", "special": true, "name": "跳弾矢", "desc": "当たった矢が近くの別の敵へ最大3回跳ねる（跳ねるたびに威力70%）", "max": 1, "req": "sniper"},
 	{"id": "sp_mark", "cat": "sniper", "special": true, "name": "弱点看破", "desc": "矢が当たった敵に赤い印。6秒間、味方全員から受けるダメージ +35%", "max": 1, "req": "sniper"},
+	# ---- ペット・近衛・修理
+	{"id": "sp_pet_burst", "cat": "pet", "special": true, "name": "爆裂ペット弾", "desc": "ペットの弾が当たると小爆発する（威力60%）", "max": 1, "req": "pet"},
+	{"id": "sp_pet_giant", "cat": "pet", "special": true, "name": "巨大ペット", "desc": "ペットが大きくなり、弾も大きく2体貫通、威力 +40%", "max": 1, "req": "pet"},
+	{"id": "sp_chain_dash", "cat": "knight", "special": true, "name": "連続突撃", "desc": "突進のあと、近くのまだ貫いていない敵へ続けて2回まで突進する", "max": 1, "req": "knight"},
+	{"id": "sp_dash_quake", "cat": "knight", "special": true, "name": "突撃の衝撃", "desc": "突進が止まった所で爆発が起きる（突進の60%の威力）", "max": 1, "req": "knight"},
+	{"id": "sp_wall_fix", "cat": "repair", "special": true, "name": "壁職人", "desc": "修理兵が城と一緒に壁も直す（1人につき4秒ごとに1発分）", "max": 1, "req": "repairer"},
+	# ---- おもしろ強化（あまり強くないけど、変で派手なやつ）
+	{"id": "sp_fun_fireworks", "cat": "soldier", "special": true, "name": "勝利の花火", "desc": "遊撃兵が敵を倒すと、30%で花火が打ち上がる（弾けた所に小ダメージ）", "max": 1},
+	{"id": "sp_fun_reflect", "cat": "guard", "special": true, "name": "はね返し盾", "desc": "盾で防いだ弾を「カキーン！」と虹色の弾で打ち返す", "max": 1, "req": "guard"},
+	{"id": "sp_fun_firework_arrow", "cat": "sniper", "special": true, "name": "花火矢", "desc": "4回に1回、矢と一緒に花火も撃ち込む", "max": 1, "req": "sniper"},
+	{"id": "sp_fun_roar", "cat": "heavy", "special": true, "name": "雄叫び", "desc": "10秒ごとに「ウオオオ！」と叫んで、周りの敵を思いっきり吹き飛ばす（ダメージはほぼなし）", "max": 1, "req": "heavy"},
+	{"id": "sp_fun_jack", "cat": "builder", "special": true, "name": "ビックリ箱壁", "desc": "壁が攻撃を防ぐと、35%でビックリ箱が飛び出して敵を吹き飛ばす", "max": 1, "req": "builder"},
+	{"id": "sp_fun_scarecrow", "cat": "engineer", "special": true, "name": "かかし", "desc": "罠と一緒にかかしを立てる。敵の気を引いて、代わりに殴られてくれる（耐久60）", "max": 1, "req": "engineer"},
+	{"id": "sp_fun_doves", "cat": "castle", "special": true, "name": "矢倉・伝書鳩部隊", "desc": "6秒ごとに、矢倉から敵を追いかけてつつく白い鳩が飛び立つ", "max": 1, "req": "tower"},
+	{"id": "sp_fun_billiard", "cat": "castle", "special": true, "name": "大砲・ビリヤード砲弾", "desc": "砲弾が着弾したあと、同じ向きに「コン！」と2回跳ねる（跳ねるたびに威力半分）", "max": 1, "req": "cannon"},
+	{"id": "sp_fun_cow", "cat": "castle", "special": true, "name": "投石器・牛投げ", "desc": "3回に1回、岩のかわりに牛を投げる。着地した牛は「モー！」と暴走して敵をはねる", "max": 1, "req": "catapult"},
+	{"id": "sp_fun_rainbow", "cat": "castle", "special": true, "name": "バリスタ・虹の矢", "desc": "矢が虹色の尾を引き、当たった敵は1.5秒間混乱してふらふら歩く", "max": 1, "req": "ballista"},
+	{"id": "sp_fun_snowball", "cat": "castle", "special": true, "name": "結界・雪合戦", "desc": "城から近くの敵へ雪玉を投げ続ける（ちょっとだけ止まる）", "max": 1, "req": "frost"},
+	{"id": "sp_fun_dance", "cat": "pet", "special": true, "name": "ペットの踊り", "desc": "10秒ごとにペットがくるくる踊り、近くの敵を2秒間混乱させる", "max": 1, "req": "pet"},
+	{"id": "sp_fun_star", "cat": "knight", "special": true, "name": "流れ星突撃", "desc": "突進の跡にキラキラの星が残って弾ける（小ダメージ）", "max": 1, "req": "knight"},
+	{"id": "sp_fun_kusudama", "cat": "repair", "special": true, "name": "くす玉割り", "desc": "12秒ごとに城の上でくす玉が割れて紙吹雪。城と味方のHPが20回復", "max": 1, "req": "repairer"},
 	# ---- 15秒ごとの必殺技（各種類の6つ目）
 	{"id": "sp_ult_storm", "cat": "soldier", "special": true, "name": "必殺・剣の大嵐", "desc": "15秒ごとに、遊撃兵全員が周りを巻き込む巨大な回転斬り（剣の5倍の威力・大きく吹き飛ばす）", "max": 1},
 	{"id": "sp_ult_dome", "cat": "guard", "special": true, "name": "必殺・鉄壁の陣", "desc": "15秒ごとに、城をドームで6秒間包む。ドームに入った敵の弾・砲弾は消える。迎撃兵のHPも全回復", "max": 1, "req": "guard"},
@@ -158,8 +191,10 @@ const SPECIAL := [
 	{"id": "sp_ult_ice_age", "cat": "castle", "special": true, "name": "結界・必殺・氷河期", "desc": "15秒ごとに、結界の2倍以上の広さの敵をまとめて3秒凍らせてダメージ", "max": 1, "req": "frost"},
 ]
 
-const CAT_LABEL := {"soldier": "遊撃", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "heavy": "重装", "engineer": "工兵", "castle": "城"}
+const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",
+	"heavy": "重装", "engineer": "工兵", "repair": "修理", "castle": "城"}
 const CAT_COLOR := {
+	"pet": Color(0.55, 1.0, 0.75), "knight": Color(1.0, 0.82, 0.4), "repair": Color(0.55, 0.75, 1.0),
 	"sniper": Color(0.75, 0.95, 0.45),
 	"soldier": Color(0.6, 0.85, 1.0), "builder": Color(1.0, 0.88, 0.45),
 	"guard": Color(0.6, 1.0, 0.65), "heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), "castle": Color(1.0, 0.7, 0.45)}
@@ -271,8 +306,6 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.add_guard()
 		"shield_arc":
 			game.guard_stats.shield_arc += deg_to_rad(20.0)
-		"guard_speed":
-			game.guard_stats.move_speed *= 1.15
 		"spear_reach":
 			game.guard_stats.spear_reach += 25.0
 		"spear_dmg":
@@ -425,6 +458,68 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.lightning = true
 		"sp_snowman":
 			castle.snowman = true
+		# ---- ペット
+		"pet_rate":
+			game.pet_interval *= 0.85
+		"pet_fang":
+			game.pet_damage *= 1.3
+			for p in game.pets:
+				p.damage = game.pet_damage
+		"pet_eye":
+			game.pet_range *= 1.2
+		"sp_pet_burst":
+			game.pet_burst = true
+		"sp_pet_giant":
+			game.pet_giant = true
+		# ---- 近衛部隊
+		"knight":
+			game.add_knight()
+		"knight_dmg":
+			game.knight_stats.damage *= 1.35
+		"knight_rate":
+			game.knight_stats.interval *= 0.85
+		"knight_reach":
+			game.knight_stats.dash_distance *= 1.25
+		"sp_chain_dash":
+			game.knight_stats.chain = 2
+		"sp_dash_quake":
+			game.knight_stats.quake = true
+		# ---- 修理部隊
+		"repairer":
+			game.add_repairer()
+		"repair_skill":
+			game.repair_stats.heal_per_sec += 1.0
+		"sp_wall_fix":
+			game.repair_stats.wall_fix = true
+		# ---- おもしろ強化
+		"sp_fun_fireworks":
+			st.fireworks = true
+		"sp_fun_reflect":
+			game.guard_stats.reflect = true
+		"sp_fun_firework_arrow":
+			game.sniper_stats.firework_arrow = true
+		"sp_fun_roar":
+			game.fun.roar = true
+		"sp_fun_jack":
+			game.walls.jack = true
+		"sp_fun_scarecrow":
+			game.engineer_stats.scarecrow = true
+		"sp_fun_doves":
+			game.fun.doves = true
+		"sp_fun_billiard":
+			castle.billiard = true
+		"sp_fun_cow":
+			castle.cow_throw = true
+		"sp_fun_rainbow":
+			castle.rainbow_bolt = true
+		"sp_fun_snowball":
+			game.fun.snowball = true
+		"sp_fun_dance":
+			game.fun.pet_dance = true
+		"sp_fun_star":
+			game.knight_stats.star_trail = true
+		"sp_fun_kusudama":
+			game.fun.kusudama = true
 		# ---- 狙撃部隊
 		"sniper":
 			game.add_sniper()
@@ -484,5 +579,3 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"wall":
 			castle.max_hp += 100.0
 			castle.hp = castle.max_hp
-		"repair":
-			castle.regen += 2.0

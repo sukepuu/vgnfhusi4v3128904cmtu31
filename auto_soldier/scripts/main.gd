@@ -28,6 +28,12 @@ const LightningScript := preload("res://scripts/lightning.gd")
 const SniperScript := preload("res://scripts/sniper.gd")
 const SniperStats := preload("res://scripts/sniper_stats.gd")
 const UltimatesScript := preload("res://scripts/ultimates.gd")
+const KnightScript := preload("res://scripts/knight.gd")
+const KnightStats := preload("res://scripts/knight_stats.gd")
+const RepairerScript := preload("res://scripts/repairer.gd")
+const RepairStats := preload("res://scripts/repair_stats.gd")
+const FunSpecialsScript := preload("res://scripts/fun_specials.gd")
+const FunFxScript := preload("res://scripts/fun_fx.gd")
 ## このレベルごとに特別強化の3択が出る
 const SPECIAL_EVERY := 5
 
@@ -76,11 +82,27 @@ var sniper_stats := SniperStats.new()
 const MAX_SNIPERS := 3
 ## 15秒ごとの必殺技（6つ目の特別強化）をまとめて管理する
 var ultimates: Node2D
+## おもしろ特別強化のうち、一定時間ごとに出るものを管理する
+var fun: Node2D
+## 近衛部隊（突進する騎士）
+var knights: Array = []
+var knight_stats := KnightStats.new()
+const MAX_KNIGHTS := 3
+## 修理部隊（城のHPを回復）
+var repairers: Array = []
+var repair_stats := RepairStats.new()
+const MAX_REPAIRERS := 3
 var pets: Array = []
 ## 遊撃兵1人あたりのペットの数（「ペットの仲間」を取るたびに+1）
 var pets_per_soldier := 0
 ## ペットの攻撃力（あとから付くペットにも反映）
 var pet_damage := 7.0
+## ペットの射撃間隔・射程（全ペット共通）
+var pet_interval := 0.8
+var pet_range := 420.0
+## ペットの特別強化：爆裂ペット弾・巨大ペット
+var pet_burst := false
+var pet_giant := false
 ## 毎フレーム更新する敵リスト（各スクリプトから参照）
 var enemies_cache: Array = []
 var _grid := {}
@@ -134,6 +156,10 @@ func _ready() -> void:
 	ultimates = UltimatesScript.new()
 	ultimates.game = self
 	effects.add_child(ultimates)
+
+	fun = FunSpecialsScript.new()
+	fun.game = self
+	effects.add_child(fun)
 
 	ground = Node2D.new()
 	ground.name = "Ground"
@@ -263,9 +289,13 @@ func nearest_enemy(pos: Vector2, max_dist: float) -> Node2D:
 
 ## 敵に狙われる味方（遊撃部隊＋迎撃部隊＋重装部隊）。築城部隊は狙われない
 func allies() -> Array:
-	var list: Array = soldiers + guards
+	var list: Array = soldiers + guards + knights
 	if heavy != null:
 		list.append(heavy)
+	# 見張り櫓・かかしなど、耐久のある設置物も敵に狙われる
+	for p in get_tree().get_nodes_in_group("attackable"):
+		if not p.dead:
+			list.append(p)
 	return list
 
 
@@ -369,6 +399,28 @@ func add_sniper() -> void:
 	s.position = castle.gate_position()
 	world.add_child(s)
 	snipers.append(s)
+
+
+func add_knight() -> void:
+	if knights.size() >= MAX_KNIGHTS:
+		return
+	var k := KnightScript.new()
+	k.game = self
+	k.index = knights.size()
+	k.position = castle.gate_position()
+	world.add_child(k)
+	knights.append(k)
+
+
+func add_repairer() -> void:
+	if repairers.size() >= MAX_REPAIRERS:
+		return
+	var r := RepairerScript.new()
+	r.game = self
+	r.index = repairers.size()
+	r.position = castle.gate_position()
+	world.add_child(r)
+	repairers.append(r)
 
 
 ## 通常速度 ⇔ 2倍速 の切り替え
@@ -645,6 +697,31 @@ func spawn_damage_text(pos: Vector2, amount: float, col: Color) -> void:
 	t.color = col
 	t.position = pos + Vector2(randf_range(-8, 8), -10)
 	effects.add_child(t)
+
+
+## 浮かび上がる文字（「ウオオオ！」など）
+func spawn_text(pos: Vector2, text: String, col: Color, size: int = 18) -> void:
+	if effects.get_child_count() > 150:
+		return
+	var t := DamageTextScript.new()
+	t.text = text
+	t.color = col
+	t.font_size = size
+	t.duration = 1.1
+	t.position = pos
+	effects.add_child(t)
+
+
+## おもしろ特別強化の見た目（kind: "firework" / "jack" / "kusudama" / "roar"）
+func spawn_fun_fx(kind: String, pos: Vector2) -> Node2D:
+	var f := FunFxScript.new()
+	f.game = self
+	f.kind = kind
+	f.position = pos
+	f.start = pos
+	f.end = pos
+	effects.add_child(f)
+	return f
 
 
 func spawn_burst(pos: Vector2, col: Color, r: float) -> void:

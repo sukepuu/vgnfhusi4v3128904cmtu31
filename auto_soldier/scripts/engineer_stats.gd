@@ -27,3 +27,5 @@ var double_plant := false
 var ap_mine := false
 ## 自動砲台（罠と一緒に、しばらく敵を撃つ砲台も置く）
 var sentry := false
+## かかし（罠と一緒に、敵の気を引くかかしを立てる）
+var scarecrow := false

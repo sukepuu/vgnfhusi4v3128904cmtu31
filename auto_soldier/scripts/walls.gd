@@ -26,6 +26,8 @@ var repair_level := 0
 var explode_on_block := false
 ## 黄金の壁（防ぐたびに経験値）
 var golden := false
+## ビックリ箱壁（防ぐたびに、たまにビックリ箱が飛び出して敵を吹き飛ばす）
+var jack := false
 ## 見張り櫓（築城兵が壁の外に矢を撃つ櫓を建てる）
 var watchtower := false
 const MAX_WATCHTOWERS := 4
@@ -99,6 +101,9 @@ func absorb(i: int, pos: Vector2 = Vector2.INF) -> void:
 	var w: Dictionary = walls[i]
 	if explode_on_block and pos != Vector2.INF:
 		game.explode(pos, 75.0, 40.0 * (1.0 + game.elapsed / 180.0), w["src"], Color(0.9, 0.75, 0.5))
+	if jack and pos != Vector2.INF and randf() < 0.35:
+		game.spawn_fun_fx("jack", pos)
+		game.explode(pos, 70.0, 20.0 * (1.0 + game.elapsed / 180.0), w["src"], Color(1.0, 0.4, 0.6), 0.0, 600.0)
 	w["hp"] -= 1.0
 	w["flash"] = 0.15
 	if golden:

@@ -35,3 +35,5 @@ var sword_wave := false
 var shadow := false
 ## ブーメラン（定期的にブーメランを投げる）
 var boomerang := false
+## 勝利の花火（敵を倒すと、たまに花火が上がる）
+var fireworks := false

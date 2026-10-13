@@ -257,6 +257,10 @@ func refresh() -> void:
 		lines_r.append("迎撃 %d / %d" % [_alive(game.guards), game.guards.size()])
 	if not game.snipers.is_empty():
 		lines_r.append("狙撃 %d人" % game.snipers.size())
+	if not game.knights.is_empty():
+		lines_r.append("近衛 %d / %d" % [_alive(game.knights), game.knights.size()])
+	if not game.repairers.is_empty():
+		lines_r.append("修理 %d人（+%d/秒）" % [game.repairers.size(), int(game.repairers.size() * game.repair_stats.heal_per_sec)])
 	if game.heavy != null:
 		lines_r.append("重装 %s" % ("復活待ち" if game.heavy.dead else "戦闘中"))
 	if not game.engineers.is_empty():
@@ -322,6 +326,13 @@ func _build_game_over() -> void:
 	stats_btn.add_theme_font_size_override("font_size", 18)
 	stats_btn.pressed.connect(func() -> void: game.stats_ui.open_panel())
 	box.add_child(stats_btn)
+
+	var up_btn := Button.new()
+	up_btn.text = "強化状態を見る"
+	up_btn.custom_minimum_size = Vector2(260, 44)
+	up_btn.add_theme_font_size_override("font_size", 18)
+	up_btn.pressed.connect(func() -> void: game.upgrades_ui.open_panel())
+	box.add_child(up_btn)
 
 
 func show_game_over() -> void:

@@ -17,7 +17,7 @@ var src: Dictionary = {}
 var thrower: Node2D = null
 ## 追尾する敵
 var target: Node2D = null
-## ball の見た目（"iron" 鉄球 / "rock" 岩）
+## 見た目（ball："iron" 鉄球 / "rock" 岩 / "cow" 牛、homing："arrow" 火矢 / "bird" 鳩）
 var look := "iron"
 
 var _t := 0.0
@@ -56,7 +56,11 @@ func _process(delta: float) -> void:
 					return
 				velocity = to.normalized() * 700.0
 		"ball":
-			_spin += velocity.length() * delta / radius
+			if look == "cow":
+				# 牛は転がらずに走る
+				_spin += delta * 14.0
+			else:
+				_spin += velocity.length() * delta / radius
 			velocity = velocity.move_toward(Vector2.ZERO, 220.0 * delta)
 			if velocity.length() < 30.0:
 				game.spawn_burst(global_position, Color(0.6, 0.55, 0.5), radius * 0.6)
@@ -103,7 +107,9 @@ func _draw() -> void:
 			draw_circle(Vector2.ZERO, 3.5, Color(0.9, 0.8, 0.5))
 		"ball":
 			draw_circle(Vector2(0, radius * 0.4), radius, Color(0, 0, 0, 0.3))
-			if look == "rock":
+			if look == "cow":
+				draw_cow(self, velocity.x < 0.0, _spin)
+			elif look == "rock":
 				draw_circle(Vector2.ZERO, radius, Color(0.5, 0.46, 0.42))
 				draw_circle(Vector2.from_angle(_spin) * radius * 0.45, radius * 0.3, Color(0.62, 0.58, 0.54))
 				draw_circle(Vector2.from_angle(_spin + 2.5) * radius * 0.5, radius * 0.2, Color(0.4, 0.37, 0.34))
@@ -116,7 +122,38 @@ func _draw() -> void:
 				draw_circle(Vector2(-radius * 0.3, -radius * 0.3), radius * 0.3, Color(0.55, 0.55, 0.6))
 		"homing":
 			var dir := velocity.normalized()
+			if look == "bird":
+				# パタパタ飛ぶ白い鳩
+				var flap := sin(_t * 22.0) * 7.0
+				var side := dir.orthogonal()
+				draw_colored_polygon(PackedVector2Array([side * 2.0, side * (12.0 + flap) - dir * 4.0, -dir * 6.0]), Color(0.92, 0.92, 0.95))
+				draw_colored_polygon(PackedVector2Array([-side * 2.0, -side * (12.0 + flap) - dir * 4.0, -dir * 6.0]), Color(0.92, 0.92, 0.95))
+				draw_circle(Vector2.ZERO, 6.0, Color(0.98, 0.98, 1.0))
+				draw_circle(dir * 6.0, 4.0, Color(0.98, 0.98, 1.0))
+				draw_colored_polygon(PackedVector2Array([dir * 13.0, dir * 8.0 + side * 2.0, dir * 8.0 - side * 2.0]), Color(1.0, 0.7, 0.2))
+				return
 			for i in 4:
 				draw_circle(-dir * (6.0 + i * 6.0), 5.0 - i, Color(1.0, 0.5 - i * 0.08, 0.1, 0.6 - i * 0.12))
 			draw_line(-dir * 10.0, dir * 8.0, Color(0.95, 0.85, 0.6), 3.0)
 			draw_circle(dir * 8.0, 4.0, Color(1.0, 0.85, 0.3))
+
+
+## 牛の絵（牛投げ用。投石器の弾からも使う）
+static func draw_cow(ci: CanvasItem, face_left: bool, t: float, sz: float = 1.0) -> void:
+	var f := -1.0 if face_left else 1.0
+	# 走る足
+	for i in 4:
+		var x := (-10.0 + i * 6.5) * sz
+		var swing := sin(t + i * 1.6) * 4.0 * sz
+		ci.draw_line(Vector2(x, 6.0 * sz), Vector2(x + swing, 16.0 * sz), Color(0.2, 0.2, 0.2), 3.0 * sz)
+	# 体と黒いぶち
+	ci.draw_circle(Vector2(-6.0 * sz, 0), 10.0 * sz, Color(0.97, 0.97, 0.95))
+	ci.draw_circle(Vector2(6.0 * sz, 0), 10.0 * sz, Color(0.97, 0.97, 0.95))
+	ci.draw_circle(Vector2(-7.0 * sz, -3.0 * sz), 4.0 * sz, Color(0.15, 0.15, 0.15))
+	ci.draw_circle(Vector2(5.0 * sz, 3.0 * sz), 3.5 * sz, Color(0.15, 0.15, 0.15))
+	# 頭・鼻・角
+	var head := Vector2(17.0 * f * sz, -5.0 * sz)
+	ci.draw_circle(head, 7.0 * sz, Color(0.97, 0.97, 0.95))
+	ci.draw_circle(head + Vector2(4.0 * f * sz, 3.0 * sz), 4.0 * sz, Color(1.0, 0.7, 0.75))
+	ci.draw_circle(head + Vector2(1.0 * f * sz, -2.0 * sz), 1.5 * sz, Color(0, 0, 0))
+	ci.draw_line(head + Vector2(-2.0 * f * sz, -6.0 * sz), head + Vector2(-4.0 * f * sz, -11.0 * sz), Color(0.9, 0.85, 0.6), 2.0 * sz)

@@ -5,6 +5,8 @@ extends Node2D
 ## sentry    ：工兵の自動砲台。しばらくのあいだ近くの敵を連射する
 ## mine      ：大砲の機雷。敵が触れると爆発
 ## snowman   ：結界の雪だるま。敵が近づくと爆発して周りを凍らせる
+## scarecrow ：工兵のかかし。敵の気を引いて、代わりに殴られてくれる
+## 見張り櫓とかかしには耐久があり、敵に攻撃される（味方と同じあつかい）
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
@@ -20,17 +22,31 @@ var _t := 0.0
 var _cd := 0.0
 var _aim := Vector2.UP
 var _forever := false
+## 耐久（見張り櫓・かかしだけ。0になったら壊れる）
+var hp := 0.0
+var max_hp := 0.0
+var dead := false
+var _hurt := 0.0
+## 耐久を持つ物の耐久
+const DURABILITY := {"watchtower": 50.0, "scarecrow": 60.0}
 
 
 func _ready() -> void:
 	add_to_group("placed_" + kind)
 	_forever = life <= 0.0
+	if DURABILITY.has(kind):
+		# 敵から味方として狙われる
+		max_hp = DURABILITY[kind]
+		hp = max_hp
+		radius = 16.0
+		add_to_group("attackable")
 	_cd = randf() * 0.5
 
 
 func _process(delta: float) -> void:
 	_t += delta
 	_cd -= delta
+	_hurt -= delta
 	if not _forever:
 		life -= delta
 		if life <= 0.0:
@@ -60,6 +76,19 @@ func _process(delta: float) -> void:
 				queue_free()
 				return
 	queue_redraw()
+
+
+## 敵の攻撃を受ける（見張り櫓・かかし）
+func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
+	if dead or max_hp <= 0.0:
+		return
+	hp -= amount
+	_hurt = 0.15
+	game.spawn_damage_text(global_position, amount, Color(1.0, 0.6, 0.4))
+	if hp <= 0.0:
+		dead = true
+		game.spawn_burst(global_position, Color(0.6, 0.45, 0.3), 30.0)
+		queue_free()
 
 
 func _enemies_inside(r: float) -> Array:
@@ -96,6 +125,15 @@ func _draw() -> void:
 	if not _forever and life < 2.0 and int(life * 8.0) % 2 == 0:
 		fade = 0.4
 	modulate.a = fade
+	if _hurt > 0.0:
+		modulate = Color(1.0, 0.5, 0.5, fade)
+	else:
+		modulate = Color(1, 1, 1, fade)
+	if max_hp > 0.0 and hp < max_hp:
+		# 耐久バー
+		var top := Vector2(-16, -48)
+		draw_rect(Rect2(top, Vector2(32, 4)), Color(0, 0, 0, 0.6))
+		draw_rect(Rect2(top, Vector2(32 * hp / max_hp, 4)), Color(0.9, 0.75, 0.3))
 	match kind:
 		"spikes":
 			draw_circle(Vector2.ZERO, radius, Color(0.45, 0.3, 0.15, 0.18))
@@ -132,6 +170,20 @@ func _draw() -> void:
 				var d := Vector2.from_angle(TAU * i / 6.0)
 				draw_line(d * 8.0, d * 12.0, Color(0.35, 0.35, 0.38), 2.0)
 			draw_circle(Vector2.ZERO, 3.0, Color(1.0, 0.2, 0.2) if blink else Color(0.4, 0.1, 0.1))
+		"scarecrow":
+			# 揺れるかかし（叩かれると大きく揺れる）
+			var sway := sin(_t * 3.0) * 0.12 + (sin(_t * 40.0) * 0.3 if _hurt > 0.0 else 0.0)
+			draw_circle(Vector2(0, 10), 10.0, Color(0, 0, 0, 0.25))
+			draw_set_transform(Vector2(0, 10), sway, Vector2.ONE)
+			draw_line(Vector2(0, 0), Vector2(0, -34), Color(0.5, 0.35, 0.2), 3.0)
+			draw_line(Vector2(-16, -24), Vector2(16, -24), Color(0.5, 0.35, 0.2), 3.0)
+			draw_rect(Rect2(Vector2(-9, -30), Vector2(18, 16)), Color(0.75, 0.3, 0.25))
+			draw_circle(Vector2(0, -38), 8.0, Color(0.95, 0.85, 0.55))
+			draw_colored_polygon(PackedVector2Array([Vector2(-13, -42), Vector2(0, -54), Vector2(13, -42)]), Color(0.85, 0.75, 0.3))
+			draw_line(Vector2(-4, -40), Vector2(-2, -38), Color(0, 0, 0), 1.5)
+			draw_line(Vector2(4, -40), Vector2(2, -38), Color(0, 0, 0), 1.5)
+			draw_arc(Vector2(0, -36), 3.0, 0.2, PI - 0.2, 6, Color(0, 0, 0), 1.5)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		"snowman":
 			draw_circle(Vector2(0, 10), 14.0, Color(0, 0, 0, 0.25))
 			draw_circle(Vector2(0, 2), 13.0, Color(0.95, 0.97, 1.0))

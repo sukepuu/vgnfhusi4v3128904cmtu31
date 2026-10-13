@@ -11,8 +11,8 @@ const HALF := Vector2(95, 45)
 var game: Node2D
 var max_hp := 600.0
 var hp := 600.0
-## 城のHPの自然回復（毎秒）。「修理工」で +2 ずつ増える
-var regen := 2.0
+## 城のHPの自然回復（毎秒）。自然回復はなし（回復は修理部隊がする）
+var regen := 0.0
 
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0
@@ -79,6 +79,11 @@ var cannon_mines := false
 var rolling_rock := false
 var lightning := false
 var snowman := false
+## おもしろ強化：ビリヤード砲弾・牛投げ・虹の矢
+var billiard := false
+var cow_throw := false
+var rainbow_bolt := false
+var _catapult_shots := 0
 var _homing_cd := 2.0
 var _lightning_cd := 2.0
 var _snowman_cd := 2.0
@@ -214,6 +219,9 @@ func _update_cannon(delta: float) -> void:
 		_cannon_aims[i] = (best.global_position - from).normalized()
 		var rec := _equip_record("cannon", "大砲", i)
 		var shells: Array = [_fire_shell(from, best.global_position, cannon_damage, cannon_radius, false, rec)]
+		# ビリヤード砲弾：着弾後に2回跳ねる
+		if billiard:
+			shells[0].bounces = 2
 		# 機雷散布：本命の砲弾が着弾地点に機雷をばらまく
 		if cannon_mines:
 			shells[0].mines = 3
@@ -245,6 +253,10 @@ func _update_catapult(delta: float) -> void:
 			s.split_count = 2 + 2 * split_level
 		if direct_hit:
 			s.direct_bonus = catapult_damage * 4.0
+		# 牛投げ：3回に1回、岩のかわりに牛を投げる
+		_catapult_shots += 1
+		if cow_throw and _catapult_shots % 3 == 0:
+			s.cow = true
 		if rolling_rock:
 			s.roll_damage = catapult_damage * 1.2
 		# 岩雨：ランダムな敵2体の頭上にも岩が落ちる
@@ -281,6 +293,10 @@ func _update_ballista(delta: float) -> void:
 				b.radius = 16.0
 				b.scale = Vector2(1.8, 1.8)
 			b.bolt = true
+			# 虹の矢：虹色の尾を引き、当たった敵を混乱させる
+			if rainbow_bolt:
+				b.rainbow = true
+				b.confuse_on_hit = 1.5
 			b.src = _equip_record("ballista", "バリスタ", i)
 			b.life = 2.5
 			b.position = from

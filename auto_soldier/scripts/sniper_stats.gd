@@ -24,3 +24,5 @@ var pin := false
 var bounces := 0
 ## 弱点看破（当たった敵は6秒間、全員からのダメージ +35%）
 var mark := false
+## 花火矢（4回に1回、矢と一緒に花火も撃ち込む）
+var firework_arrow := false

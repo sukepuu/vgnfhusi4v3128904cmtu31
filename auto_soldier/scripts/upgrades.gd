@@ -170,10 +170,10 @@ const SPECIAL := [
 	{"id": "sp_fun_scarecrow", "cat": "engineer", "special": true, "name": "かかし", "desc": "罠と一緒にかかしを立てる。敵の気を引いて、代わりに殴られてくれる（耐久60）", "max": 1, "req": "engineer"},
 	{"id": "sp_fun_doves", "cat": "castle", "special": true, "name": "矢倉・伝書鳩部隊", "desc": "6秒ごとに、矢倉から敵を追いかける白い鳩が飛び立つ。当たった敵が生き残っていたらくっついて、1秒ごとにあと2回つつく", "max": 1, "req": "tower"},
 	{"id": "sp_fun_billiard", "cat": "castle", "special": true, "name": "大砲・ビリヤード砲弾", "desc": "砲弾が着弾したあと、同じ向きに2回跳ねる（跳ねるたびに威力半分）", "max": 1, "req": "cannon"},
-	{"id": "sp_fun_cow", "cat": "castle", "special": true, "name": "投石器・牛投げ", "desc": "3回に1回、岩のかわりに牛を投げる。着地した牛は暴走して敵をはねる", "max": 1, "req": "catapult"},
+	{"id": "sp_fun_cow", "cat": "castle", "special": true, "name": "投石器・牛投げ", "desc": "3回に1回、岩のかわりに牛を投げる。着地した牛は6秒間、近くの敵へ何度も突進する", "max": 1, "req": "catapult"},
 	{"id": "sp_fun_rainbow", "cat": "castle", "special": true, "name": "バリスタ・虹の矢", "desc": "矢が虹色の尾を引き、当たった敵は1.5秒間混乱してふらふら歩く", "max": 1, "req": "ballista"},
 	{"id": "sp_fun_snowball", "cat": "castle", "special": true, "name": "結界・雪合戦", "desc": "城から近くの敵へ雪玉を投げ続ける（ちょっとだけ止まる）", "max": 1, "req": "frost"},
-	{"id": "sp_fun_dance", "cat": "pet", "special": true, "name": "ペットの踊り", "desc": "10秒ごとにペットがくるくる踊り、近くの敵を2秒間混乱させる", "max": 1, "req": "pet"},
+	{"id": "sp_fun_dance", "cat": "pet", "special": true, "name": "ペットの踊り", "desc": "ペットが虹色に光りながらくるくる回り、5秒ごとに全方位へ虹色の玉を12発撃つ", "max": 1, "req": "pet"},
 	{"id": "sp_fun_star", "cat": "knight", "special": true, "name": "流れ星突撃", "desc": "突進の跡にキラキラの星が残って弾ける（小ダメージ）", "max": 1, "req": "knight"},
 	{"id": "sp_fun_kusudama", "cat": "repair", "special": true, "name": "くす玉割り", "desc": "12秒ごとに城の上でくす玉が割れて紙吹雪。城と味方のHPが20回復", "max": 1, "req": "repairer"},
 	# ---- 15秒ごとの必殺技（各種類の6つ目）

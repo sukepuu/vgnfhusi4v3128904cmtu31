@@ -3,6 +3,7 @@ extends Node2D
 ## boomerang：遊撃兵のブーメラン。飛んでいって戻ってくる（行きと帰りでそれぞれ敵を貫く）
 ## ball     ：重装兵の鉄球・投石器の転がり岩。転がりながらだんだん遅くなり、ひいた敵を吹き飛ばす
 ## homing   ：矢倉の追尾火矢。敵を追いかけて、当たると小爆発
+## cow      ：牛投げの牛。着地してから life 秒のあいだ、近くの敵へ何度も突進する
 
 var game: Node2D
 var kind := "boomerang"
@@ -29,6 +30,9 @@ var _spin := 0.0
 var _stuck_on: Node2D = null
 var _pecks_left := 0
 var _peck_cd := 0.0
+## 牛：今の突進の残り時間と、次の突進までの休み
+var _charge_left := 0.0
+var _rest_left := 0.3
 
 
 func _ready() -> void:
@@ -62,6 +66,8 @@ func _process(delta: float) -> void:
 					queue_free()
 					return
 				velocity = to.normalized() * 700.0
+		"cow":
+			_update_cow(delta)
 		"ball":
 			if look == "cow":
 				# 牛は転がらずに走る
@@ -104,10 +110,35 @@ func _check_hits() -> void:
 					return
 				queue_free()
 				return
-			"ball":
-				e.take_damage(damage, velocity.normalized() * 500.0, src)
+			"ball", "cow":
+				e.take_damage(damage, velocity.normalized() * 450.0, src)
 			_:
 				e.take_damage(damage, velocity.normalized() * 150.0, src)
+
+
+## 牛：近くの敵を見つけては突進する（突進のたびに同じ敵にもまた当たる）
+func _update_cow(delta: float) -> void:
+	_spin += delta * 14.0
+	if _charge_left > 0.0:
+		_charge_left -= delta
+		if _charge_left <= 0.0:
+			_rest_left = 0.35
+			velocity = velocity.normalized() * 30.0
+		return
+	_rest_left -= delta
+	velocity = velocity.move_toward(Vector2.ZERO, 400.0 * delta)
+	if _rest_left > 0.0:
+		return
+	var t: Node2D = game.nearest_enemy(global_position, 380.0)
+	if t == null:
+		# 近くに敵がいなければ、のんびりうろうろ
+		_rest_left = 0.5
+		velocity = Vector2.from_angle(randf() * TAU) * 60.0
+		return
+	# 敵の向こう側まで突き抜けるつもりで突進
+	_hit.clear()
+	velocity = (t.global_position - global_position).normalized() * 480.0
+	_charge_left = clampf(global_position.distance_to(t.global_position) / 480.0 + 0.25, 0.3, 1.0)
 
 
 ## 鳩が敵にくっついている間：敵と一緒に動き、1秒ごとにつつく
@@ -137,6 +168,11 @@ func _draw() -> void:
 			draw_line(Vector2.ZERO, a * radius, Color(0.55, 0.35, 0.15), 6.0)
 			draw_line(Vector2.ZERO, b * radius, Color(0.55, 0.35, 0.15), 6.0)
 			draw_circle(Vector2.ZERO, 3.5, Color(0.9, 0.8, 0.5))
+		"cow":
+			# 消える前は点滅
+			modulate.a = 0.4 if life < 1.0 and int(life * 8.0) % 2 == 0 else 1.0
+			draw_circle(Vector2(0, radius * 0.4), radius, Color(0, 0, 0, 0.3))
+			draw_cow(self, velocity.x < 0.0, _spin if velocity.length() > 40.0 else 0.0)
 		"ball":
 			draw_circle(Vector2(0, radius * 0.4), radius, Color(0, 0, 0, 0.3))
 			if look == "cow":

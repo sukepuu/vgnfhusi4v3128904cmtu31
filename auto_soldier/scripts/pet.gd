@@ -14,8 +14,6 @@ var interval := 0.8
 var attack_range := 420.0
 
 var _cd := 0.5
-## ペットの踊り（おもしろ強化）：踊っている残り時間
-var dance_left := 0.0
 var _t := 0.0
 var _aim := Vector2.RIGHT
 
@@ -26,12 +24,11 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	dance_left -= delta
 	# 担当の兵士のまわりを回る。兵士が倒れているあいだは城の前で待つ
 	var center: Vector2 = game.castle.gate_position() if owner_soldier.dead else owner_soldier.position
 	# 同じ兵士のペット同士は等間隔に並んで回る
 	var n: int = maxi(game.pets_per_soldier, 1)
-	var ang := _t * (9.0 if dance_left > 0.0 else 1.6) + TAU * index / n
+	var ang := _t * 1.6 + TAU * index / n
 	var target_pos: Vector2 = center + Vector2.from_angle(ang) * 60.0
 	position = position.lerp(target_pos, 1.0 - exp(-10.0 * delta))
 
@@ -84,11 +81,21 @@ func _draw() -> void:
 	# ふわふわ浮いている小鳥風
 	var bob := sin(_t * 6.0) * 2.0
 	draw_circle(Vector2(0, 10), 7.0, Color(0, 0, 0, 0.25))
-	var c := Vector2(0, bob - (absf(sin(_t * 14.0)) * 10.0 if dance_left > 0.0 else 0.0))
-	draw_circle(c, 9.0, Color(0.45, 0.95, 0.65))
+	var c := Vector2(0, bob)
+	if game.fun.pet_dance:
+		# ペットの踊り：虹色に光りながら、その場でくるくる回る
+		var hue := fmod(_t * 0.8 + index * 0.3, 1.0)
+		draw_circle(c, 15.0, Color.from_hsv(hue, 0.7, 1.0, 0.35))
+		for i in 6:
+			var a := _t * 4.0 + TAU * i / 6.0
+			draw_circle(c + Vector2.from_angle(a) * 14.0, 2.5, Color.from_hsv(fmod(hue + i / 6.0, 1.0), 0.8, 1.0))
+		draw_set_transform(c, _t * 9.0, Vector2.ONE)
+		c = Vector2.ZERO
+	draw_circle(c, 9.0, Color.from_hsv(fmod(_t * 0.8 + index * 0.3, 1.0), 0.55, 1.0) if game.fun.pet_dance else Color(0.45, 0.95, 0.65))
 	var wing := sin(_t * 18.0) * 4.0
 	draw_colored_polygon(PackedVector2Array([c + Vector2(-6, 0), c + Vector2(-15, -4 - wing), c + Vector2(-8, 5)]), Color(0.3, 0.75, 0.5))
 	draw_colored_polygon(PackedVector2Array([c + Vector2(6, 0), c + Vector2(15, -4 - wing), c + Vector2(8, 5)]), Color(0.3, 0.75, 0.5))
 	draw_circle(c + _aim * 4.0 + Vector2(-2, -2), 1.8, Color(0.1, 0.1, 0.1))
 	draw_circle(c + _aim * 4.0 + Vector2(2, -2), 1.8, Color(0.1, 0.1, 0.1))
 	draw_colored_polygon(PackedVector2Array([c + _aim * 12.0, c + _aim * 7.0 + _aim.orthogonal() * 3.0, c + _aim * 7.0 - _aim.orthogonal() * 3.0]), Color(1.0, 0.8, 0.3))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

@@ -14,7 +14,7 @@ var roar := false
 var doves := false
 ## 結界：雪合戦（城から敵へ雪玉を投げ続ける）
 var snowball := false
-## ペット：ペットの踊り（10秒ごとに踊って、周りの敵を混乱させる）
+## ペット：ペットの踊り（虹色に光ってくるくる回り、5秒ごとに全方位へ玉を撃つ）
 var pet_dance := false
 ## 修理：くす玉割り（12秒ごとにくす玉が割れて、城と味方が少し回復）
 var kusudama := false
@@ -50,7 +50,7 @@ func _process(delta: float) -> void:
 	if pet_dance and not game.pets.is_empty():
 		_dance_cd -= delta
 		if _dance_cd <= 0.0:
-			_dance_cd = 10.0
+			_dance_cd = 5.0
 			_do_dance()
 	if kusudama and not game.repairers.is_empty():
 		_kusu_cd -= delta
@@ -98,12 +98,20 @@ func _throw_snowball() -> void:
 
 
 func _do_dance() -> void:
+	# 全部のペットが、全方位へ虹色の玉を12発ずつ撃つ
 	for p in game.pets:
-		for e in game.enemies_near(p.global_position, 130.0):
-			if is_instance_valid(e) and not e.dead and p.global_position.distance_to(e.global_position) < 130.0:
-				e.confuse(2.0)
-				e.take_damage(game.pet_damage, Vector2.ZERO, p.record)
-		p.dance_left = 1.2
+		for i in 12:
+			var dir := Vector2.from_angle(TAU * i / 12.0 + p._t)
+			var b := BulletScript.new()
+			b.game = game
+			b.velocity = dir * 420.0
+			b.damage = game.pet_damage
+			b.radius = 5.0
+			b.color = Color.from_hsv(float(i) / 12.0, 0.75, 1.0)
+			b.life = 0.9
+			b.position = p.global_position + dir * 10.0
+			b.src = p.record
+			game.world.add_child(b)
 
 
 func _do_kusudama() -> void:

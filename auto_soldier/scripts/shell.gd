@@ -73,10 +73,8 @@ func _explode() -> void:
 		s.flight_time = 0.45
 		s.bounces = bounces - 1
 	if cow:
-		# 着地した牛が、城と反対の方へ暴走する
-		var away: Vector2 = (target - game.castle.global_position).normalized()
-		var m: Node2D = game.spawn_missile("ball", target, away.rotated(randf_range(-0.4, 0.4)) * 330.0, damage * 0.5, 22.0, 3.5, src)
-		m.look = "cow"
+		# 着地した牛が、6秒間近くの敵へ何度も突進する
+		game.spawn_missile("cow", target, Vector2.ZERO, damage * 0.5, 22.0, 6.0, src)
 	if fire_time > 0.0:
 		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), src)
 	for i in mines:

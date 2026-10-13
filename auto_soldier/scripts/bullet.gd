@@ -109,7 +109,8 @@ func _process(delta: float) -> void:
 				e.mark_left = 6.0
 			if confuse_on_hit > 0.0:
 				e.confuse(confuse_on_hit)
-			e.take_damage(damage, velocity.normalized() * 120.0, src)
+			# 射撃では敵を押し戻さない（ノックバックなし）
+			e.take_damage(damage, Vector2.ZERO, src)
 			if first_blast_radius > 0.0:
 				game.explode(global_position, first_blast_radius, first_blast_damage, src, Color(1.0, 0.5, 0.2), 0.0, 300.0)
 				first_blast_radius = 0.0

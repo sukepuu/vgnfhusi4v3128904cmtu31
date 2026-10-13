@@ -1,13 +1,11 @@
 extends Node2D
 ## 重装部隊（最大1体）。足は遅いが、耐久力と攻撃力が高い。
-## 壁の中央（城の真上）の外側に陣取り、迎撃部隊のように近づく敵を迎え撃ちに行く。
-## 攻撃は遊撃部隊と同じ扇形の斬撃のみ。
+## マップの中を自由に歩き回り、マップの真ん中に一番近い敵を最優先で倒しに行く。
+## 敵がいないときはマップの真ん中で待つ。攻撃は遊撃部隊と同じ扇形の斬撃のみ。
 
 const SlashScript := preload("res://scripts/slash_effect.gd")
 
 const RESPAWN_TIME := 15.0
-## 持ち場からどの距離の敵に反応するか
-const ALERT := 300.0
 
 var game: Node2D
 var radius := 22.0
@@ -26,8 +24,6 @@ var slash_damage := 135.0
 var slash_radius := 105.0
 var slash_arc := deg_to_rad(150.0)
 var slash_interval := 1.1
-## 持ち場からどこまで離れて戦うか
-var leash := 170.0
 
 var _slash_cd := 0.0
 var _hurt_flash := 0.0
@@ -56,9 +52,9 @@ func _ready() -> void:
 	record = game.new_record("heavy", "重装兵")
 
 
-## 持ち場：壁の中央の、少し外側
+## 敵がいないときの待機場所：マップの真ん中
 func post_position() -> Vector2:
-	return game.walls.point_at(PI * 1.5, game.walls.RADIUS + 55.0)
+	return game.MAP_RECT.get_center()
 
 
 func _process(delta: float) -> void:
@@ -78,18 +74,18 @@ func _process(delta: float) -> void:
 	_retarget_cd -= delta
 	hp = minf(max_hp, hp + regen * delta)
 
-	var post := post_position()
 	if _retarget_cd <= 0.0 or not _target_valid():
-		target = _choose_target(post)
+		target = _choose_target(post_position())
 		_retarget_cd = 0.3
 
-	# 敵に向かって行く。ただし持ち場から離れすぎない
-	var desired := post
+	# 狙った敵の所へどこまでも歩いていく（斬撃が届く距離まで近づいたら止まる）
+	var desired := post_position()
+	var stop_dist := 6.0
 	if _target_valid():
-		var to_t := target.global_position - post
-		desired = post + to_t.limit_length(leash)
+		desired = target.global_position
+		stop_dist = slash_radius * 0.6
 	var to := desired - global_position
-	if to.length() > 6.0:
+	if to.length() > stop_dist:
 		position += to.normalized() * minf(move_speed * delta, to.length())
 	position = game.clamp_to_map(position, radius)
 
@@ -138,14 +134,14 @@ func _target_valid() -> bool:
 	return target != null and is_instance_valid(target) and not target.dead
 
 
-## 持ち場に一番近い敵
-func _choose_target(post: Vector2) -> Node2D:
+## マップの真ん中に一番近い敵
+func _choose_target(center: Vector2) -> Node2D:
 	var best: Node2D = null
-	var best_d := ALERT
+	var best_d := INF
 	for e in game.enemies_cache:
 		if not is_instance_valid(e) or e.dead:
 			continue
-		var d: float = e.global_position.distance_to(post)
+		var d: float = e.global_position.distance_to(center)
 		if d < best_d:
 			best_d = d
 			best = e

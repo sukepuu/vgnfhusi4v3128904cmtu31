@@ -55,15 +55,14 @@ const LIST := [
 	{"id": "sniper_rate", "cat": "sniper", "name": "早撃ち", "desc": "狙撃兵が矢を放つ間隔 -15%", "max": 4, "req": "sniper"},
 	{"id": "sniper_multi", "cat": "sniper", "name": "多連矢", "desc": "一度に放つ矢 +1本", "max": 3, "req": "sniper"},
 	{"id": "sniper_dmg", "cat": "sniper", "name": "強弓", "desc": "矢の威力 +35%", "max": 5, "req": "sniper"},
-	{"id": "sniper_range", "cat": "sniper", "name": "遠矢", "desc": "射程 +20%、矢の速さ +15%", "max": 3, "req": "sniper"},
 	{"id": "sniper_pierce", "cat": "sniper", "name": "貫き矢", "desc": "矢が敵をもう1体貫通する", "max": 3, "req": "sniper"},
 	# ---- 重装部隊
-	{"id": "heavy", "cat": "heavy", "name": "重装部隊", "desc": "足は遅いが耐久力と攻撃力が高い重装兵が加わる。壁の中央の前に陣取り、近づく敵を斬撃で迎え撃つ", "max": 1, "weight": 1.5},
+	{"id": "heavy", "cat": "heavy", "name": "重装部隊", "desc": "足は遅いが耐久力と攻撃力が高い重装兵が加わる。マップ内を自由に歩き回り、マップの真ん中に一番近い敵を最優先で斬りに行く", "max": 1, "weight": 1.5},
 	{"id": "heavy_dmg", "cat": "heavy", "name": "剛剣", "desc": "重装兵の斬撃の威力 +35%", "max": 5, "req": "heavy"},
 	{"id": "heavy_haste", "cat": "heavy", "name": "連撃", "desc": "重装兵の斬撃の間隔 -15%", "max": 4, "req": "heavy"},
 	{"id": "heavy_range", "cat": "heavy", "name": "大薙ぎ", "desc": "重装兵の斬撃の範囲 +20%", "max": 4, "req": "heavy"},
 	{"id": "heavy_hp", "cat": "heavy", "name": "重鎧", "desc": "重装兵の最大HP +40%、HP全回復、自然回復 +3/秒", "max": 4, "req": "heavy"},
-	{"id": "heavy_speed", "cat": "heavy", "name": "軽量化", "desc": "重装兵の移動速度 +20%、持ち場から離れて戦える距離 +40", "max": 3, "req": "heavy"},
+	{"id": "heavy_speed", "cat": "heavy", "name": "軽量化", "desc": "重装兵の移動速度 +20%", "max": 3, "req": "heavy"},
 	{"id": "heavy_whirl", "cat": "heavy", "name": "旋風斬り", "desc": "重装兵の斬撃が全方位360度になる", "max": 1, "req": "heavy"},
 	# ---- 工兵部隊
 	{"id": "engineer", "cat": "engineer", "name": "工兵部隊", "desc": "フィールドを回って、爆弾（範囲ダメージ）と落とし穴（範囲ダメージ＋10秒足止め）を交互に仕掛ける工兵が加わる",
@@ -338,7 +337,6 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 				game.heavy.hp = game.heavy.max_hp
 		"heavy_speed":
 			game.heavy.move_speed *= 1.2
-			game.heavy.leash += 40.0
 		"heavy_whirl":
 			game.heavy.slash_arc = TAU
 		"trap_dmg":
@@ -529,9 +527,6 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.sniper_stats.shots += 1
 		"sniper_dmg":
 			game.sniper_stats.damage *= 1.35
-		"sniper_range":
-			game.sniper_stats.fire_range *= 1.2
-			game.sniper_stats.arrow_speed *= 1.15
 		"sniper_pierce":
 			game.sniper_stats.pierce += 1
 		"sp_counter_battery":

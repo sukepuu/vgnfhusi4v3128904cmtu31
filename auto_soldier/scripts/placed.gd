@@ -39,6 +39,8 @@ var dead := false
 var _hurt := 0.0
 ## 耐久を持つ物の耐久
 const DURABILITY := {"watchtower": 50.0, "scarecrow": 60.0}
+## 修理玉の大きさ（ボスの半径46の7割くらい）
+const ORB_RADIUS := 32.0
 
 
 func _ready() -> void:
@@ -120,8 +122,10 @@ func _fire_orb() -> void:
 	b.game = game
 	b.velocity = (t.global_position - global_position).normalized() * 220.0
 	b.damage = dmg
-	b.radius = 8.0 + minf(dmg / 25.0, 14.0)
-	b.color = Color(0.45, 1.0, 0.6)
+	# 撃った玉もボスの7割くらいの大きさの、水色の半透明の玉
+	b.radius = ORB_RADIUS
+	b.color = Color(0.55, 0.9, 1.0)
+	b.orb = true
 	b.only_target = t
 	b.life = 12.0
 	b.position = global_position
@@ -266,18 +270,18 @@ func _draw() -> void:
 			draw_line(Vector2(-6, 4), Vector2(8, -2), Color(0.3, 0.28, 0.26), 2.0)
 			draw_line(Vector2(8, -2), Vector2(14, 8), Color(0.3, 0.28, 0.26), 2.0)
 		"repair_orb":
-			# ためた量が多いほど大きく光る緑の玉と、発射までの時間の輪
-			var charge := _orb_charge()
-			var r := 10.0 + minf(charge / 25.0, 14.0)
-			var pulse := 0.8 + 0.2 * sin(_t * 6.0)
-			draw_circle(Vector2.ZERO, r * 1.8, Color(0.4, 1.0, 0.55, 0.15 * pulse))
-			draw_circle(Vector2.ZERO, r, Color(0.45, 1.0, 0.6, 0.85))
-			draw_circle(Vector2(-r * 0.3, -r * 0.3), r * 0.35, Color(1, 1, 1, 0.6))
-			draw_arc(Vector2.ZERO, r + 6.0, -PI / 2.0, -PI / 2.0 + TAU * clampf(life / 10.0, 0.0, 1.0), 32, Color(0.8, 1.0, 0.8), 2.0)
+			# 当たり判定のない、水色の半透明の玉。ふんわり少し光っている
+			var glow := 0.5 + 0.5 * sin(_t * 3.0)
+			draw_circle(Vector2.ZERO, ORB_RADIUS * 1.35, Color(0.6, 0.95, 1.0, 0.08 + 0.07 * glow))
+			draw_circle(Vector2.ZERO, ORB_RADIUS, Color(0.55, 0.9, 1.0, 0.35))
+			draw_arc(Vector2.ZERO, ORB_RADIUS, 0.0, TAU, 48, Color(0.75, 0.97, 1.0, 0.55), 2.0)
+			draw_circle(Vector2(-ORB_RADIUS * 0.35, -ORB_RADIUS * 0.35), ORB_RADIUS * 0.25, Color(1, 1, 1, 0.35))
+			# 発射までの時間の輪と、たまった量
+			draw_arc(Vector2.ZERO, ORB_RADIUS + 7.0, -PI / 2.0, -PI / 2.0 + TAU * clampf(life / 10.0, 0.0, 1.0), 40, Color(0.8, 0.97, 1.0, 0.7), 2.0)
 			var font := ThemeDB.fallback_font
-			var txt := str(int(charge))
-			var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
-			draw_string(font, Vector2(-w / 2.0, -r - 10.0), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.8, 1.0, 0.8))
+			var txt := str(int(_orb_charge()))
+			var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+			draw_string(font, Vector2(-w / 2.0, 6.0), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 1, 1, 0.9))
 		"automaton":
 			# ボスと同じくらい大きな、木と鉄のからくり兵
 			var r := 46.0

@@ -317,7 +317,6 @@ func _do_overhaul() -> void:
 	if game.heavy != null and not game.heavy.dead:
 		game.heavy.hp = game.heavy.max_hp
 	game.spawn_burst(castle.global_position, Color(0.5, 1.0, 0.6), 160.0)
-	game.spawn_fun_fx("kusudama", castle.global_position + Vector2(0, -castle.HALF.y - 60.0))
 	_flash(Color(0.6, 1.0, 0.7))
 
 

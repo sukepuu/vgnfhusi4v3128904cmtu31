@@ -2,7 +2,6 @@ extends Node2D
 ## おもしろ特別強化の見た目（ダメージは呼んだ側か、このスクリプトの花火が計算する）
 ## firework：start から打ち上がって end で弾ける花火（弾けた所の敵に小ダメージ）
 ## jack    ：ビックリ箱（バネでピエロが飛び出す）
-## kusudama：くす玉が割れて紙吹雪が舞う
 ## roar    ：雄叫びの広がる輪
 
 var game: Node2D
@@ -25,18 +24,12 @@ var _sparks: Array = []
 func _ready() -> void:
 	if kind == "firework":
 		position = start
-	elif kind == "kusudama":
-		# 紙吹雪
-		for i in 40:
-			_sparks.append({"p": Vector2(randf_range(-10, 10), 0), "v": Vector2(randf_range(-160, 160), randf_range(-220, -40)), "c": COLORS.pick_random()})
 
 
 func _life() -> float:
 	match kind:
 		"firework":
 			return rise_time + 0.8
-		"kusudama":
-			return 1.8
 		_:
 			return 0.7
 
@@ -94,18 +87,6 @@ func _draw() -> void:
 			draw_circle(top + Vector2(-4, -3), 1.8, Color(0, 0, 0, a))
 			draw_circle(top + Vector2(4, -3), 1.8, Color(0, 0, 0, a))
 			draw_colored_polygon(PackedVector2Array([top + Vector2(-10, -7), top + Vector2(0, -24), top + Vector2(10, -7)]), Color(0.3, 0.6, 1.0, a))
-		"kusudama":
-			var open := clampf(_t / 0.25, 0.0, 1.0)
-			var a := clampf((1.8 - _t) / 0.5, 0.0, 1.0)
-			# 半分に割れるくす玉
-			draw_arc(Vector2(-open * 14.0, 0), 18.0, PI * 0.5, PI * 1.5, 16, Color(1.0, 0.85, 0.2, a), 5.0)
-			draw_arc(Vector2(open * 14.0, 0), 18.0, -PI * 0.5, PI * 0.5, 16, Color(1.0, 0.85, 0.2, a), 5.0)
-			# 垂れ幕
-			if _t > 0.2:
-				draw_rect(Rect2(Vector2(-14, 4), Vector2(28, 46 * open)), Color(1, 1, 1, a))
-				draw_string(ThemeDB.fallback_font, Vector2(-8, 26), "祝", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.9, 0.1, 0.1, a))
-			for s in _sparks:
-				draw_rect(Rect2(s["p"], Vector2(4, 3)), Color(s["c"], a))
 		"roar":
 			var k := _t / 0.7
 			draw_arc(Vector2.ZERO, radius * k, 0.0, TAU, 48, Color(1.0, 0.6, 0.3, 1.0 - k), 8.0)

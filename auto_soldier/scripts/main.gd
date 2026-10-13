@@ -753,7 +753,7 @@ func spawn_text(pos: Vector2, text: String, col: Color, size: int = 18) -> void:
 	effects.add_child(t)
 
 
-## おもしろ特別強化の見た目（kind: "firework" / "jack" / "kusudama" / "roar"）
+## おもしろ特別強化の見た目（kind: "firework" / "jack" / "roar"）
 func spawn_fun_fx(kind: String, pos: Vector2) -> Node2D:
 	var f := FunFxScript.new()
 	f.game = self

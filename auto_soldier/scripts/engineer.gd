@@ -69,13 +69,13 @@ func _place_trap() -> void:
 				mine_n += 1
 		if mine_n < 2:
 			game.spawn_placed("scarecrow", position + _facing.orthogonal() * 40.0, 0.0, 14.0, 40.0, record)
-	# 自動砲台：罠の隣に砲台も置く（同時に置けるのは工兵1人につき2台まで）
+	# 自動砲台：罠の隣に砲台も置く（同時に置けるのは工兵1人につき3台まで）
 	if game.engineer_stats.sentry:
 		var mine := 0
 		for p in game.get_tree().get_nodes_in_group("placed_sentry"):
 			if is_same(p.src, record):
 				mine += 1
-		if mine < 2:
+		if mine < 3:
 			game.spawn_placed("sentry", position - _facing.orthogonal() * 40.0, 14.0 * (1.0 + game.elapsed / 150.0), 0.0, 30.0, record)
 	# 二重設置：もう1種類の罠も隣に仕掛ける
 	if game.engineer_stats.double_plant:

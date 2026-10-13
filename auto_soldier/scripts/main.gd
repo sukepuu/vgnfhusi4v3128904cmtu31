@@ -44,7 +44,7 @@ const MAX_ENEMIES := 260
 const MAX_SOLDIERS := 5
 const MAX_GUARDS := 3
 const MAX_BUILDERS := 3
-const MAX_ENGINEERS := 2
+const MAX_ENGINEERS := 3
 ## 遊撃兵1人あたりのペットの最大数
 const MAX_PETS := 4
 ## 近くの敵を素早く探すための空間グリッドのマス目サイズ

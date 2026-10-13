@@ -9,6 +9,8 @@ extends Node2D
 ## 自爆兵（bomber）は兵士・壁・城にぶつかると爆発する（壁は3発分削る）。
 ## 隠密兵（stealth）は右下・左下から現れて城を狙う。半透明で見えにくい。
 ## 迫撃砲（mortar）はマップの端から動かず、壁を飛び越える砲弾で城を撃ってくる。
+## 弾幕兵（ringer）は5秒ごとに全方位へ赤い弾を撃ちながら城へ進む。
+## 誘導砲兵（seeker）はマップの端から動かず、体力のある味方（兵士・櫓・かかしなど）へ誘導弾を撃つ。
 ## ボスは Lv10 ごとに2種類が交互に出現。
 ##   破城の魔王（boss）：壁に触れると壁の耐久を7削り、城に着いても消えずに攻撃し続ける。
 ##   砲台要塞（boss2）：その場から動かず、いろんな弾幕と城狙いの砲撃をしてくる。
@@ -114,6 +116,13 @@ func setup(k: String, hp_mult: float) -> void:
 		"mortar":
 			max_hp = 40.0; speed = 0.0; damage = 6.0; castle_damage = 6.0; radius = 16.0; xp_value = 3
 			color = Color(0.45, 0.42, 0.3)
+		"ringer":
+			max_hp = 45.0; speed = 45.0; damage = 7.0; castle_damage = 8.0; radius = 17.0; xp_value = 3
+			color = Color(0.85, 0.15, 0.2)
+			_skill_cd = randf_range(1.0, 5.0)
+		"seeker":
+			max_hp = 50.0; speed = 0.0; damage = 10.0; castle_damage = 0.0; radius = 16.0; xp_value = 4
+			color = Color(0.3, 0.4, 0.35)
 		"boss2":
 			max_hp = 412.5 * (1.0 + 0.3 * (boss_rank - 1)); speed = 0.0; damage = 20.0
 			castle_damage = 0.0; radius = 50.0; xp_value = 60
@@ -137,7 +146,7 @@ func setup(k: String, hp_mult: float) -> void:
 	if not is_boss:
 		speed *= randf_range(0.9, 1.1)
 	_strafe_sign = 1.0 if randf() < 0.5 else -1.0
-	_shoot_cd = randf_range(2.0, 4.0) if k == "mortar" else randf_range(1.0, 2.5)
+	_shoot_cd = randf_range(2.0, 4.0) if k == "mortar" or k == "seeker" else randf_range(1.0, 2.5)
 	add_to_group("enemies")
 
 
@@ -155,7 +164,7 @@ func _process(delta: float) -> void:
 		knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
 		queue_redraw()
 		return
-	if kind == "mortar" or kind == "boss2":
+	if kind == "mortar" or kind == "boss2" or kind == "seeker":
 		_update_stationary(delta)
 		return
 	var castle: Node2D = game.castle
@@ -166,13 +175,15 @@ func _process(delta: float) -> void:
 		_boss_skills(delta)
 	elif kind == "healer":
 		_heal_skill(delta)
+	elif kind == "ringer":
+		_ring_skill(delta)
 	# 基本は城へ。近くに兵士がいればそちらを狙う
 	var aggro := 300.0 if ranged else 110.0
 	if hunter:
 		aggro = INF
 	elif kind == "bomber":
 		aggro = 300.0
-	elif kind == "healer" or is_boss:
+	elif kind == "healer" or kind == "ringer" or is_boss:
 		aggro = 0.0
 	var soldier: Node2D = game.nearest_ally(global_position, aggro)
 	# 挑発：近くに迎撃兵がいればそちらを狙う
@@ -315,6 +326,17 @@ func _update_stationary(delta: float) -> void:
 		if _shoot_cd <= 0.0:
 			_shoot_cd = randf_range(6.0, 8.0)
 			_lob_at_castle(damage, 45.0, 8.0)
+	elif kind == "seeker":
+		# 一番近い「体力のある味方」へ誘導弾（いなければ撃たない）
+		var t: Node2D = game.nearest_ally(global_position, INF)
+		if t != null:
+			_facing = (t.global_position - global_position).normalized()
+			_shoot_cd -= delta
+			if _shoot_cd <= 0.0:
+				_shoot_cd = randf_range(4.0, 5.5)
+				var b: Node2D = _shoot(_facing, damage, 190.0, 8.0, Color(1.0, 0.45, 0.2), 7.0)
+				b.seek = t
+				_recoil = 0.3
 	else:
 		_fortress_skills(delta)
 	# 触れた兵士にはダメージ
@@ -413,6 +435,18 @@ func _fortress_skills(delta: float) -> void:
 				_pattern_left = 0.0
 	_pattern_count += 1
 	_recoil = 0.15
+
+
+## 弾幕兵：5秒ごとに全方位へ赤い弾を10発
+func _ring_skill(delta: float) -> void:
+	_skill_cd -= delta
+	if _skill_cd > 0.0:
+		return
+	_skill_cd = 5.0
+	_spiral_angle += 0.3
+	for i in 10:
+		_shoot(Vector2.from_angle(TAU * i / 10.0 + _spiral_angle), damage, 220.0, 6.0, Color(1.0, 0.15, 0.15), 3.0)
+	_recoil = 0.3
 
 
 ## 分裂の魔獣の技：全方位へ弾を撃ちながら城へ進む（小さい体ほど弾は少なく弱い）
@@ -618,6 +652,24 @@ func _draw() -> void:
 			draw_colored_polygon(PackedVector2Array([
 				Vector2(-22, crown_y), Vector2(-22, crown_y - 14), Vector2(-11, crown_y - 6), Vector2(0, crown_y - 18),
 				Vector2(11, crown_y - 6), Vector2(22, crown_y - 14), Vector2(22, crown_y)]), Color(1.0, 0.82, 0.25))
+		"ringer":
+			# 赤いトゲトゲの玉。撃つ前は光る
+			var spin := Time.get_ticks_msec() / 400.0
+			for i in 8:
+				var d := Vector2.from_angle(spin + TAU * i / 8.0)
+				draw_colored_polygon(PackedVector2Array([d.rotated(0.25) * radius * 0.8, d * radius * 1.35, d.rotated(-0.25) * radius * 0.8]), Color(0.55, 0.05, 0.1))
+			draw_circle(Vector2.ZERO, radius, c)
+			var glow := clampf(1.0 - _skill_cd, 0.0, 1.0)
+			draw_circle(Vector2.ZERO, radius * 0.45, Color(1.0, 0.6 + 0.4 * glow, 0.5 * glow))
+		"seeker":
+			# 発射台と、狙った味方の方を向いたミサイルの筒（2本）
+			draw_rect(Rect2(Vector2(-radius, -radius * 0.2), Vector2(radius * 2.0, radius)), Color(0.25, 0.28, 0.25))
+			draw_circle(Vector2.ZERO, radius * 0.75, c)
+			var side := _facing.orthogonal() * 5.0
+			var back := -_facing * (4.0 if _recoil > 0.0 else 0.0)
+			for sgn in [-1.0, 1.0]:
+				draw_line(back + side * sgn, back + side * sgn + _facing * (radius + 10.0), Color(0.2, 0.22, 0.2), 7.0)
+				draw_circle(back + side * sgn + _facing * (radius + 10.0), 3.0, Color(1.0, 0.4, 0.2))
 		"boss3":
 			# ぷるぷる揺れるスライム。分裂前の大きい体には王冠
 			var wob := sin(Time.get_ticks_msec() / 180.0 + radius) * radius * 0.06

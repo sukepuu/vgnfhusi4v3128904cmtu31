@@ -36,16 +36,16 @@ func _process(delta: float) -> void:
 		position += to.normalized() * minf(110.0 * delta, to.length())
 	# 城の回復（移動中も少しずつ）
 	if castle.hp < castle.max_hp:
-		# 緊急修理：城が危ないときは3倍の速さで直す
-		var rate: float = st.heal_per_sec * (3.0 if st.emergency and castle.hp < castle.max_hp * 0.3 else 1.0)
+		# 緊急修理：城が危ないときは2倍の速さで直す
+		var rate: float = st.heal_per_sec * (2.0 if st.emergency and castle.hp < castle.max_hp * 0.3 else 1.0)
 		castle.hp = minf(castle.max_hp, castle.hp + rate * delta)
 		_spark_cd -= delta
 		if _working and _spark_cd <= 0.0:
 			_spark_cd = 0.25
 			_sparks.append({"p": Vector2(randf_range(-6, 6), -14), "v": Vector2(randf_range(-40, 40), randf_range(-90, -40)), "t": 0.4})
-	# 応急手当：近くの味方のHPを毎秒4回復
+	# 応急手当：フィールド全体の味方のHPを、城と同じ量だけ回復
 	if st.first_aid:
-		_first_aid(delta)
+		_first_aid(st.heal_per_sec * delta)
 	# 壁職人：ついでに壁も直す
 	if st.wall_fix:
 		_wall_cd -= delta
@@ -63,19 +63,19 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func _first_aid(delta: float) -> void:
+func _first_aid(amount: float) -> void:
 	for s in game.soldiers:
-		if not s.dead and position.distance_to(s.position) < 220.0:
-			s.hp = minf(game.stats.max_hp, s.hp + 4.0 * delta)
+		if not s.dead:
+			s.hp = minf(game.stats.max_hp, s.hp + amount)
 	for g in game.guards:
-		if not g.dead and position.distance_to(g.position) < 220.0:
-			g.hp = minf(game.guard_stats.max_hp, g.hp + 4.0 * delta)
+		if not g.dead:
+			g.hp = minf(game.guard_stats.max_hp, g.hp + amount)
 	for k in game.knights:
-		if not k.dead and position.distance_to(k.position) < 220.0:
-			k.hp = minf(game.knight_stats.max_hp, k.hp + 4.0 * delta)
+		if not k.dead:
+			k.hp = minf(game.knight_stats.max_hp, k.hp + amount)
 	var h: Node2D = game.heavy
-	if h != null and not h.dead and position.distance_to(h.position) < 220.0:
-		h.hp = minf(h.max_hp, h.hp + 4.0 * delta)
+	if h != null and not h.dead:
+		h.hp = minf(h.max_hp, h.hp + amount)
 
 
 func _draw() -> void:

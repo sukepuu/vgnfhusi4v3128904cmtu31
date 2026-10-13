@@ -21,5 +21,5 @@ var star_trail := false
 var stun_hit := false
 ## 勇猛の突撃：突進で敵を1体貫くたびにHPが8回復
 var heal_on_hit := false
-## とどめの一撃：HPが3割以下の敵（ボス以外）は突進で一撃で倒す
+## とどめの一撃：HPが2割以下の敵（ボス以外）は突進で一撃で倒す
 var execute := false

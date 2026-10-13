@@ -27,6 +27,8 @@ var castle_ratio := 1.0
 var only_target: Node2D = null
 ## 追尾ペット弾：近くの敵の方へ少しずつ曲がる
 var homing := false
+## 誘導砲兵の誘導弾：この味方を追いかける（倒れたらまっすぐ飛ぶ）
+var seek: Node2D = null
 ## 狙撃部隊の特別強化：当たった敵を動けなくする秒数・弱点看破・跳ねる回数・会心（見た目用）
 var stun_on_hit := 0.0
 var mark_on_hit := false
@@ -47,6 +49,12 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if seek != null:
+		if is_instance_valid(seek) and not seek.dead:
+			var want := (seek.global_position - global_position).normalized() * velocity.length()
+			velocity = velocity.lerp(want, clampf(2.5 * delta, 0.0, 1.0)).normalized() * velocity.length()
+		else:
+			seek = null
 	if homing and not from_enemy:
 		var near: Node2D = game.nearest_enemy(global_position, 260.0)
 		if near != null:
@@ -136,7 +144,14 @@ func _bounce_target(from_e: Node2D) -> Node2D:
 
 
 func _draw() -> void:
-	if from_enemy:
+	if from_enemy and seek != null:
+		# 誘導弾：炎の尾を引くミサイル
+		var dir := velocity.normalized()
+		for i in 4:
+			draw_circle(-dir * (8.0 + i * 6.0), 5.0 - i, Color(1.0, 0.6 - i * 0.1, 0.1, 0.6 - i * 0.12))
+		draw_line(-dir * 8.0, dir * 8.0, Color(0.35, 0.35, 0.38), 6.0)
+		draw_circle(dir * 8.0, 3.5, Color(1.0, 0.3, 0.2))
+	elif from_enemy:
 		draw_circle(Vector2.ZERO, radius, color)
 		draw_circle(Vector2.ZERO, radius * 0.5, Color(1, 1, 1, 0.8))
 	elif wave:

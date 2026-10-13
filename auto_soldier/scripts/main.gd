@@ -485,7 +485,7 @@ func _update_spawning(delta: float) -> void:
 			var pos := _random_spawn_pos()
 			if k == "stealth":
 				pos = _stealth_spawn_pos()
-			elif k == "mortar":
+			elif k == "mortar" or k == "seeker":
 				pos = _mortar_spawn_pos()
 			_spawn_enemy(k, pos)
 	# 定期的に横一列の大群
@@ -518,6 +518,11 @@ func _pick_kind() -> String:
 	# 迫撃砲は同時に出すぎないように上限つき
 	if elapsed > 180.0 and _count_kind("mortar") < 2 + int(elapsed / 300.0):
 		pool.append(["mortar", 0.6 + elapsed / 400.0])
+	if elapsed > 150.0:
+		pool.append(["ringer", 0.8 + elapsed / 300.0])
+	# 誘導砲兵も同時に出すぎないように上限つき
+	if elapsed > 200.0 and _count_kind("seeker") < 2 + int(elapsed / 300.0):
+		pool.append(["seeker", 0.5 + elapsed / 400.0])
 	var total := 0.0
 	for entry in pool:
 		total += entry[1]

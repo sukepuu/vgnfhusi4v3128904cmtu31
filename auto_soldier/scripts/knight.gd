@@ -124,7 +124,7 @@ func _update_dash(delta: float, st) -> void:
 			_dash_hit[e] = true
 			var hit_dmg := dmg
 			# とどめの一撃：弱った敵（ボス以外）は一撃で倒す
-			if st.execute and not e.is_boss and e.hp <= e.max_hp * 0.3:
+			if st.execute and not e.is_boss and e.hp <= e.max_hp * 0.2:
 				hit_dmg = maxf(dmg, e.hp + 1.0)
 			if st.stun_hit:
 				e.stun(1.0)

@@ -166,10 +166,10 @@ const SPECIAL := [
 	{"id": "sp_dash_quake", "cat": "knight", "special": true, "name": "突撃の衝撃", "desc": "突進が止まった所で爆発が起きる（突進の60%の威力）", "max": 1, "req": "knight"},
 	{"id": "sp_knight_stun", "cat": "knight", "special": true, "name": "衝撃の槍", "desc": "突進で貫いた敵を1秒間気絶させる", "max": 1, "req": "knight"},
 	{"id": "sp_knight_heal", "cat": "knight", "special": true, "name": "勇猛の突撃", "desc": "突進で敵を1体貫くたびに、近衛兵のHPが8回復する", "max": 1, "req": "knight"},
-	{"id": "sp_knight_execute", "cat": "knight", "special": true, "name": "とどめの一撃", "desc": "HPが3割以下の敵（ボス以外）は、突進で一撃で倒す", "max": 1, "req": "knight"},
-	{"id": "sp_first_aid", "cat": "repair", "special": true, "name": "応急手当", "desc": "修理兵の近くにいる味方（遊撃・迎撃・近衛・重装）のHPが毎秒4回復する", "max": 1, "req": "repairer"},
-	{"id": "sp_emergency", "cat": "repair", "special": true, "name": "緊急修理", "desc": "城のHPが3割より少ないとき、修理の速さが3倍になる", "max": 1, "req": "repairer"},
-	{"id": "sp_armor", "cat": "repair", "special": true, "name": "鉄壁補強", "desc": "城が受けるダメージ -25%", "max": 1, "req": "repairer"},
+	{"id": "sp_knight_execute", "cat": "knight", "special": true, "name": "とどめの一撃", "desc": "HPが2割以下の敵（ボス以外）は、突進で一撃で倒す", "max": 1, "req": "knight"},
+	{"id": "sp_first_aid", "cat": "repair", "special": true, "name": "応急手当", "desc": "フィールド全体の味方（遊撃・迎撃・近衛・重装）のHPも、修理兵が城を直すのと同じ量だけ回復する", "max": 1, "req": "repairer"},
+	{"id": "sp_emergency", "cat": "repair", "special": true, "name": "緊急修理", "desc": "城のHPが3割より少ないとき、修理の速さが2倍になる", "max": 1, "req": "repairer"},
+	{"id": "sp_armor", "cat": "repair", "special": true, "name": "鉄壁補強", "desc": "城が受けるダメージ -10%", "max": 1, "req": "repairer"},
 	{"id": "sp_maintenance", "cat": "repair", "special": true, "name": "設備点検", "desc": "城の設備（矢倉・大砲・投石器・バリスタ）の発射間隔 -15%", "max": 1, "req": "repairer"},
 	{"id": "sp_wall_fix", "cat": "repair", "special": true, "name": "壁職人", "desc": "修理兵が城と一緒に壁も直す（1人につき4秒ごとに1発分）", "max": 1, "req": "repairer"},
 	# ---- おもしろ強化（あまり強くないけど、変で派手なやつ）
@@ -190,7 +190,7 @@ const SPECIAL := [
 	# ---- 15秒ごとの必殺技（各種類の6つ目）
 	{"id": "sp_ult_flock", "cat": "pet", "special": true, "name": "必殺・鳥の大群", "desc": "15秒ごとに、ペット1匹につき6羽の鳥を呼ぶ。鳥は敵を追いかけ、当たった敵にくっついて2回つつく（ペットの3倍の威力）", "max": 1, "req": "pet"},
 	{"id": "sp_ult_cavalry", "cat": "knight", "special": true, "name": "必殺・百騎突撃", "desc": "15秒ごとに、一番下の敵のあたりを騎士の幻8騎が横一列で駆け抜け、通った敵を全部はねる（突進の2.5倍の威力）", "max": 1, "req": "knight"},
-	{"id": "sp_ult_overhaul", "cat": "repair", "special": true, "name": "必殺・大修繕", "desc": "15秒ごとに、城のHPを最大HPの15%回復し、すべての壁と味方のHPを全回復する", "max": 1, "req": "repairer"},
+	{"id": "sp_ult_overhaul", "cat": "repair", "special": true, "name": "必殺・大修繕", "desc": "15秒ごとに、城のHPを最大HPの10%回復し、味方のHPを全回復する（壁は直さない）", "max": 1, "req": "repairer"},
 	{"id": "sp_ult_storm", "cat": "soldier", "special": true, "name": "必殺・剣の大嵐", "desc": "15秒ごとに、遊撃兵全員が周りを巻き込む巨大な回転斬り（剣の5倍の威力・大きく吹き飛ばす）", "max": 1},
 	{"id": "sp_ult_dome", "cat": "guard", "special": true, "name": "必殺・鉄壁の陣", "desc": "15秒ごとに、城をドームで6秒間包む。ドームに入った敵の弾・砲弾は消える。迎撃兵のHPも全回復", "max": 1, "req": "guard"},
 	{"id": "sp_ult_sky_arrow", "cat": "sniper", "special": true, "name": "必殺・天穿つ一矢", "desc": "15秒ごとに、狙撃兵が敵が一番多く並ぶ方向へ巨大な矢を放つ（12倍の威力で全部貫く）", "max": 1, "req": "sniper"},
@@ -524,7 +524,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"sp_emergency":
 			game.repair_stats.emergency = true
 		"sp_armor":
-			castle.damage_taken_mult *= 0.75
+			castle.damage_taken_mult *= 0.9
 		"sp_maintenance":
 			castle.tower_interval *= 0.85
 			castle.cannon_interval *= 0.85

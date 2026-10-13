@@ -40,7 +40,7 @@ var ice_age := false
 var flock := false
 ## 近衛：百騎突撃（騎士の幻が横一列になってフィールドを駆け抜ける）
 var cavalry := false
-## 修理：大修繕（城のHP15%回復・壁と味方を全回復）
+## 修理：大修繕（城のHP10%回復・味方を全回復。壁は直さない）
 var overhaul := false
 
 ## 技ごとの残り時間（同時に出ないように少しずつずらしておく）
@@ -304,10 +304,7 @@ func _do_cavalry() -> void:
 
 func _do_overhaul() -> void:
 	var castle: Node2D = game.castle
-	castle.hp = minf(castle.max_hp, castle.hp + castle.max_hp * 0.15)
-	for w in game.walls.walls:
-		w["hp"] = w["max"]
-		w["flash"] = 0.3
+	castle.hp = minf(castle.max_hp, castle.hp + castle.max_hp * 0.10)
 	for s in game.soldiers:
 		if not s.dead:
 			s.hp = game.stats.max_hp

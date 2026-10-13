@@ -97,6 +97,7 @@ func _shoot(target: Node2D, st) -> void:
 		b.stun_on_hit = 1.5 if st.pin else 0.0
 		b.mark_on_hit = st.mark
 		b.bounces = st.bounces
+		b.bounce_target = target
 		b.position = global_position + offset + dir * 12.0
 		game.world.add_child(b)
 	_draw_t = 0.15

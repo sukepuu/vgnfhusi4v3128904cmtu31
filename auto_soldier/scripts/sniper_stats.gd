@@ -10,8 +10,8 @@ var shots := 1
 ## 射程
 var fire_range := 750.0
 ## 貫通する敵の数
-var pierce := 0
-var arrow_speed := 1100.0
+var pierce := 2
+var arrow_speed := 1650.0
 
 # --- 特別強化
 ## 対砲兵狙撃（迫撃砲を最優先で狙い、遠い敵ほどダメージ増加）

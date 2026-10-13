@@ -29,6 +29,8 @@ var only_target: Node2D = null
 var stun_on_hit := 0.0
 var mark_on_hit := false
 var bounces := 0
+## 跳弾矢：この敵（狙った敵）に当たったときだけ跳ねる。跳ねた先の敵が次の「狙った敵」になる
+var bounce_target: Node2D = null
 var crit := false
 ## 虹の矢（バリスタのおもしろ強化）：虹色の尾＋当たった敵が混乱する秒数
 var rainbow := false
@@ -96,12 +98,14 @@ func _process(delta: float) -> void:
 			if explode_radius > 0.0:
 				game.explode(global_position, explode_radius, damage * explode_ratio, src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
 			_hit[e] = true
-			# 跳弾矢：近くの別の敵へ跳ねる（威力は7割に）
-			if bounces > 0:
+			# 跳弾矢：狙った敵に当たったら、近くの別の敵へ跳ねる（威力は7割に）
+			# 途中で当たったほかの敵は、ふつうに貫通するだけ
+			if bounces > 0 and is_instance_valid(bounce_target) and e == bounce_target:
 				var next := _bounce_target(e)
 				if next != null:
 					bounces -= 1
 					damage *= 0.7
+					bounce_target = next
 					velocity = (next.global_position - global_position).normalized() * velocity.length()
 					life = maxf(life, 0.5)
 					continue

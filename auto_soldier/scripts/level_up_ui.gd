@@ -44,17 +44,14 @@ func _ready() -> void:
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_box.add_child(hint)
 
-	# リロールボタン（画面の中央下）
+	# リロールボタン（3つ目の選択肢のすぐ下。show_choices で一番下に並べ直す）
 	_reroll_btn = Button.new()
 	_reroll_btn.add_theme_font_size_override("font_size", 22)
-	_reroll_btn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_reroll_btn.offset_left = -150
-	_reroll_btn.offset_right = 150
-	_reroll_btn.offset_top = -80
-	_reroll_btn.offset_bottom = -26
+	_reroll_btn.custom_minimum_size = Vector2(300, 50)
+	_reroll_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_reroll_btn.focus_mode = Control.FOCUS_NONE
 	_reroll_btn.pressed.connect(_on_reroll)
-	add_child(_reroll_btn)
+	_box.add_child(_reroll_btn)
 
 
 ## rerolled = true ならリロール後の表示（リロールボタンは使用済みになる）
@@ -69,7 +66,7 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int, special
 		_title.text = "LEVEL UP!  Lv %d" % player_level
 		_title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
 	for c in _box.get_children():
-		if c is Button:
+		if c is Button and c != _reroll_btn:
 			c.queue_free()
 	_ids.clear()
 	for i in choices.size():
@@ -89,6 +86,8 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int, special
 		btn.pressed.connect(_pick.bind(u["id"]))
 		_box.add_child(btn)
 		_ids.append(u["id"])
+	# リロールボタンは選択肢の一番下へ
+	_box.move_child(_reroll_btn, -1)
 	visible = true
 
 

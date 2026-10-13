@@ -34,7 +34,8 @@ func _process(delta: float) -> void:
 			# 見張り櫓が足りなければ先に建てる
 			if walls.watchtower and _towers_planned() < walls.MAX_WATCHTOWERS:
 				tower_job = true
-				tower_spot = walls.point_at(randf_range(PI + 0.35, TAU - 0.35), walls.RADIUS + 55.0)
+				# 見張り櫓は壁の内側（城と壁のあいだ）の、まだ空いている場所に建てる
+				tower_spot = _free_tower_spot()
 				state = "walking"
 				queue_redraw()
 				return
@@ -69,6 +70,30 @@ func _process(delta: float) -> void:
 ## 壁の内側に立って作業する
 func _site() -> Vector2:
 	return game.walls.point_at((plan.x + plan.y) / 2.0, game.walls.RADIUS - 24.0)
+
+
+## 見張り櫓を建てる場所：壁の内側に等間隔で4か所。建っている櫓や、ほかの築城兵が向かっている場所は避ける
+func _free_tower_spot() -> Vector2:
+	var walls: Node2D = game.walls
+	var taken: Array = []
+	for t in game.get_tree().get_nodes_in_group("placed_watchtower"):
+		taken.append(t.global_position + Vector2(0, 26))
+	for b in game.builders:
+		if b != self and b.state != "idle" and b.tower_job:
+			taken.append(b.tower_spot)
+	var n: int = walls.MAX_WATCHTOWERS
+	var free: Array = []
+	for i in n:
+		var spot: Vector2 = walls.point_at(PI + PI * (i + 1) / float(n + 1), walls.RADIUS - 60.0)
+		var ok := true
+		for p in taken:
+			if spot.distance_to(p) < 30.0:
+				ok = false
+		if ok:
+			free.append(spot)
+	if free.is_empty():
+		return walls.point_at(randf_range(PI + 0.35, TAU - 0.35), walls.RADIUS - 60.0)
+	return free.pick_random()
 
 
 ## 建っている櫓と、ほかの築城兵が建てに行っている櫓の数

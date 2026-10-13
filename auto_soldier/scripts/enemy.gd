@@ -355,7 +355,7 @@ func _update_stationary(delta: float) -> void:
 			_facing = (t.global_position - global_position).normalized()
 			_shoot_cd -= delta
 			if _shoot_cd <= 0.0:
-				_shoot_cd = randf_range(4.0, 5.5)
+				_shoot_cd = randf_range(2.0, 2.75)
 				var b: Node2D = _shoot(_facing, damage, 190.0, 8.0, Color(1.0, 0.45, 0.2), 7.0)
 				b.seek = t
 				_recoil = 0.3
@@ -366,13 +366,8 @@ func _update_stationary(delta: float) -> void:
 	if touching != null and _contact_cd <= 0.0:
 		touching.take_damage(damage, global_position)
 		_contact_cd = 0.6
-	if kind == "boss2":
-		# 砲台要塞はノックバック無効（押されて城に弾が届かなくなるのを防ぐ）
-		knock = Vector2.ZERO
-	else:
-		# 迫撃砲は吹き飛ばされても少しだけ
-		position += knock * delta * 0.3
-		knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
+	# 動かない敵（砲台要塞・迫撃砲・誘導砲兵）はノックバック無効
+	knock = Vector2.ZERO
 	position = game.clamp_to_map(position, radius)
 	queue_redraw()
 
@@ -587,9 +582,9 @@ func no_castle_push(v: Vector2) -> Vector2:
 
 
 ## 攻撃で押される強さの倍率。大型は吹き飛びにくい
-## 破城の魔王・分裂の魔獣は重いので押されにくい（ふつうの敵の4割）。砲台要塞は押されない
+## 破城の魔王・分裂の魔獣は重いので押されにくい（ふつうの敵の4割）。砲台要塞・迫撃砲・誘導砲兵は押されない
 func _kb_mult() -> float:
-	if kind == "boss2":
+	if kind == "boss2" or kind == "mortar" or kind == "seeker":
 		return 0.0
 	if is_boss:
 		return 0.4

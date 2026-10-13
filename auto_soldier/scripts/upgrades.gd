@@ -113,7 +113,7 @@ const SPECIAL := [
 	{"id": "sp_wall_repair", "cat": "builder", "special": true, "name": "自己修復", "desc": "壁が3秒ごとに1発分ずつ回復する", "max": 1, "req": "builder"},
 	{"id": "sp_wall_blast", "cat": "builder", "special": true, "name": "爆裂壁", "desc": "壁が攻撃を防ぐたびに、その場で爆発して周りの敵にダメージ", "max": 1, "req": "builder"},
 	{"id": "sp_golden_wall", "cat": "builder", "special": true, "name": "黄金の壁", "desc": "壁が攻撃を防ぐたびに経験値が1入る", "max": 1, "req": "builder"},
-	{"id": "sp_watchtower", "cat": "builder", "special": true, "name": "見張り櫓", "desc": "築城兵が壁の外に見張り櫓を建てる（最大4基）。櫓は近くの敵へ矢を撃ち続ける", "max": 1, "req": "builder"},
+	{"id": "sp_watchtower", "cat": "builder", "special": true, "name": "見張り櫓", "desc": "築城兵が壁の内側に見張り櫓を建てる（最大4基）。櫓は近くの敵へ矢を撃ち続ける", "max": 1, "req": "builder"},
 	# ---- 工兵部隊
 	{"id": "sp_cluster", "cat": "engineer", "special": true, "name": "子爆弾", "desc": "爆弾が爆発すると、周りに小爆弾が6個散らばって爆発する", "max": 1, "req": "engineer"},
 	{"id": "sp_poison", "cat": "engineer", "special": true, "name": "毒沼", "desc": "作動した落とし穴の跡が9秒間、毒の沼になる", "max": 1, "req": "engineer"},
@@ -186,7 +186,7 @@ const SPECIAL := [
 	{"id": "sp_fun_snowball", "cat": "castle", "special": true, "name": "結界・雪合戦", "desc": "城から近くの敵へ雪玉を投げ続ける（ちょっとだけ止まる）", "max": 1, "req": "frost"},
 	{"id": "sp_fun_dance", "cat": "pet", "special": true, "name": "ペットの踊り", "desc": "ペットが虹色に光りながらくるくる回り、5秒ごとに全方位へ虹色の玉を12発撃つ", "max": 1, "req": "pet"},
 	{"id": "sp_fun_star", "cat": "knight", "special": true, "name": "流れ星突撃", "desc": "突進の跡にキラキラの星が残って弾ける（小ダメージ）", "max": 1, "req": "knight"},
-	{"id": "sp_repair_orb", "cat": "repair", "special": true, "name": "修理玉", "desc": "20秒ごとに城の前へ修理玉を置く（当たり判定なし）。置いてから10秒間に回復した城のHPの2倍のダメージの弾を、HPが一番多い敵へゆっくり撃つ（貫通無限）", "max": 1, "req": "repairer"},
+	{"id": "sp_repair_orb", "cat": "repair", "special": true, "name": "修理玉", "desc": "20秒ごとに城の前へ修理玉を置く（当たり判定なし）。置いてから10秒間に回復した城のHPの6倍のダメージの弾を、HPが一番多い敵へゆっくり撃つ（貫通無限）", "max": 1, "req": "repairer"},
 	# ---- 15秒ごとの必殺技（各種類の6つ目）
 	{"id": "sp_ult_flock", "cat": "pet", "special": true, "name": "必殺・鳥の大群", "desc": "15秒ごとに、ペット1匹につき6羽の鳥を呼ぶ。鳥は敵を追いかけ、当たった敵にくっついて2回つつく（ペットの3倍の威力）", "max": 1, "req": "pet"},
 	# ---- 8つ目の特別強化

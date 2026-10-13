@@ -56,7 +56,8 @@ func _process(delta: float) -> void:
 	if seek != null:
 		if is_instance_valid(seek) and not seek.dead:
 			var want := (seek.global_position - global_position).normalized() * velocity.length()
-			velocity = velocity.lerp(want, clampf(2.5 * delta, 0.0, 1.0)).normalized() * velocity.length()
+			# 誘導砲兵の弾は、しつこく曲がって追いかける
+			velocity = velocity.lerp(want, clampf(6.0 * delta, 0.0, 1.0)).normalized() * velocity.length()
 		else:
 			seek = null
 	if homing and not from_enemy:

@@ -19,6 +19,8 @@ var src: Dictionary = {}
 var thrower: Node2D = null
 ## 追尾する敵
 var target: Node2D = null
+## 鳥の体の色（ふつうは白い鳩。鳥の大群は青い鳥）
+var bird_color := Color(0.95, 0.95, 0.98)
 ## 見た目（ball："iron" 鉄球 / "rock" 岩 / "cow" 牛、homing："arrow" 火矢 / "bird" 鳩）
 var look := "iron"
 
@@ -218,13 +220,14 @@ func _draw() -> void:
 				if _stuck_on != null:
 					# くっついてつつく鳩（頭がコツコツ動く）
 					dir = Vector2.DOWN
-				# パタパタ飛ぶ白い鳩
+				# パタパタ飛ぶ鳥（ふつうは白い鳩）
 				var flap := sin(_t * 22.0) * 7.0
 				var side := dir.orthogonal()
-				draw_colored_polygon(PackedVector2Array([side * 2.0, side * (12.0 + flap) - dir * 4.0, -dir * 6.0]), Color(0.92, 0.92, 0.95))
-				draw_colored_polygon(PackedVector2Array([-side * 2.0, -side * (12.0 + flap) - dir * 4.0, -dir * 6.0]), Color(0.92, 0.92, 0.95))
-				draw_circle(Vector2.ZERO, 6.0, Color(0.98, 0.98, 1.0))
-				draw_circle(dir * 6.0, 4.0, Color(0.98, 0.98, 1.0))
+				var wing := bird_color.darkened(0.06)
+				draw_colored_polygon(PackedVector2Array([side * 2.0, side * (12.0 + flap) - dir * 4.0, -dir * 6.0]), wing)
+				draw_colored_polygon(PackedVector2Array([-side * 2.0, -side * (12.0 + flap) - dir * 4.0, -dir * 6.0]), wing)
+				draw_circle(Vector2.ZERO, 6.0, bird_color)
+				draw_circle(dir * 6.0, 4.0, bird_color)
 				var peck := (absf(sin(_t * 12.0)) * 4.0) if _stuck_on != null else 0.0
 				draw_colored_polygon(PackedVector2Array([dir * (13.0 + peck), dir * (8.0 + peck) + side * 2.0, dir * (8.0 + peck) - side * 2.0]), Color(1.0, 0.7, 0.2))
 				return

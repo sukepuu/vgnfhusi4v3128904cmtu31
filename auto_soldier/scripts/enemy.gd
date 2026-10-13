@@ -168,6 +168,7 @@ func _process(delta: float) -> void:
 		stun_left -= delta
 		position += knock * delta
 		knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
+		position = game.clamp_to_map(position, radius)
 		queue_redraw()
 		return
 	if kind == "mortar" or kind == "boss2" or kind == "seeker":
@@ -235,14 +236,15 @@ func _process(delta: float) -> void:
 		_contact_cd = 0.6
 	if is_boss:
 		# ボスは壁を壊して進み、城に着いたら殴り続ける
-		# ボスは壁に触れると壁の耐久を7減らし、上側のランダムな方向へ弾かれる
+		# ボスは壁に触れると壁の耐久を7減らし、大きく弾かれる
 		_wall_cd -= delta
 		var wi: int = game.walls.hit_test(global_position, radius)
 		if wi >= 0 and _wall_cd <= 0.0:
 			game.walls.damage_wall(wi, 7.0)
-			# 上側のランダムな方向へ、ボスの体0.5体分（半径ぶん）くらい弾かれる
+			# ボス自身はダメージを受けず、ランダムな方向へ大きく弾かれる（だいたい200くらい・気絶はしない）
+			# 下側（城の方）へは弾かれない
 			# （knock は毎秒1400ずつ弱まるので、進む距離 = 速さ² ÷ 2800）
-			knock = Vector2.from_angle(randf_range(PI + 0.25, TAU - 0.25)) * sqrt(2800.0 * radius)
+			knock = Vector2.from_angle(randf_range(PI + 0.15, TAU - 0.15)) * sqrt(2800.0 * 200.0)
 			_wall_cd = 1.0
 		if castle.distance_to_point(global_position) < radius:
 			move = Vector2.ZERO
@@ -293,7 +295,7 @@ func _nearest_guard(max_dist: float) -> Node2D:
 	return best
 
 
-## 壁に触れたら壁が1発分防ぎ、この敵は消滅する（false を返す）
+## 壁に触れたら、壁の耐久を削って、この敵はHP半分・大きく弾き飛ばされて5秒気絶（false を返す）
 func _check_wall() -> bool:
 	var wi: int = game.walls.hit_test(global_position, radius)
 	if wi < 0:
@@ -301,11 +303,23 @@ func _check_wall() -> bool:
 	# 体当たりした敵は壁の耐久を5削る（自爆兵はその3倍）
 	game.walls.absorb(wi, global_position, 15.0 if kind == "bomber" else 5.0)
 	if kind == "bomber":
+		# 自爆兵はその場で爆発して消える
 		game.spawn_burst(global_position, Color(1.0, 0.4, 0.1), 40.0)
-	dead = true
-	remove_from_group("enemies")
+		dead = true
+		remove_from_group("enemies")
+		game.spawn_burst(global_position, color, radius)
+		queue_free()
+		return false
 	game.spawn_burst(global_position, color, radius)
-	queue_free()
+	# HPが半分になる（倒れはしない）。ダメージは築城部隊の手柄
+	var src: Dictionary = game.builders[0].record if not game.builders.is_empty() else {}
+	take_damage(hp * 0.5, Vector2.ZERO, src)
+	if dead:
+		return false
+	# 5秒気絶して、上側のランダムな方向へ大きく弾き飛ばされる（だいたい170くらい）
+	# （knock は毎秒1400ずつ弱まるので、進む距離 = 速さ² ÷ 2800）
+	stun(5.0)
+	knock = Vector2.from_angle(randf_range(PI + 0.35, TAU - 0.35)) * sqrt(2800.0 * 170.0)
 	return false
 
 

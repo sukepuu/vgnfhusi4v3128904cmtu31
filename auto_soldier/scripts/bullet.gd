@@ -25,6 +25,8 @@ var first_blast_damage := 0.0
 var castle_ratio := 1.0
 ## 徹甲榴弾：この敵だけを追いかけて当たる（ほかの敵はすり抜ける）。null なら普通の弾
 var only_target: Node2D = null
+## この敵を追いかけて飛ぶ（当たり判定はほかの敵にもある）。当たったら追いかけるのをやめてまっすぐ飛ぶ
+var aim_target: Node2D = null
 ## 追尾ペット弾：近くの敵の方へ少しずつ曲がる
 var homing := false
 ## 誘導砲兵の誘導弾：この味方を追いかける（倒れたらまっすぐ飛ぶ）
@@ -69,6 +71,11 @@ func _process(delta: float) -> void:
 		else:
 			# 先に倒されたら、そこから先は普通の弾として飛ぶ
 			only_target = null
+	if aim_target != null:
+		if is_instance_valid(aim_target) and not aim_target.dead and not _hit.has(aim_target):
+			velocity = (aim_target.global_position - global_position).normalized() * velocity.length()
+		else:
+			aim_target = null
 	position += velocity * delta
 	life -= delta
 	if life <= 0.0:

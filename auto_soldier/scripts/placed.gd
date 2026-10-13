@@ -111,7 +111,7 @@ func _orb_charge() -> float:
 	return game.castle.healed_total - _heal_start
 
 
-## 修理玉：たまった量のダメージの弾を、HPが一番多い敵へゆっくり撃つ（ほかの敵はすり抜ける）
+## 修理玉：たまった量のダメージの弾を、HPが一番多い敵へゆっくり撃つ（貫通無限。途中の敵にも当たり、狙った敵に当たったあともそのまま飛んでいく）
 func _fire_orb() -> void:
 	var dmg := _orb_charge()
 	var t: Node2D = game.castle._toughest_enemy_in(global_position, INF)
@@ -126,7 +126,8 @@ func _fire_orb() -> void:
 	b.radius = ORB_RADIUS * 1.5
 	b.color = Color(0.3, 0.85, 1.0)
 	b.orb = true
-	b.only_target = t
+	b.aim_target = t
+	b.pierce = 1000000
 	b.life = 12.0
 	b.position = global_position
 	b.src = src

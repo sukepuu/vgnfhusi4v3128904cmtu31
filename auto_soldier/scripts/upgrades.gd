@@ -186,7 +186,7 @@ const SPECIAL := [
 	{"id": "sp_fun_snowball", "cat": "castle", "special": true, "name": "結界・雪合戦", "desc": "城から近くの敵へ雪玉を投げ続ける（ちょっとだけ止まる）", "max": 1, "req": "frost"},
 	{"id": "sp_fun_dance", "cat": "pet", "special": true, "name": "ペットの踊り", "desc": "ペットが虹色に光りながらくるくる回り、5秒ごとに全方位へ虹色の玉を12発撃つ", "max": 1, "req": "pet"},
 	{"id": "sp_fun_star", "cat": "knight", "special": true, "name": "流れ星突撃", "desc": "突進の跡にキラキラの星が残って弾ける（小ダメージ）", "max": 1, "req": "knight"},
-	{"id": "sp_repair_orb", "cat": "repair", "special": true, "name": "修理玉", "desc": "20秒ごとに城の前へ修理玉を置く（当たり判定なし）。置いてから10秒間に回復した城のHPぶんのダメージの弾を、HPが一番多い敵へゆっくり撃つ", "max": 1, "req": "repairer"},
+	{"id": "sp_repair_orb", "cat": "repair", "special": true, "name": "修理玉", "desc": "20秒ごとに城の前へ修理玉を置く（当たり判定なし）。置いてから10秒間に回復した城のHPぶんのダメージの弾を、HPが一番多い敵へゆっくり撃つ（貫通無限）", "max": 1, "req": "repairer"},
 	# ---- 15秒ごとの必殺技（各種類の6つ目）
 	{"id": "sp_ult_flock", "cat": "pet", "special": true, "name": "必殺・鳥の大群", "desc": "15秒ごとに、ペット1匹につき6羽の鳥を呼ぶ。鳥は敵を追いかけ、当たった敵にくっついて2回つつく（ペットの3倍の威力）", "max": 1, "req": "pet"},
 	# ---- 8つ目の特別強化

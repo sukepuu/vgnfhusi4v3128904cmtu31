@@ -11,8 +11,8 @@ const HALF := Vector2(95, 45)
 var game: Node2D
 var max_hp := 600.0
 var hp := 600.0
-## 城のHPの自然回復（毎秒）。自然回復はなし（回復は修理部隊がする）
-var regen := 0.0
+## 城のHPの自然回復（毎秒1）。もっと回復させるには修理部隊が必要
+var regen := 1.0
 ## これまでに回復したHPの合計（修理玉が「10秒で回復した量」を数えるのに使う）
 var healed_total := 0.0
 ## 受けるダメージの倍率（修理部隊の「鉄壁補強」で下がる）
@@ -133,8 +133,9 @@ func _equip_record(key: String, label: String, i: int) -> Dictionary:
 func _process(delta: float) -> void:
 	_t += delta
 	_flash -= delta
-	if regen > 0.0:
-		hp = minf(max_hp, hp + regen * delta)
+	# 自然回復（毎秒 regen ずつ）。修理玉がためる「回復した量」にも入る
+	if regen > 0.0 and hp > 0.0 and hp < max_hp:
+		heal(regen * delta)
 	_update_towers(delta)
 	_update_cannon(delta)
 	_update_catapult(delta)

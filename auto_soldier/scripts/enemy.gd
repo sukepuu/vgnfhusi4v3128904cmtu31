@@ -10,7 +10,7 @@ extends Node2D
 ## 隠密兵（stealth）は右下・左下から現れて城を狙う。半透明で見えにくい。
 ## 迫撃砲（mortar）はマップの端から動かず、壁を飛び越える砲弾で城を撃ってくる。
 ## 弾幕兵（ringer）は5秒ごとに全方位へ赤い弾を撃ちながら城へ進む。
-## 誘導砲兵（seeker）はマップの端から動かず、体力のある味方（兵士・櫓・かかしなど）へ誘導弾を撃つ。
+## 誘導砲兵（seeker）はマップの端から動かず、迎撃と設置物以外の味方（遊撃・近衛・重装）へ誘導弾を撃つ。
 ## ボスは Lv10 ごとに2種類が交互に出現。
 ##   破城の魔王（boss）：壁に触れると壁の耐久を7削り、城に着いても消えずに攻撃し続ける。
 ##   砲台要塞（boss2）：その場から動かず、いろんな弾幕と城狙いの砲撃をしてくる。
@@ -338,6 +338,23 @@ func _boss_skills(delta: float) -> void:
 			game.spawn_enemy_at("grunt", global_position + Vector2.from_angle(TAU * i / 5.0) * (radius + 30.0))
 
 
+## 誘導砲兵の狙い：迎撃と設置物以外で一番近い味方
+func _seeker_target() -> Node2D:
+	var list: Array = game.soldiers + game.knights
+	if game.heavy != null:
+		list.append(game.heavy)
+	var best: Node2D = null
+	var best_d := INF
+	for a in list:
+		if not is_instance_valid(a) or a.dead:
+			continue
+		var d: float = global_position.distance_to(a.global_position)
+		if d < best_d:
+			best_d = d
+			best = a
+	return best
+
+
 ## 動かない敵（迫撃砲・砲台要塞）：その場で城の方を向いて撃ち続ける
 func _update_stationary(delta: float) -> void:
 	var castle: Node2D = game.castle
@@ -349,8 +366,9 @@ func _update_stationary(delta: float) -> void:
 			_shoot_cd = randf_range(6.0, 8.0)
 			_lob_at_castle(damage, 45.0, 8.0)
 	elif kind == "seeker":
-		# 一番近い「体力のある味方」へ誘導弾（いなければ撃たない）
-		var t: Node2D = game.nearest_ally(global_position, INF)
+		# 一番近いキャラクター（遊撃・近衛・重装）へ誘導弾（いなければ撃たない）
+		# 迎撃と、見張り櫓・かかしなどの設置物は狙わない
+		var t: Node2D = _seeker_target()
 		if t != null:
 			_facing = (t.global_position - global_position).normalized()
 			_shoot_cd -= delta

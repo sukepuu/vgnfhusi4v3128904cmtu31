@@ -17,8 +17,9 @@ var regen := 1.0
 var healed_total := 0.0
 ## 受けるダメージの倍率（修理部隊の「鉄壁補強」で下がる）
 var damage_taken_mult := 1.0
-## 背水の修繕：城のHPが毎秒この量ずつ減る（HP1より下にはならない）
-var drain := 0.0
+## 背水の修繕：修理兵1人につき、城のHPが毎秒 OVERWORK_DRAIN ずつ減る（HP1より下にはならない）
+var overwork := false
+const OVERWORK_DRAIN := 2.0
 
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0
@@ -152,8 +153,8 @@ func _process(delta: float) -> void:
 	if regen > 0.0 and hp > 0.0 and hp < max_hp:
 		heal(regen * delta)
 	# 背水の修繕：城のHPが少しずつ減る（これで城が落ちることはない）
-	if drain > 0.0 and hp > 1.0:
-		hp = maxf(1.0, hp - drain * delta)
+	if overwork and hp > 1.0 and not game.repairers.is_empty():
+		hp = maxf(1.0, hp - OVERWORK_DRAIN * game.repairers.size() * delta)
 	_update_towers(delta)
 	_update_cannon(delta)
 	_update_catapult(delta)

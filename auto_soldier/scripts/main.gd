@@ -578,8 +578,9 @@ func _random_spawn_pos() -> Vector2:
 	return Vector2(MAP_RECT.end.x - m, y)
 
 
+## 敵のHP倍率。時間とともに上がる（上がる分を1.5倍にしている）
 func _hp_mult() -> float:
-	return 1.0 + elapsed / 75.0 + pow(elapsed / 170.0, 2.0)
+	return 1.0 + 1.5 * (elapsed / 75.0 + pow(elapsed / 170.0, 2.0))
 
 
 func _spawn_enemy(kind: String, pos: Vector2) -> void:

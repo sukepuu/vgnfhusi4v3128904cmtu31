@@ -34,6 +34,7 @@ const RepairerScript := preload("res://scripts/repairer.gd")
 const RepairStats := preload("res://scripts/repair_stats.gd")
 const FunSpecialsScript := preload("res://scripts/fun_specials.gd")
 const FunFxScript := preload("res://scripts/fun_fx.gd")
+const SummaryScript := preload("res://scripts/summary_ui.gd")
 ## このレベルごとに特別強化の3択が出る
 const SPECIAL_EVERY := 5
 
@@ -60,6 +61,8 @@ var hud: CanvasLayer
 var level_up_ui: CanvasLayer
 var stats_ui: CanvasLayer
 var upgrades_ui: CanvasLayer
+## ゲームオーバー時の戦績まとめ画面
+var summary_ui: CanvasLayer
 ## 部隊戦績（個体ごとの与ダメージ・被ダメージなど）。new_record() で追加する
 var records: Array = []
 
@@ -196,6 +199,10 @@ func _ready() -> void:
 	upgrades_ui = UpgradesUIScript.new()
 	upgrades_ui.game = self
 	add_child(upgrades_ui)
+
+	summary_ui = SummaryScript.new()
+	summary_ui.game = self
+	add_child(summary_ui)
 
 	queue_redraw()
 
@@ -587,6 +594,13 @@ func spawn_enemy_at(kind: String, pos: Vector2, hp_mult: float = -1.0) -> Node2D
 	return e
 
 
+## 迫撃砲部隊：マップの端に迫撃砲が8体一気に現れる
+func _spawn_mortar_squad() -> void:
+	for i in 8:
+		spawn_enemy_at("mortar", _mortar_spawn_pos())
+	hud.show_banner("⚠ 迫撃砲部隊 襲来！ ⚠", Color(1.0, 0.6, 0.3))
+
+
 ## ボス出現（Lv10ごと）。破城の魔王 → 砲台要塞 → 分裂の魔獣 の順に来る
 func _spawn_boss() -> void:
 	bosses_spawned += 1
@@ -641,6 +655,9 @@ func add_xp(amount: int) -> void:
 		_pending_levels.append(level)
 		if level % BOSS_EVERY == 0:
 			_spawn_boss()
+		# Lv5・15・25…で迫撃砲部隊（8体）が襲来
+		if level % 10 == 5:
+			_spawn_mortar_squad()
 	if pending_levelups > 0 and not level_up_ui.visible and not game_over:
 		_open_level_up()
 

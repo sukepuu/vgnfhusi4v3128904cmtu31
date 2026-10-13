@@ -20,7 +20,7 @@ var storm := false
 var dome := false
 ## 重装：大地砕き（敵の群れへ飛び込んで地面を叩き割る）
 var leap := false
-## 築城：城壁の大号令（壁が全回復して、全部の壁が爆発する）
+## 築城：城壁の大号令（全部の壁が耐久10回復して、全部の壁が爆発する）
 var wall_burst := false
 ## 工兵：絨毯爆撃（敵の群れに一直線に爆弾が降る）
 var carpet := false
@@ -167,7 +167,7 @@ func _do_wall_burst() -> void:
 	var walls: Node2D = game.walls
 	var dmg := 150.0 * _time_mult()
 	for w in walls.walls:
-		w["hp"] = w["max"]
+		w["hp"] = minf(w["max"], w["hp"] + 10.0)
 		var p: Vector2 = walls.point_at((w["a0"] + w["a1"]) / 2.0)
 		game.explode(p + (p - game.castle.global_position).normalized() * 30.0, 110.0, dmg, w["src"], Color(1.0, 0.85, 0.4), 0.0, 400.0)
 

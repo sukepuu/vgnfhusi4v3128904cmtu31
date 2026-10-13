@@ -11,6 +11,7 @@ var _level_label: Label
 var _hp_label: Label
 var _time_label: Label
 var _kill_label: Label
+var _enemy_label: Label
 var _soldier_label: Label
 var _game_over: Control
 var _boss_bar: ProgressBar
@@ -68,11 +69,21 @@ func _ready() -> void:
 	_kill_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	root.add_child(_kill_label)
 
+	# 侵攻中の敵の数（撃破数の下）
+	_enemy_label = _make_label(20)
+	_enemy_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_enemy_label.offset_left = -260
+	_enemy_label.offset_right = -16
+	_enemy_label.offset_top = 52
+	_enemy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_enemy_label.add_theme_color_override("font_color", Color(1.0, 0.55, 0.5))
+	root.add_child(_enemy_label)
+
 	_soldier_label = _make_label(20)
 	_soldier_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_soldier_label.offset_left = -220
 	_soldier_label.offset_right = -16
-	_soldier_label.offset_top = 52
+	_soldier_label.offset_top = 80
 	_soldier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	root.add_child(_soldier_label)
 
@@ -285,6 +296,7 @@ func refresh() -> void:
 	var t := int(game.elapsed)
 	_time_label.text = "%02d:%02d" % [t / 60, t % 60]
 	_kill_label.text = "撃破 %d" % game.kills
+	_enemy_label.text = "侵攻中の敵 %d体" % game.enemies_cache.size()
 
 
 
@@ -340,6 +352,14 @@ func _build_game_over() -> void:
 	stats_btn.add_theme_font_size_override("font_size", 18)
 	stats_btn.pressed.connect(func() -> void: game.stats_ui.open_panel())
 	box.add_child(stats_btn)
+
+	var sum_btn := Button.new()
+	sum_btn.text = "戦績まとめ"
+	sum_btn.custom_minimum_size = Vector2(260, 44)
+	sum_btn.add_theme_font_size_override("font_size", 18)
+	sum_btn.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
+	sum_btn.pressed.connect(func() -> void: game.summary_ui.open_panel())
+	box.add_child(sum_btn)
 
 	var up_btn := Button.new()
 	up_btn.text = "強化状態を見る"

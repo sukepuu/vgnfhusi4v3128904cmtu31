@@ -93,7 +93,7 @@ const SPECIAL := [
 	# ---- 遊撃部隊
 	{"id": "sp_burst", "cat": "soldier", "special": true, "name": "炸裂弾", "desc": "遊撃兵の弾が当たると小爆発する（威力55%）", "max": 1},
 	{"id": "sp_volley", "cat": "soldier", "special": true, "name": "一斉射撃", "desc": "6秒ごとに全方位へ18発の弾をばらまく", "max": 1},
-	{"id": "sp_sword_wave", "cat": "soldier", "special": true, "name": "剣気", "desc": "斬撃と一緒に、敵を貫く三日月形の衝撃波が飛ぶ", "max": 1},
+	{"id": "sp_sword_wave", "cat": "soldier", "special": true, "name": "剣気", "desc": "斬撃と一緒に、敵を貫く大きな三日月形の衝撃波がゆっくり飛ぶ", "max": 1},
 	{"id": "sp_shadow", "cat": "soldier", "special": true, "name": "影分身", "desc": "遊撃兵の横に半透明の分身が現れ、一緒に弾を撃つ（威力50%）", "max": 1},
 	{"id": "sp_boomerang", "cat": "soldier", "special": true, "name": "ブーメラン", "desc": "3.5秒ごとにブーメランを投げる。行きと帰りで敵を貫く（剣の1.3倍の威力）", "max": 1},
 	# ---- 迎撃部隊
@@ -145,7 +145,7 @@ const SPECIAL := [
 	{"id": "sp_blast_bolt", "cat": "castle", "special": true, "name": "バリスタ・炸裂大矢", "desc": "矢が最初に当たった敵の場所で大爆発（威力150%の範囲攻撃）", "max": 1, "req": "ballista"},
 	{"id": "sp_lightning", "cat": "castle", "special": true, "name": "バリスタ・雷撃", "desc": "5秒ごとに、バリスタ1基につき1本、敵から敵へ7回飛び移る雷を放つ（威力80%）", "max": 1, "req": "ballista"},
 	# ---- 氷結の結界
-	{"id": "sp_freeze", "cat": "castle", "special": true, "name": "結界・絶対零度", "desc": "8秒ごとに結界内の敵すべてを3.5秒間凍らせる", "max": 1, "req": "frost"},
+	{"id": "sp_freeze", "cat": "castle", "special": true, "name": "結界・絶対零度", "desc": "10秒ごとに結界内の敵すべてを3.5秒間凍らせる", "max": 1, "req": "frost"},
 	{"id": "sp_icicle", "cat": "castle", "special": true, "name": "結界・氷柱", "desc": "1.5秒ごとに結界内の敵2体へ氷柱が降る", "max": 1, "req": "frost"},
 	{"id": "sp_blizzard", "cat": "castle", "special": true, "name": "結界・吹雪", "desc": "結界の中の敵にずっとダメージを与え続ける", "max": 1, "req": "frost"},
 	{"id": "sp_ice_lance", "cat": "castle", "special": true, "name": "結界・氷槍", "desc": "3秒ごとに、結界内で一番HPの多い敵へ大ダメージの氷の槍", "max": 1, "req": "frost"},
@@ -195,7 +195,7 @@ const SPECIAL := [
 	{"id": "sp_ult_dome", "cat": "guard", "special": true, "name": "必殺・鉄壁の陣", "desc": "15秒ごとに、城をドームで6秒間包む。ドームに入った敵の弾・砲弾は消える。迎撃兵のHPも全回復", "max": 1, "req": "guard"},
 	{"id": "sp_ult_sky_arrow", "cat": "sniper", "special": true, "name": "必殺・天穿つ一矢", "desc": "15秒ごとに、狙撃兵が敵が一番多く並ぶ方向へ巨大な矢を放つ（12倍の威力で全部貫く）", "max": 1, "req": "sniper"},
 	{"id": "sp_ult_leap", "cat": "heavy", "special": true, "name": "必殺・大地砕き", "desc": "15秒ごとに、重装兵が近くの敵の群れへ飛び込み、地面を叩き割る（斬撃4倍の範囲攻撃＋2秒気絶）", "max": 1, "req": "heavy"},
-	{"id": "sp_ult_wall_burst", "cat": "builder", "special": true, "name": "必殺・城壁の大号令", "desc": "15秒ごとに、すべての壁が全回復し、全部の壁が外側へ大爆発する", "max": 1, "req": "builder"},
+	{"id": "sp_ult_wall_burst", "cat": "builder", "special": true, "name": "必殺・城壁の大号令", "desc": "15秒ごとに、すべての壁の耐久が10回復し、全部の壁が外側へ大爆発する", "max": 1, "req": "builder"},
 	{"id": "sp_ult_carpet", "cat": "engineer", "special": true, "name": "必殺・絨毯爆撃", "desc": "15秒ごとに、敵が密集した所へ一直線に13個の爆弾が降りそそぐ", "max": 1, "req": "engineer"},
 	{"id": "sp_ult_thousand", "cat": "castle", "special": true, "name": "矢倉・必殺・千本矢", "desc": "15秒ごとに、フィールド中の敵30か所へ一斉に矢の雨が降る（矢倉の3倍の威力）", "max": 1, "req": "tower"},
 	{"id": "sp_ult_barrage", "cat": "castle", "special": true, "name": "大砲・必殺・一斉砲撃", "desc": "15秒ごとに、12発の砲弾を一気に撃ち込む（大砲の2倍の威力）", "max": 1, "req": "cannon"},

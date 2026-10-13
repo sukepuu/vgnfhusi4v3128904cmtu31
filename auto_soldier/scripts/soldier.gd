@@ -333,13 +333,14 @@ func _try_slash() -> bool:
 		# 剣気：敵を貫く三日月形の衝撃波
 		var w := BulletScript.new()
 		w.game = game
-		w.velocity = facing * 520.0
+		# 大きな三日月がゆっくり進む（届く距離は前と同じ）
+		w.velocity = facing * 260.0
 		w.damage = st.sword_damage
 		w.pierce = 1000000
-		w.radius = 16.0
+		w.radius = 32.0
 		w.wave = true
 		w.color = Color(0.75, 0.9, 1.0)
-		w.life = 0.75
+		w.life = 1.5
 		w.position = global_position + facing * 20.0
 		w.src = record
 		game.world.add_child(w)

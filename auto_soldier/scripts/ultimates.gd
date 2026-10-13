@@ -38,6 +38,10 @@ var thunder_spear := false
 var ice_age := false
 ## ペット：鳥の大群（ペット1匹につき鳥を6羽呼び、敵を追いかけてつつく）
 var flock := false
+## 近衛：百騎突撃（騎士の幻が横一列になってフィールドを駆け抜ける）
+var cavalry := false
+## 修理：大修繕（城のHP15%回復・壁と味方を全回復）
+var overhaul := false
 
 ## 技ごとの残り時間（同時に出ないように少しずつずらしておく）
 var _cds := {}
@@ -49,7 +53,7 @@ var _ice_ring := 0.0
 
 
 func _ready() -> void:
-	var names := ["storm", "dome", "leap", "wall_burst", "carpet", "sky_arrow", "thousand", "barrage", "meteor", "thunder_spear", "ice_age", "flock"]
+	var names := ["storm", "dome", "leap", "wall_burst", "carpet", "sky_arrow", "thousand", "barrage", "meteor", "thunder_spear", "ice_age", "flock", "cavalry", "overhaul"]
 	for i in names.size():
 		_cds[names[i]] = 4.0 + i * 1.3
 
@@ -96,6 +100,10 @@ func _process(delta: float) -> void:
 		_do_ice_age()
 	if flock and not game.pets.is_empty() and _ready_to_fire("flock", delta):
 		_do_flock()
+	if cavalry and not game.knights.is_empty() and not game.enemies_cache.is_empty() and _ready_to_fire("cavalry", delta):
+		_do_cavalry()
+	if overhaul and not game.repairers.is_empty() and _ready_to_fire("overhaul", delta):
+		_do_overhaul()
 	queue_redraw()
 
 
@@ -273,6 +281,47 @@ func _do_flock() -> void:
 				Vector2.from_angle(TAU * i / 6.0) * 300.0, game.pet_damage * 3.0, 10.0, 6.0, p.record)
 			m.look = "bird"
 	_flash(Color(0.8, 1.0, 0.9))
+
+
+func _do_cavalry() -> void:
+	# 一番下にいる敵の高さを中心に、8騎が横一列で駆け抜ける
+	var low_y := -INF
+	for e in _alive_enemies():
+		low_y = maxf(low_y, e.global_position.y)
+	if low_y == -INF:
+		_cds["cavalry"] = 1.0
+		return
+	var rect: Rect2 = game.MAP_RECT
+	var from_left := randf() < 0.5
+	var sgn := 1.0 if from_left else -1.0
+	var dmg: float = game.knight_stats.damage * game._hp_mult() * 2.5
+	for i in 8:
+		var y := clampf(low_y + (i - 3.5) * 34.0, rect.position.y + 20.0, rect.end.y - 20.0)
+		var x := (rect.position.x + 10.0 if from_left else rect.end.x - 10.0) - (i % 2) * 40.0 * sgn
+		game.spawn_missile("rider", Vector2(x, y), Vector2(950.0 * sgn, 0.0), dmg, 20.0, 1.8, game.knights[0].record)
+	_flash(Color(1.0, 0.9, 0.5))
+
+
+func _do_overhaul() -> void:
+	var castle: Node2D = game.castle
+	castle.hp = minf(castle.max_hp, castle.hp + castle.max_hp * 0.15)
+	for w in game.walls.walls:
+		w["hp"] = w["max"]
+		w["flash"] = 0.3
+	for s in game.soldiers:
+		if not s.dead:
+			s.hp = game.stats.max_hp
+	for g in game.guards:
+		if not g.dead:
+			g.hp = game.guard_stats.max_hp
+	for k in game.knights:
+		if not k.dead:
+			k.hp = game.knight_stats.max_hp
+	if game.heavy != null and not game.heavy.dead:
+		game.heavy.hp = game.heavy.max_hp
+	game.spawn_burst(castle.global_position, Color(0.5, 1.0, 0.6), 160.0)
+	game.spawn_fun_fx("kusudama", castle.global_position + Vector2(0, -castle.HALF.y - 60.0))
+	_flash(Color(0.6, 1.0, 0.7))
 
 
 func _do_ice_age() -> void:

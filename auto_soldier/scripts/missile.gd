@@ -3,6 +3,7 @@ extends Node2D
 ## boomerang：遊撃兵のブーメラン。飛んでいって戻ってくる（行きと帰りでそれぞれ敵を貫く）
 ## ball     ：重装兵の鉄球・投石器の転がり岩。転がりながらだんだん遅くなり、ひいた敵を吹き飛ばす
 ## homing   ：矢倉の追尾火矢。敵を追いかけて、当たると小爆発
+## rider    ：近衛の必殺「百騎突撃」の騎士の幻。まっすぐ駆け抜けて、通った敵を全部はねる
 ## cow      ：牛投げの牛。着地してから life 秒のあいだ、近くの敵へ何度も突進する
 
 var game: Node2D
@@ -110,7 +111,7 @@ func _check_hits() -> void:
 					return
 				queue_free()
 				return
-			"ball", "cow":
+			"ball", "cow", "rider":
 				e.take_damage(damage, velocity.normalized() * 450.0, src)
 			_:
 				e.take_damage(damage, velocity.normalized() * 150.0, src)
@@ -168,6 +169,20 @@ func _draw() -> void:
 			draw_line(Vector2.ZERO, a * radius, Color(0.55, 0.35, 0.15), 6.0)
 			draw_line(Vector2.ZERO, b * radius, Color(0.55, 0.35, 0.15), 6.0)
 			draw_circle(Vector2.ZERO, 3.5, Color(0.9, 0.8, 0.5))
+		"rider":
+			# 半透明の金色の騎馬（馬の体・脚・騎士・槍）
+			var f := 1.0 if velocity.x >= 0.0 else -1.0
+			var gold := Color(1.0, 0.85, 0.4, 0.75)
+			for i in 3:
+				draw_circle(Vector2(-f * (14.0 + i * 12.0), 0), 10.0 - i * 2.5, Color(1.0, 0.85, 0.4, 0.25 - i * 0.07))
+			for i in 4:
+				var x := (-10.0 + i * 6.5) * f
+				draw_line(Vector2(x, 6), Vector2(x + sin(_t * 30.0 + i * 1.6) * 5.0, 17), gold, 3.0)
+			draw_circle(Vector2(-5 * f, 0), 10.0, gold)
+			draw_circle(Vector2(7 * f, 0), 10.0, gold)
+			draw_circle(Vector2(18 * f, -6), 6.0, gold)
+			draw_circle(Vector2(0, -14), 7.0, Color(0.95, 0.95, 1.0, 0.8))
+			draw_line(Vector2(-4 * f, -12), Vector2(34 * f, -12), Color(1, 1, 1, 0.9), 3.0)
 		"cow":
 			# 消える前は点滅
 			modulate.a = 0.4 if life < 1.0 and int(life * 8.0) % 2 == 0 else 1.0

@@ -13,6 +13,8 @@ var max_hp := 600.0
 var hp := 600.0
 ## 城のHPの自然回復（毎秒）。自然回復はなし（回復は修理部隊がする）
 var regen := 0.0
+## 受けるダメージの倍率（修理部隊の「鉄壁補強」で下がる）
+var damage_taken_mult := 1.0
 
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0
@@ -156,6 +158,7 @@ func slow_factor_at(p: Vector2) -> float:
 func take_damage(amount: float) -> void:
 	if hp <= 0.0:
 		return
+	amount *= damage_taken_mult
 	record["taken"] += minf(amount, hp)
 	hp -= amount
 	_flash = 0.15

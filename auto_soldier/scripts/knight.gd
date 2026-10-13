@@ -122,7 +122,15 @@ func _update_dash(delta: float, st) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < radius + e.radius + 6.0:
 			_dash_hit[e] = true
-			e.take_damage(dmg, _dash_dir * 350.0, record)
+			var hit_dmg := dmg
+			# とどめの一撃：弱った敵（ボス以外）は一撃で倒す
+			if st.execute and not e.is_boss and e.hp <= e.max_hp * 0.3:
+				hit_dmg = maxf(dmg, e.hp + 1.0)
+			if st.stun_hit:
+				e.stun(1.0)
+			e.take_damage(hit_dmg, _dash_dir * 350.0, record)
+			if st.heal_on_hit:
+				hp = minf(st.max_hp, hp + 8.0)
 	# 流れ星突撃：通った跡に星が残って弾ける
 	if st.star_trail:
 		_star_cd -= delta

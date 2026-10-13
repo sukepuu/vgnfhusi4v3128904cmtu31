@@ -10,7 +10,7 @@ var game: Node2D
 
 ## 重装：雄叫び（10秒ごとに叫んで、周りの敵に斬撃3倍のダメージを与えて吹き飛ばす）
 var roar := false
-## 矢倉：伝書鳩部隊（6秒ごとに敵を追いかけてつつく鳩を放つ）
+## 矢倉：伝書鳩部隊（6秒ごとに敵を追いかける鳩を放つ。当たった敵にくっついて2回つつく）
 var doves := false
 ## 結界：雪合戦（城から敵へ雪玉を投げ続ける）
 var snowball := false
@@ -99,7 +99,6 @@ func _throw_snowball() -> void:
 
 func _do_dance() -> void:
 	for p in game.pets:
-		game.spawn_text(p.global_position + Vector2(randf_range(-10, 10), -16), ["♪", "♫", "♬"].pick_random(), Color(1.0, 0.6, 0.9), 22)
 		for e in game.enemies_near(p.global_position, 130.0):
 			if is_instance_valid(e) and not e.dead and p.global_position.distance_to(e.global_position) < 130.0:
 				e.confuse(2.0)
@@ -123,4 +122,3 @@ func _do_kusudama() -> void:
 			k.hp = minf(game.knight_stats.max_hp, k.hp + 20.0)
 	if game.heavy != null and not game.heavy.dead:
 		game.heavy.hp = minf(game.heavy.max_hp, game.heavy.hp + 20.0)
-	game.spawn_text(castle.global_position + Vector2(0, -castle.HALF.y - 100.0), "おめでとう！", Color(1.0, 0.85, 0.3), 22)

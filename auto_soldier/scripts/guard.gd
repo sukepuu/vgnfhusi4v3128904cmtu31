@@ -151,7 +151,6 @@ func _reflect(from_pos: Vector2, amount: float) -> void:
 	b.position = global_position + dir * 20.0
 	b.src = record
 	game.world.add_child(b)
-	game.spawn_text(global_position + Vector2(0, -24), "カキーン！", Color(1.0, 1.0, 0.6), 16)
 
 
 ## 城に当たりそうな敵の弾のうち、城に一番近いもの（ほかの迎撃兵が受け止めに行っている弾は除く）

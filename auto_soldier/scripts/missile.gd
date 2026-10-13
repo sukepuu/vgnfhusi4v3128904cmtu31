@@ -25,6 +25,10 @@ var _hit := {}
 var _returning := false
 var _home := Vector2.ZERO
 var _spin := 0.0
+## 鳩：当たった敵にくっついている間の、その敵・残りのつつく回数・次につつくまでの時間
+var _stuck_on: Node2D = null
+var _pecks_left := 0
+var _peck_cd := 0.0
 
 
 func _ready() -> void:
@@ -36,6 +40,9 @@ func _process(delta: float) -> void:
 	life -= delta
 	if life <= 0.0:
 		queue_free()
+		return
+	if _stuck_on != null:
+		_update_stuck(delta)
 		return
 	match kind:
 		"boomerang":
@@ -88,12 +95,37 @@ func _check_hits() -> void:
 			"homing":
 				e.take_damage(damage, velocity.normalized() * 100.0, src)
 				game.explode(global_position, 55.0, damage * 0.5, src, Color(1.0, 0.5, 0.15), 0.0, 120.0)
+				if look == "bird" and is_instance_valid(e) and not e.dead:
+					# 鳩：敵が生き残っていたらくっついて、1秒ごとに2回つつく
+					_stuck_on = e
+					_pecks_left = 2
+					_peck_cd = 1.0
+					life = maxf(life, 2.5)
+					return
 				queue_free()
 				return
 			"ball":
 				e.take_damage(damage, velocity.normalized() * 500.0, src)
 			_:
 				e.take_damage(damage, velocity.normalized() * 150.0, src)
+
+
+## 鳩が敵にくっついている間：敵と一緒に動き、1秒ごとにつつく
+func _update_stuck(delta: float) -> void:
+	if not is_instance_valid(_stuck_on) or _stuck_on.dead:
+		# 先に倒されたら飛んでいく
+		queue_free()
+		return
+	position = _stuck_on.global_position + Vector2(0, -_stuck_on.radius - 4.0)
+	_peck_cd -= delta
+	if _peck_cd <= 0.0:
+		_peck_cd = 1.0
+		_pecks_left -= 1
+		_stuck_on.take_damage(damage, Vector2.ZERO, src)
+		if _pecks_left <= 0:
+			queue_free()
+			return
+	queue_redraw()
 
 
 func _draw() -> void:
@@ -123,6 +155,9 @@ func _draw() -> void:
 		"homing":
 			var dir := velocity.normalized()
 			if look == "bird":
+				if _stuck_on != null:
+					# くっついてつつく鳩（頭がコツコツ動く）
+					dir = Vector2.DOWN
 				# パタパタ飛ぶ白い鳩
 				var flap := sin(_t * 22.0) * 7.0
 				var side := dir.orthogonal()
@@ -130,7 +165,8 @@ func _draw() -> void:
 				draw_colored_polygon(PackedVector2Array([-side * 2.0, -side * (12.0 + flap) - dir * 4.0, -dir * 6.0]), Color(0.92, 0.92, 0.95))
 				draw_circle(Vector2.ZERO, 6.0, Color(0.98, 0.98, 1.0))
 				draw_circle(dir * 6.0, 4.0, Color(0.98, 0.98, 1.0))
-				draw_colored_polygon(PackedVector2Array([dir * 13.0, dir * 8.0 + side * 2.0, dir * 8.0 - side * 2.0]), Color(1.0, 0.7, 0.2))
+				var peck := (absf(sin(_t * 12.0)) * 4.0) if _stuck_on != null else 0.0
+				draw_colored_polygon(PackedVector2Array([dir * (13.0 + peck), dir * (8.0 + peck) + side * 2.0, dir * (8.0 + peck) - side * 2.0]), Color(1.0, 0.7, 0.2))
 				return
 			for i in 4:
 				draw_circle(-dir * (6.0 + i * 6.0), 5.0 - i, Color(1.0, 0.5 - i * 0.08, 0.1, 0.6 - i * 0.12))

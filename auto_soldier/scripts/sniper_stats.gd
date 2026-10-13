@@ -2,7 +2,7 @@ extends RefCounted
 ## 狙撃部隊（弓）全員で共有するステータス
 
 ## 矢1本のダメージ
-var damage := 45.0
+var damage := 67.5
 ## 矢を放つ間隔（秒）
 var interval := 1.6
 ## 一度に放つ矢の数

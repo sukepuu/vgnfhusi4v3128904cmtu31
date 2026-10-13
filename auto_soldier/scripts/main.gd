@@ -119,6 +119,9 @@ var _grid := {}
 
 var level := 1
 var xp := 0
+## 経験値の獲得倍率と、まだ入っていない端数
+const XP_GAIN := 1.3
+var _xp_frac := 0.0
 var xp_to_next := xp_needed(1)
 var kills := 0
 var elapsed := 0.0
@@ -578,9 +581,10 @@ func _random_spawn_pos() -> Vector2:
 	return Vector2(MAP_RECT.end.x - m, y)
 
 
-## 敵のHP倍率。時間とともに上がる（上がる分を1.5倍にしている）
+## 敵のHP倍率。時間とともに上がる（上がるペースを1.5倍にしている）
 func _hp_mult() -> float:
-	return 1.0 + 1.5 * (elapsed / 75.0 + pow(elapsed / 170.0, 2.0))
+	var t := elapsed * 1.5
+	return 1.0 + t / 75.0 + pow(t / 170.0, 2.0)
 
 
 func _spawn_enemy(kind: String, pos: Vector2) -> void:
@@ -649,7 +653,11 @@ func xp_needed(lv: int) -> int:
 
 
 func add_xp(amount: int) -> void:
-	xp += amount
+	# 経験値の獲得量は1.3倍。端数はためておいて、1たまったら入る
+	_xp_frac += amount * XP_GAIN
+	var whole := int(floor(_xp_frac))
+	_xp_frac -= whole
+	xp += whole
 	while xp >= xp_to_next:
 		xp -= xp_to_next
 		level += 1

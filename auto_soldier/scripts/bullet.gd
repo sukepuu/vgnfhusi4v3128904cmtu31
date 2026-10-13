@@ -25,6 +25,8 @@ var first_blast_damage := 0.0
 var castle_ratio := 1.0
 ## 徹甲榴弾：この敵だけを追いかけて当たる（ほかの敵はすり抜ける）。null なら普通の弾
 var only_target: Node2D = null
+## 追尾ペット弾：近くの敵の方へ少しずつ曲がる
+var homing := false
 ## 狙撃部隊の特別強化：当たった敵を動けなくする秒数・弱点看破・跳ねる回数・会心（見た目用）
 var stun_on_hit := 0.0
 var mark_on_hit := false
@@ -45,6 +47,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if homing and not from_enemy:
+		var near: Node2D = game.nearest_enemy(global_position, 260.0)
+		if near != null:
+			var want := (near.global_position - global_position).normalized() * velocity.length()
+			velocity = velocity.lerp(want, clampf(5.0 * delta, 0.0, 1.0)).normalized() * velocity.length()
 	if only_target != null:
 		if is_instance_valid(only_target) and not only_target.dead:
 			# 狙った敵が動いても外れないように、まっすぐ追いかける

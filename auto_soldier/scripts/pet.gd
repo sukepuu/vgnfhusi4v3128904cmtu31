@@ -36,32 +36,49 @@ func _process(delta: float) -> void:
 	interval = game.pet_interval
 	attack_range = game.pet_range
 	scale = Vector2(1.7, 1.7) if game.pet_giant else Vector2.ONE
+	# 癒しのさえずり：担当の遊撃兵のHPを少しずつ回復
+	if game.pet_heal and not owner_soldier.dead:
+		owner_soldier.hp = minf(game.stats.max_hp, owner_soldier.hp + 2.0 * delta)
 	_cd -= delta
 	if _cd <= 0.0:
 		var target := _nearest_enemy()
 		if target != null:
 			_aim = (target.global_position - global_position).normalized()
-			var b := BulletScript.new()
-			b.game = game
-			b.velocity = _aim * 520.0
-			b.damage = damage
-			b.radius = 4.0
-			b.color = Color(0.5, 1.0, 0.7)
-			b.life = attack_range / 520.0 + 0.2
-			b.position = global_position
-			b.src = record
-			# 巨大ペット：弾も大きく、2体貫通して威力アップ
-			if game.pet_giant:
-				b.damage *= 1.4
-				b.radius = 7.0
-				b.pierce = 2
-			# 爆裂ペット弾：当たると小爆発
-			if game.pet_burst:
-				b.explode_radius = 45.0
-				b.explode_ratio = 0.6
-			game.world.add_child(b)
+			for k in game.pet_shots:
+				_shoot_one(target, k)
 			_cd = interval
 	queue_redraw()
+
+
+## 1発撃つ。何発も撃つときは少しずつ横にずらして、どれも狙った敵へ向かわせる
+func _shoot_one(target: Node2D, k: int) -> void:
+	var offset: Vector2 = _aim.orthogonal() * (k - (game.pet_shots - 1) / 2.0) * 8.0
+	var dir: Vector2 = (target.global_position - (global_position + offset)).normalized()
+	var b := BulletScript.new()
+	b.game = game
+	b.velocity = dir * 520.0
+	b.damage = damage
+	b.radius = 4.0
+	b.color = Color(0.5, 1.0, 0.7)
+	b.life = attack_range / 520.0 + 0.2
+	b.position = global_position + offset
+	b.src = record
+	# 追尾ペット弾：敵を少し追いかける
+	b.homing = game.pet_homing
+	# 凍える羽根：当たった敵が0.4秒止まる
+	if game.pet_frost:
+		b.stun_on_hit = 0.4
+		b.color = Color(0.7, 0.95, 1.0)
+	# 巨大ペット：弾も大きく、2体貫通して威力アップ
+	if game.pet_giant:
+		b.damage *= 1.4
+		b.radius = 7.0
+		b.pierce = 2
+	# 爆裂ペット弾：当たると小爆発
+	if game.pet_burst:
+		b.explode_radius = 45.0
+		b.explode_ratio = 0.6
+	game.world.add_child(b)
 
 
 func _nearest_enemy() -> Node2D:

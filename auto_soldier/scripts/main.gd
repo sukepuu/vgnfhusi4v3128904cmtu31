@@ -100,9 +100,14 @@ var pet_damage := 7.0
 ## ペットの射撃間隔・射程（全ペット共通）
 var pet_interval := 0.8
 var pet_range := 420.0
-## ペットの特別強化：爆裂ペット弾・巨大ペット
+## ペットが一度に撃つ弾の数
+var pet_shots := 1
+## ペットの特別強化：爆裂ペット弾・巨大ペット・追尾ペット弾・凍える羽根・癒しのさえずり
 var pet_burst := false
 var pet_giant := false
+var pet_homing := false
+var pet_frost := false
+var pet_heal := false
 ## 毎フレーム更新する敵リスト（各スクリプトから参照）
 var enemies_cache: Array = []
 var _grid := {}

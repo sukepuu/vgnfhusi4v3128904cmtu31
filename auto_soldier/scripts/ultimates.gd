@@ -36,6 +36,8 @@ var meteor := false
 var thunder_spear := false
 ## 結界：氷河期（広い範囲の敵をまとめて凍らせる）
 var ice_age := false
+## ペット：鳥の大群（ペット1匹につき鳥を6羽呼び、敵を追いかけてつつく）
+var flock := false
 
 ## 技ごとの残り時間（同時に出ないように少しずつずらしておく）
 var _cds := {}
@@ -47,7 +49,7 @@ var _ice_ring := 0.0
 
 
 func _ready() -> void:
-	var names := ["storm", "dome", "leap", "wall_burst", "carpet", "sky_arrow", "thousand", "barrage", "meteor", "thunder_spear", "ice_age"]
+	var names := ["storm", "dome", "leap", "wall_burst", "carpet", "sky_arrow", "thousand", "barrage", "meteor", "thunder_spear", "ice_age", "flock"]
 	for i in names.size():
 		_cds[names[i]] = 4.0 + i * 1.3
 
@@ -92,6 +94,8 @@ func _process(delta: float) -> void:
 		_do_thunder_spear()
 	if ice_age and castle.frost_radius > 0.0 and _ready_to_fire("ice_age", delta):
 		_do_ice_age()
+	if flock and not game.pets.is_empty() and _ready_to_fire("flock", delta):
+		_do_flock()
 	queue_redraw()
 
 
@@ -259,6 +263,16 @@ func _do_thunder_spear() -> void:
 		fx.width = 3.0 - k
 		game.effects.add_child(fx)
 	_flash(Color(0.7, 0.85, 1.0))
+
+
+func _do_flock() -> void:
+	# ペット1匹につき6羽。当たった敵が生き残っていたら、くっついて2回つつく（伝書鳩と同じ）
+	for p in game.pets:
+		for i in 6:
+			var m: Node2D = game.spawn_missile("homing", p.global_position,
+				Vector2.from_angle(TAU * i / 6.0) * 300.0, game.pet_damage * 3.0, 10.0, 6.0, p.record)
+			m.look = "bird"
+	_flash(Color(0.8, 1.0, 0.9))
 
 
 func _do_ice_age() -> void:

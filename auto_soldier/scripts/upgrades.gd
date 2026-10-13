@@ -39,6 +39,7 @@ const LIST := [
 	{"id": "pet_rate", "cat": "pet", "name": "早撃ちペット", "desc": "ペットの射撃の間隔 -15%", "max": 4, "req": "pet"},
 	{"id": "pet_fang", "cat": "pet", "name": "ペットの牙", "desc": "ペットの弾の威力 +30%", "max": 5, "req": "pet"},
 	{"id": "pet_eye", "cat": "pet", "name": "ペットの目", "desc": "ペットの射程 +20%", "max": 3, "req": "pet"},
+	{"id": "pet_multi", "cat": "pet", "name": "連射ペット", "desc": "ペットが一度に撃つ弾 +1発", "max": 3, "req": "pet"},
 	# 【近衛】
 	{"id": "knight", "cat": "knight", "name": "近衛部隊", "desc": "フィールドの一番下にいる敵を最優先で狙い、近くから一直線に高速突進して貫く騎士が加わる（隠密兵を1発で倒せる威力）",
 		"desc_up": "近衛部隊の騎士が1人増える（最大3人）", "max": 3, "weight": 1.5},
@@ -158,6 +159,9 @@ const SPECIAL := [
 	# ---- ペット・近衛・修理
 	{"id": "sp_pet_burst", "cat": "pet", "special": true, "name": "爆裂ペット弾", "desc": "ペットの弾が当たると小爆発する（威力60%）", "max": 1, "req": "pet"},
 	{"id": "sp_pet_giant", "cat": "pet", "special": true, "name": "巨大ペット", "desc": "ペットが大きくなり、弾も大きく2体貫通、威力 +40%", "max": 1, "req": "pet"},
+	{"id": "sp_pet_homing", "cat": "pet", "special": true, "name": "追尾ペット弾", "desc": "ペットの弾が、近くの敵の方へ曲がって追いかける", "max": 1, "req": "pet"},
+	{"id": "sp_pet_frost", "cat": "pet", "special": true, "name": "凍える羽根", "desc": "ペットの弾が氷になり、当たった敵が0.4秒止まる", "max": 1, "req": "pet"},
+	{"id": "sp_pet_heal", "cat": "pet", "special": true, "name": "癒しのさえずり", "desc": "ペット1匹につき、担当の遊撃兵のHPが毎秒2回復する", "max": 1, "req": "pet"},
 	{"id": "sp_chain_dash", "cat": "knight", "special": true, "name": "連続突撃", "desc": "突進のあと、近くのまだ貫いていない敵へ続けて2回まで突進する", "max": 1, "req": "knight"},
 	{"id": "sp_dash_quake", "cat": "knight", "special": true, "name": "突撃の衝撃", "desc": "突進が止まった所で爆発が起きる（突進の60%の威力）", "max": 1, "req": "knight"},
 	{"id": "sp_wall_fix", "cat": "repair", "special": true, "name": "壁職人", "desc": "修理兵が城と一緒に壁も直す（1人につき4秒ごとに1発分）", "max": 1, "req": "repairer"},
@@ -177,6 +181,7 @@ const SPECIAL := [
 	{"id": "sp_fun_star", "cat": "knight", "special": true, "name": "流れ星突撃", "desc": "突進の跡にキラキラの星が残って弾ける（小ダメージ）", "max": 1, "req": "knight"},
 	{"id": "sp_fun_kusudama", "cat": "repair", "special": true, "name": "くす玉割り", "desc": "12秒ごとに城の上でくす玉が割れて紙吹雪。城と味方のHPが20回復", "max": 1, "req": "repairer"},
 	# ---- 15秒ごとの必殺技（各種類の6つ目）
+	{"id": "sp_ult_flock", "cat": "pet", "special": true, "name": "必殺・鳥の大群", "desc": "15秒ごとに、ペット1匹につき6羽の鳥を呼ぶ。鳥は敵を追いかけ、当たった敵にくっついて2回つつく（ペットの3倍の威力）", "max": 1, "req": "pet"},
 	{"id": "sp_ult_storm", "cat": "soldier", "special": true, "name": "必殺・剣の大嵐", "desc": "15秒ごとに、遊撃兵全員が周りを巻き込む巨大な回転斬り（剣の5倍の威力・大きく吹き飛ばす）", "max": 1},
 	{"id": "sp_ult_dome", "cat": "guard", "special": true, "name": "必殺・鉄壁の陣", "desc": "15秒ごとに、城をドームで6秒間包む。ドームに入った敵の弾・砲弾は消える。迎撃兵のHPも全回復", "max": 1, "req": "guard"},
 	{"id": "sp_ult_sky_arrow", "cat": "sniper", "special": true, "name": "必殺・天穿つ一矢", "desc": "15秒ごとに、狙撃兵が敵が一番多く並ぶ方向へ巨大な矢を放つ（12倍の威力で全部貫く）", "max": 1, "req": "sniper"},
@@ -465,6 +470,16 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 				p.damage = game.pet_damage
 		"pet_eye":
 			game.pet_range *= 1.2
+		"pet_multi":
+			game.pet_shots += 1
+		"sp_pet_homing":
+			game.pet_homing = true
+		"sp_pet_frost":
+			game.pet_frost = true
+		"sp_pet_heal":
+			game.pet_heal = true
+		"sp_ult_flock":
+			game.ultimates.flock = true
 		"sp_pet_burst":
 			game.pet_burst = true
 		"sp_pet_giant":

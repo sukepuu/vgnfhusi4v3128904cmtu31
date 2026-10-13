@@ -56,8 +56,9 @@ var _wall_cd := 0.0
 var dead := false
 
 var knock := Vector2.ZERO
-## 射撃のノックバックのクールタイム（1.5秒に1回だけ押し戻される）
-var _shot_kb_cd := 0.0
+## ノックバックのクールタイム（どんな攻撃でも、押されるのは1.5秒に1回だけ）
+const KB_COOLDOWN := 1.5
+var _kb_cd := 0.0
 var _facing := Vector2.RIGHT
 var _shoot_cd := 1.5
 var _contact_cd := 0.0
@@ -160,7 +161,7 @@ func _process(delta: float) -> void:
 	_flash -= delta
 	_contact_cd -= delta
 	mark_left -= delta
-	_shot_kb_cd -= delta
+	_kb_cd -= delta
 	confuse_left -= delta
 	slow_left -= delta
 	if stun_left > 0.0:
@@ -609,13 +610,21 @@ func _shoot(dir: Vector2, dmg: float, spd: float = 260.0, r: float = 7.0, col: C
 	return b
 
 
-## 射撃によるノックバック。1.5秒に1回だけで、下側（城の方）へは押さない
+## 射撃によるノックバック。射撃は下側（城の方）へは押さない
 func shot_knockback(kb: Vector2) -> void:
-	if dead or _shot_kb_cd > 0.0 or _kb_mult() <= 0.0:
-		return
-	_shot_kb_cd = 1.5
 	kb.y = minf(kb.y, 0.0)
+	apply_knock(kb)
+
+
+## 攻撃で押す。どんな攻撃でも、同じ敵が押されるのは1.5秒に1回だけ。城に近づく向きには押さない
+func apply_knock(kb: Vector2) -> void:
+	if dead or kb.length_squared() < 1.0 or _kb_cd > 0.0 or _kb_mult() <= 0.0:
+		return
+	_kb_cd = KB_COOLDOWN
 	knock += no_castle_push(kb * _kb_mult())
+	# ボスは下側（城の方）には押されない
+	if is_boss and knock.y > 0.0:
+		knock.y = 0.0
 
 
 ## 押す力から「城に近づく向き」の分を取りのぞく（攻撃で城側へは押されない）
@@ -663,10 +672,7 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 			src["kills"] += 1
 	hp -= amount
 	_flash = 0.1
-	knock += no_castle_push(knockback * _kb_mult())
-	# ボスは下側（城の方）には押されない
-	if is_boss and knock.y > 0.0:
-		knock.y = 0.0
+	apply_knock(knockback)
 	game.spawn_damage_text(global_position, amount, Color(1, 1, 1))
 	if hp <= 0.0:
 		dead = true

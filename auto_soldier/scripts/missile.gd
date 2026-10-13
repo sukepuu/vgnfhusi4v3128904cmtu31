@@ -103,7 +103,7 @@ func _check_hits() -> void:
 		match kind:
 			"homing":
 				e.take_damage(damage, Vector2.ZERO, src)
-				# 追尾火矢・鳩も射撃のノックバック（1.5秒に1回・下側へは押さない）
+				# 追尾火矢・鳩も射撃のノックバック（下側へは押さない）
 				e.shot_knockback(velocity.normalized() * 100.0)
 				game.explode(global_position, 55.0, damage * 0.5, src, Color(1.0, 0.5, 0.15), 0.0, 120.0)
 				if look == "bird" and is_instance_valid(e) and not e.dead:

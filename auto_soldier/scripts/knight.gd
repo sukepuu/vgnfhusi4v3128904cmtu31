@@ -161,7 +161,7 @@ func _update_dash(delta: float, st) -> void:
 		# 運んでいた敵を、勢いよく放り出す（城の方へは飛ばさない）
 		for c in _carried:
 			if is_instance_valid(c) and not c.dead:
-				c.knock = c.no_castle_push(_dash_dir * 400.0)
+				c.apply_knock(_dash_dir * 400.0)
 		_carried.clear()
 		# 突撃の衝撃：止まった所で爆発
 		if st.quake:

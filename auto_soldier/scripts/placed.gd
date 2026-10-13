@@ -111,9 +111,10 @@ func _orb_charge() -> float:
 	return game.castle.healed_total - _heal_start
 
 
-## 修理玉：たまった量のダメージの弾を、HPが一番多い敵へゆっくり撃つ（貫通無限。途中の敵にも当たり、狙った敵に当たったあともそのまま飛んでいく）
+## 修理玉：たまった量の2倍のダメージの弾を、HPが一番多い敵へゆっくり撃つ（貫通無限。途中の敵にも当たり、狙った敵に当たったあともそのまま飛んでいく）
 func _fire_orb() -> void:
-	var dmg := _orb_charge()
+	# 威力は、たまった量（10秒で城が回復したHP）の2倍
+	var dmg := _orb_charge() * 2.0
 	var t: Node2D = game.castle._toughest_enemy_in(global_position, INF)
 	if dmg <= 0.0 or t == null:
 		game.spawn_burst(global_position, Color(0.5, 1.0, 0.6), 20.0)
@@ -284,8 +285,8 @@ func _draw() -> void:
 			draw_arc(Vector2.ZERO, ORB_RADIUS + 7.0, -PI / 2.0, -PI / 2.0 + TAU * clampf(life / 10.0, 0.0, 1.0), 40, Color(0.8, 0.97, 1.0, 0.7), 2.0)
 			var font := ThemeDB.fallback_font
 			var txt := str(int(_orb_charge()))
-			var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
-			draw_string(font, Vector2(-w / 2.0, 6.0), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 1, 1, 0.9))
+			var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x
+			draw_string(font, Vector2(-w / 2.0, 10.0), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color(0, 0, 0))
 		"automaton":
 			# ボスと同じくらい大きな、木と鉄のからくり兵
 			var r := 46.0

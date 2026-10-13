@@ -556,11 +556,21 @@ func _shoot(dir: Vector2, dmg: float, spd: float = 260.0, r: float = 7.0, col: C
 
 ## 射撃によるノックバック。0.5秒に1回だけで、下側（城の方）へは押さない
 func shot_knockback(kb: Vector2) -> void:
-	if dead or is_boss or _shot_kb_cd > 0.0:
+	if dead or _shot_kb_cd > 0.0 or _kb_mult() <= 0.0:
 		return
 	_shot_kb_cd = 0.5
 	kb.y = minf(kb.y, 0.0)
-	knock += kb * (0.3 if kind == "brute" else 1.0)
+	knock += kb * _kb_mult()
+
+
+## 攻撃で押される強さの倍率。大型は吹き飛びにくい
+## 破城の魔王・分裂の魔獣は重いので押されにくい（ふつうの敵の4割）。砲台要塞は押されない
+func _kb_mult() -> float:
+	if kind == "boss2":
+		return 0.0
+	if is_boss:
+		return 0.4
+	return 0.3 if kind == "brute" else 1.0
 
 
 func confuse(seconds: float) -> void:
@@ -586,10 +596,10 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 			src["kills"] += 1
 	hp -= amount
 	_flash = 0.1
-	# 大型は吹き飛びにくい
-	# ボスは攻撃のノックバックが効かない（大型の brute は効きにくい）
-	if not is_boss:
-		knock += knockback * (0.3 if kind == "brute" else 1.0)
+	knock += knockback * _kb_mult()
+	# ボスは下側（城の方）には押されない
+	if is_boss and knock.y > 0.0:
+		knock.y = 0.0
 	game.spawn_damage_text(global_position, amount, Color(1, 1, 1))
 	if hp <= 0.0:
 		dead = true

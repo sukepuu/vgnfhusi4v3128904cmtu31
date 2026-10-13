@@ -79,7 +79,7 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int, special
 		if u.get("special", false):
 			lv_text = "特別"
 		var star := "★" if u.get("special", false) else ""
-		btn.text = "[%d] 【%s】%s%s  (%s)\n%s" % [i + 1, Upgrades.CAT_LABEL[u["cat"]], star, u["name"], lv_text, Upgrades.describe(u, cur)]
+		btn.text = "[%d] 【%s】%s%s  (%s)\n%s" % [i + 1, Upgrades.CAT_LABEL[u["cat"]], star, u["name"], lv_text, _wrap(Upgrades.describe(u, cur))]
 		var col: Color = Upgrades.CAT_COLOR[u["cat"]]
 		btn.add_theme_color_override("font_color", col)
 		btn.add_theme_color_override("font_hover_color", col.lightened(0.4))
@@ -90,6 +90,31 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int, special
 	_box.move_child(_reroll_btn, -1)
 	visible = true
 
+
+
+## 説明文が長いときは、だいたい WRAP_CHARS 文字ごとに改行する（「。」「、」の後ろで切れるならそこで切る）
+const WRAP_CHARS := 34
+
+
+func _wrap(text: String) -> String:
+	var out := PackedStringArray()
+	for line in text.split("\n"):
+		while line.length() > WRAP_CHARS:
+			var cut := WRAP_CHARS
+			# 区切りのいい所（句読点の後ろ）を、上限の少し手前から探す
+			for i in range(WRAP_CHARS, WRAP_CHARS - 12, -1):
+				var ch := line.substr(i - 1, 1)
+				if ch == "。" or ch == "、" or ch == "）" or ch == "→":
+					cut = i
+					break
+			# 次の行が「。」「、」などで始まらないように、それも前の行に入れる
+			while cut < line.length() and "。、）".contains(line.substr(cut, 1)):
+				cut += 1
+			out.append(line.substr(0, cut))
+			line = line.substr(cut)
+		if line != "":
+			out.append(line)
+	return "\n".join(out)
 
 func _on_reroll() -> void:
 	if not visible or _rerolled:

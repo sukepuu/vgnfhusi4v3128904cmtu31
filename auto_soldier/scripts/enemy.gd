@@ -575,10 +575,9 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	hp -= amount
 	_flash = 0.1
 	# 大型は吹き飛びにくい
-	knock += knockback * (0.05 if is_boss else (0.3 if kind == "brute" else 1.0))
-	# ボスは下側（城の方）には押されない
-	if is_boss and knock.y > 0.0:
-		knock.y = 0.0
+	# ボスは攻撃のノックバックが効かない（大型の brute は効きにくい）
+	if not is_boss:
+		knock += knockback * (0.3 if kind == "brute" else 1.0)
 	game.spawn_damage_text(global_position, amount, Color(1, 1, 1))
 	if hp <= 0.0:
 		dead = true

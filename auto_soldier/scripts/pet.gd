@@ -8,7 +8,7 @@ var game: Node2D
 ## 担当の遊撃兵と、その兵士のペットの中での番号
 var owner_soldier: Node2D
 var index := 0
-var damage := 7.0
+var damage := 4.2
 var record: Dictionary
 var interval := 0.8
 var attack_range := 420.0

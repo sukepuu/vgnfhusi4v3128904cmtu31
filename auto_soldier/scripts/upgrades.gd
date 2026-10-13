@@ -191,7 +191,7 @@ const SPECIAL := [
 	{"id": "sp_ult_flock", "cat": "pet", "special": true, "name": "必殺・鳥の大群", "desc": "15秒ごとに、ペット1匹につき6羽の鳥を呼ぶ。鳥は敵を追いかけ、当たった敵にくっついて2回つつく（ペットの3倍の威力）", "max": 1, "req": "pet"},
 	# ---- 8つ目の特別強化
 	{"id": "sp_touch_blast", "cat": "soldier", "special": true, "name": "触爆", "desc": "遊撃兵に触れた敵が爆発し、周りの敵に射撃の3倍ダメージ", "max": 1},
-	{"id": "sp_berserk_guard", "cat": "guard", "special": true, "name": "捨て身の構え", "desc": "迎撃兵の最大HPが1/3になり、盾で防いでも半分のダメージを受ける。そのかわり槍が当たった敵が爆発し、周りに槍の3倍ダメージ", "max": 1, "req": "guard"},
+	{"id": "sp_berserk_guard", "cat": "guard", "special": true, "name": "捨て身の構え", "desc": "迎撃兵の最大HPが半分になり、盾で防いでも半分のダメージを受ける。そのかわり槍が当たった敵が爆発し、周りに槍の3倍ダメージ", "max": 1, "req": "guard"},
 	{"id": "sp_blast_arrow", "cat": "sniper", "special": true, "name": "爆裂矢", "desc": "矢が当たった敵が爆発し、周りの敵に矢の3倍ダメージ", "max": 1, "req": "sniper"},
 	{"id": "sp_rage", "cat": "heavy", "special": true, "name": "怒りの闘志", "desc": "ダメージを受けるたびに重装兵の与ダメージ +5%（最大+100%）。2秒ダメージを受けないと元に戻る", "max": 1, "req": "heavy"},
 	{"id": "sp_counter_wall", "cat": "builder", "special": true, "name": "反撃壁", "desc": "敵の弾が壁に当たると、その場所から近くの敵へ弾を撃ち返す", "max": 1, "req": "builder"},
@@ -552,7 +552,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			st.touch_blast = true
 		"sp_berserk_guard":
 			game.guard_stats.berserk = true
-			game.guard_stats.max_hp /= 3.0
+			game.guard_stats.max_hp /= 2.0
 			for g in game.guards:
 				g.hp = minf(g.hp, game.guard_stats.max_hp)
 		"sp_blast_arrow":

@@ -128,7 +128,7 @@ func _place_automaton() -> void:
 	var best: Node2D = castle._densest_enemy(2000.0, 150.0)
 	var pos: Vector2 = castle.global_position + Vector2(0, -320)
 	if best != null:
-		pos = best.global_position + (castle.global_position - best.global_position).normalized() * 100.0
+		pos = best.global_position + (castle.global_position - best.global_position).normalized() * 160.0
 	var dmg: float = game.engineer_stats.bomb_damage
-	game.spawn_placed("automaton", pos, dmg, 46.0, 10.0, game.engineers[0].record)
+	game.spawn_placed("automaton", pos, dmg, 92.0, 10.0, game.engineers[0].record)
 	game.spawn_burst(pos, Color(1.0, 0.8, 0.4), 50.0)

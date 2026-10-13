@@ -195,7 +195,7 @@ const SPECIAL := [
 	{"id": "sp_blast_arrow", "cat": "sniper", "special": true, "name": "爆裂矢", "desc": "矢が当たった敵が爆発し、周りの敵に矢の3倍ダメージ", "max": 1, "req": "sniper"},
 	{"id": "sp_rage", "cat": "heavy", "special": true, "name": "怒りの闘志", "desc": "ダメージを受けるたびに重装兵の与ダメージ +5%（最大+100%）。2秒ダメージを受けないと元に戻る", "max": 1, "req": "heavy"},
 	{"id": "sp_counter_wall", "cat": "builder", "special": true, "name": "反撃壁", "desc": "敵の弾が壁に当たると、その場所から近くの敵へ弾を撃ち返す", "max": 1, "req": "builder"},
-	{"id": "sp_automaton", "cat": "engineer", "special": true, "name": "巨大からくり兵", "desc": "20秒ごとに、ボスくらい大きなからくり兵を置く（10秒で消える）。ゆっくり歩き、全方位斬り→高速連射をくり返す。消えるときに大爆発", "max": 1, "req": "engineer"},
+	{"id": "sp_automaton", "cat": "engineer", "special": true, "name": "巨大からくり兵", "desc": "20秒ごとに、ボスの2倍の大きさのからくり兵を置く（10秒で消える）。ゆっくり歩き、広い全方位斬り→10体貫通の高速連射をくり返す。消えるときに超広範囲の大爆発", "max": 1, "req": "engineer"},
 	{"id": "sp_tower_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂矢", "desc": "矢倉の矢が当たった敵が爆発し、周りの敵に矢の3倍ダメージ", "max": 1, "req": "tower"},
 	{"id": "sp_double_cannon", "cat": "castle", "special": true, "name": "大砲・二連砲", "desc": "大砲が一度に2発撃つ（2発目は別の密集地へ）", "max": 1, "req": "cannon"},
 	{"id": "sp_stay_rock", "cat": "castle", "special": true, "name": "投石器・居座り岩", "desc": "着弾地点に大岩が5秒間残り、上にいる敵にダメージを与え続け、移動速度 -30%", "max": 1, "req": "catapult"},

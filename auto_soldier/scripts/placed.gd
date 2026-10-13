@@ -67,9 +67,9 @@ func _process(delta: float) -> void:
 			if kind == "repair_orb":
 				_fire_orb()
 			if kind == "automaton":
-				# 消えるときに大爆発
-				game.explode(global_position, 170.0, damage * 1.5, src, Color(1.0, 0.6, 0.2), 0.0, 450.0)
-				game.spawn_burst(global_position, Color(1.0, 0.9, 0.5), 90.0)
+				# 消えるときに大爆発（範囲510）
+				game.explode(global_position, 510.0, damage * 1.5, src, Color(1.0, 0.6, 0.2), 0.0, 450.0)
+				game.spawn_burst(global_position, Color(1.0, 0.9, 0.5), 270.0)
 			queue_free()
 			return
 	match kind:
@@ -81,10 +81,10 @@ func _process(delta: float) -> void:
 					e.stun(0.3)
 		"watchtower":
 			# 時間とともに威力が上がる
-			if _cd <= 0.0 and _fire(400.0, damage * (1.0 + game.elapsed / 180.0), 680.0, Color(0.95, 0.85, 0.6)):
+			if _cd <= 0.0 and _fire(400.0, damage * (1.0 + game.elapsed / 180.0), 680.0, Color(0.95, 0.85, 0.6)) != null:
 				_cd = 0.7
 		"sentry":
-			if _cd <= 0.0 and _fire(330.0, damage, 720.0, Color(1.0, 0.95, 0.5)):
+			if _cd <= 0.0 and _fire(330.0, damage, 720.0, Color(1.0, 0.95, 0.5)) != null:
 				_cd = 0.25
 		"boulder":
 			if _cd <= 0.0:
@@ -141,16 +141,17 @@ func _update_automaton(delta: float) -> void:
 	var t: Node2D = game.nearest_enemy(global_position, 900.0)
 	if t != null:
 		_aim = (t.global_position - global_position).normalized()
-		if global_position.distance_to(t.global_position) > 90.0:
+		if global_position.distance_to(t.global_position) > 180.0:
 			position += _aim * 45.0 * delta
 			position = game.clamp_to_map(position, radius)
 	if _cd > 0.0:
 		return
 	if _mode == "slash":
 		_cd = 0.6
-		game.explode(global_position, 130.0, damage * 0.35, src, Color(0.9, 0.85, 0.7), 0.0, 300.0)
+		# 全方位斬り（範囲390）
+		game.explode(global_position, 390.0, damage * 0.35, src, Color(0.9, 0.85, 0.7), 0.0, 300.0)
 		var fx := SlashScript.new()
-		fx.radius = 130.0
+		fx.radius = 390.0
 		fx.arc = TAU
 		fx.duration = 0.25
 		fx.position = global_position
@@ -162,7 +163,10 @@ func _update_automaton(delta: float) -> void:
 	else:
 		_cd = 0.08
 		if t != null:
-			_fire(600.0, damage * 0.1, 800.0, Color(1.0, 0.8, 0.4))
+			var b := _fire(600.0, damage * 0.1, 800.0, Color(1.0, 0.8, 0.4))
+			if b != null:
+				# からくり兵の弾は10体まで貫通する
+				b.pierce = 10
 		_mode_count += 1
 		if _mode_count >= 12:
 			_mode = "slash"
@@ -191,12 +195,12 @@ func _enemies_inside(r: float) -> Array:
 	return list
 
 
-## 一番近い敵へ弾を撃つ。撃てたら true
-func _fire(rng: float, dmg: float, spd: float, col: Color) -> bool:
+## 一番近い敵へ弾を撃つ。撃てたらその弾を返す（撃てなければ null）
+func _fire(rng: float, dmg: float, spd: float, col: Color) -> Node2D:
 	var from := global_position + Vector2(0, -22.0 if kind == "watchtower" else -8.0)
 	var t: Node2D = game.nearest_enemy(from, rng)
 	if t == null:
-		return false
+		return null
 	_aim = (t.global_position - from).normalized()
 	var b := BulletScript.new()
 	b.game = game
@@ -208,7 +212,7 @@ func _fire(rng: float, dmg: float, spd: float, col: Color) -> bool:
 	b.position = from
 	b.src = src
 	game.world.add_child(b)
-	return true
+	return b
 
 
 func _draw() -> void:
@@ -288,8 +292,9 @@ func _draw() -> void:
 			var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x
 			draw_string(font, Vector2(-w / 2.0, 10.0), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color(0, 0, 0))
 		"automaton":
-			# ボスと同じくらい大きな、木と鉄のからくり兵
+			# ボスの2倍くらい大きな、木と鉄のからくり兵（絵は半径46で描いて2倍に広げる）
 			var r := 46.0
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2(radius / r, radius / r))
 			draw_circle(Vector2(0, 14), r, Color(0, 0, 0, 0.3))
 			for i in 8:
 				var d := Vector2.from_angle(_gear + TAU * i / 8.0)
@@ -305,6 +310,7 @@ func _draw() -> void:
 			# 残り時間のバー
 			draw_rect(Rect2(Vector2(-30, -r - 14), Vector2(60, 5)), Color(0, 0, 0, 0.6))
 			draw_rect(Rect2(Vector2(-30, -r - 14), Vector2(60 * clampf(life / 10.0, 0.0, 1.0), 5)), Color(1.0, 0.8, 0.3))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		"scarecrow":
 			# 揺れるかかし（叩かれると大きく揺れる）
 			var sway := sin(_t * 3.0) * 0.12 + (sin(_t * 40.0) * 0.3 if _hurt > 0.0 else 0.0)

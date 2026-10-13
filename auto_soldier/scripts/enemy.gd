@@ -56,8 +56,8 @@ var _wall_cd := 0.0
 var dead := false
 
 var knock := Vector2.ZERO
-## ノックバックのクールタイム（どんな攻撃でも、押されるのは1.5秒に1回だけ）
-const KB_COOLDOWN := 1.5
+## ノックバックのクールタイム（どんな攻撃でも、押されるのは1秒に1回だけ）
+const KB_COOLDOWN := 1.0
 var _kb_cd := 0.0
 var _facing := Vector2.RIGHT
 var _shoot_cd := 1.5
@@ -616,7 +616,7 @@ func shot_knockback(kb: Vector2) -> void:
 	apply_knock(kb)
 
 
-## 攻撃で押す。どんな攻撃でも、同じ敵が押されるのは1.5秒に1回だけ。城に近づく向きには押さない
+## 攻撃で押す。どんな攻撃でも、同じ敵が押されるのは1秒に1回だけ。城に近づく向きには押さない
 func apply_knock(kb: Vector2) -> void:
 	if dead or kb.length_squared() < 1.0 or _kb_cd > 0.0 or _kb_mult() <= 0.0:
 		return

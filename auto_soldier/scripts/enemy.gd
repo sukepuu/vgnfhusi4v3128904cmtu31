@@ -56,6 +56,8 @@ var _wall_cd := 0.0
 var dead := false
 
 var knock := Vector2.ZERO
+## 射撃のノックバックのクールタイム（0.5秒に1回だけ押し戻される）
+var _shot_kb_cd := 0.0
 var _facing := Vector2.RIGHT
 var _shoot_cd := 1.5
 var _contact_cd := 0.0
@@ -158,6 +160,7 @@ func _process(delta: float) -> void:
 	_flash -= delta
 	_contact_cd -= delta
 	mark_left -= delta
+	_shot_kb_cd -= delta
 	confuse_left -= delta
 	slow_left -= delta
 	if stun_left > 0.0:
@@ -549,6 +552,15 @@ func _shoot(dir: Vector2, dmg: float, spd: float = 260.0, r: float = 7.0, col: C
 		b.castle_ratio = 0.2
 	game.world.add_child(b)
 	return b
+
+
+## 射撃によるノックバック。0.5秒に1回だけで、下側（城の方）へは押さない
+func shot_knockback(kb: Vector2) -> void:
+	if dead or is_boss or _shot_kb_cd > 0.0:
+		return
+	_shot_kb_cd = 0.5
+	kb.y = minf(kb.y, 0.0)
+	knock += kb * (0.3 if kind == "brute" else 1.0)
 
 
 func confuse(seconds: float) -> void:

@@ -37,6 +37,8 @@ var _invuln := 0.0
 var _retarget_cd := 0.0
 var _volley_cd := 3.0
 var _last_kills := 0
+## 触爆：同じ敵を何度も爆発させないための待ち時間
+var _touch_cd := {}
 var _boomerang_cd := 2.0
 var _strafe_sign := 1.0
 var _strafe_cd := 2.0
@@ -59,6 +61,8 @@ func _process(delta: float) -> void:
 	_fire_cd -= delta
 	_volley_cd -= delta
 	_boomerang_cd -= delta
+	if st.touch_blast:
+		_touch_blast(st, delta)
 	# 勝利の花火：敵を倒したら30%で花火を打ち上げる（弾けた所に小ダメージ）
 	if st.fireworks and record["kills"] > _last_kills and randf() < 0.3:
 		var f: Node2D = game.spawn_fun_fx("firework", global_position)
@@ -112,6 +116,20 @@ func _process(delta: float) -> void:
 	if st.dash_level > 0 and _dash_cd <= 0.0 and _dash_time <= 0.0:
 		_try_dash()
 	queue_redraw()
+
+
+## 触爆：体に触れた敵が爆発する（同じ敵は1秒に1回まで）
+func _touch_blast(st, delta: float) -> void:
+	for e in _touch_cd.keys():
+		_touch_cd[e] -= delta
+		if _touch_cd[e] <= 0.0 or not is_instance_valid(e):
+			_touch_cd.erase(e)
+	for e in game.enemies_near(global_position, radius + 40.0):
+		if not is_instance_valid(e) or e.dead or _touch_cd.has(e):
+			continue
+		if global_position.distance_to(e.global_position) < radius + e.radius + 4.0:
+			_touch_cd[e] = 1.0
+			game.explode(e.global_position, 75.0, st.bullet_damage * 3.0, record, Color(1.0, 0.5, 0.2), 0.0, 260.0)
 
 
 # ---------------------------------------------------------------- 狙う敵を決める

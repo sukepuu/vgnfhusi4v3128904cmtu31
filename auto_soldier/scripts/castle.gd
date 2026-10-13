@@ -86,6 +86,19 @@ var billiard := false
 var cow_throw := false
 var rainbow_bolt := false
 var _catapult_shots := 0
+## 8つ目の特別強化
+## 矢倉：爆裂矢（当たった敵が爆発して矢の3倍ダメージ）
+var tower_blast := false
+## 大砲：二連砲（1回に2発撃つ）
+var double_cannon := false
+## 投石器：居座り岩（着弾地点に岩が5秒残り、持続ダメージ＋足が30%遅くなる）
+var stay_rock := false
+## バリスタ：巨大弩砲（8秒ごとに3倍の大きさ・3倍の威力・1/3の速さの矢）
+var mega_bolt := false
+var _mega_cd := 4.0
+## 結界：凍てつく大地（結界の中にずっとダメージ）
+var frost_ground := false
+var _ground_tick := 0.0
 var _homing_cd := 2.0
 var _lightning_cd := 2.0
 var _snowman_cd := 2.0
@@ -203,6 +216,9 @@ func _update_towers(delta: float) -> void:
 			b.pierce = tower_pierce
 			b.radius = 4.0
 			b.color = Color(0.95, 0.8, 0.55)
+			if tower_blast:
+				b.explode_radius = 70.0
+				b.explode_ratio = 3.0
 			b.src = _equip_record("tower", "矢倉", i)
 			b.life = tower_range / 760.0 + 0.2
 			b.position = from
@@ -229,6 +245,11 @@ func _update_cannon(delta: float) -> void:
 		if cannon_mines:
 			shells[0].mines = 3
 			shells[0].mine_damage = cannon_damage * 1.2
+		# 二連砲：もう1発、別の密集地へ撃つ（見つからなければ同じ所の近く）
+		if double_cannon:
+			var second := _densest_enemy(cannon_range, cannon_radius)
+			var to2: Vector2 = second.global_position if second != null else best.global_position + Vector2.from_angle(randf() * TAU) * 80.0
+			shells.append(_fire_shell(from + Vector2(8, 0), to2, cannon_damage, cannon_radius, false, rec))
 		# 散弾砲：着弾地点の周りにも落ちる
 		for k in scatter_level * 2:
 			var off := Vector2.from_angle(randf() * TAU) * randf_range(60.0, 110.0)
@@ -256,6 +277,8 @@ func _update_catapult(delta: float) -> void:
 			s.split_count = 2 + 2 * split_level
 		if direct_hit:
 			s.direct_bonus = catapult_damage * 4.0
+		if stay_rock:
+			s.stay_rock = true
 		# 牛投げ：3回に1回、岩のかわりに牛を投げる
 		_catapult_shots += 1
 		if cow_throw and _catapult_shots % 3 == 0:
@@ -393,6 +416,7 @@ func _update_new_specials(delta: float) -> void:
 				b.src = _equip_record("cannon", "大砲", i)
 				game.world.add_child(b)
 	_update_fifth_specials(delta)
+	_update_eighth_specials(delta)
 	if ice_lance and frost_radius > 0.0:
 		_lance_cd -= delta
 		if _lance_cd <= 0.0:
@@ -401,6 +425,41 @@ func _update_new_specials(delta: float) -> void:
 			if big != null:
 				var dmg: float = 300.0 * (1.0 + game.elapsed / 120.0)
 				game.spawn_blast(big.global_position, 0.4, 30.0, dmg, _equip_record("frost", "氷結の結界", 0), Color(0.6, 0.9, 1.0), "ice")
+
+
+## 8つ目の特別強化（巨大弩砲・凍てつく大地）
+func _update_eighth_specials(delta: float) -> void:
+	if mega_bolt and ballista_level > 0:
+		_mega_cd -= delta
+		if _mega_cd <= 0.0:
+			var big := _toughest_enemy_in(global_position, INF)
+			if big != null:
+				_mega_cd = 8.0
+				for i in mini(ballista_level, MAX_GUNS):
+					var from := global_position + _ballista_local_pos(i)
+					var dir := (big.global_position - from).normalized()
+					_ballista_aims[i] = dir
+					var b := BulletScript.new()
+					b.game = game
+					b.velocity = dir * 1000.0 / 3.0
+					b.damage = ballista_damage * 3.0
+					b.pierce = 1000000
+					b.radius = 21.0
+					b.scale = Vector2(3.0, 3.0)
+					b.bolt = true
+					b.life = 7.0
+					b.position = from
+					b.src = _equip_record("ballista", "バリスタ", i)
+					game.world.add_child(b)
+	if frost_ground and frost_radius > 0.0:
+		_ground_tick -= delta
+		if _ground_tick <= 0.0:
+			_ground_tick = 0.5
+			var dps: float = 25.0 * (1.0 + game.elapsed / 120.0)
+			var rec := _equip_record("frost", "氷結の結界", 0)
+			for e in game.enemies_cache:
+				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < frost_radius:
+					e.take_damage(dps * 0.5, Vector2.ZERO, rec)
 
 
 ## 5つ目の特別強化（追尾火矢・雷撃・雪だるま）
@@ -539,6 +598,14 @@ func _draw() -> void:
 		var pulse := 0.06 + sin(_t * 2.0) * 0.02
 		draw_circle(Vector2.ZERO, frost_radius, Color(0.5, 0.8, 1.0, pulse))
 		draw_arc(Vector2.ZERO, frost_radius, 0.0, TAU, 64, Color(0.6, 0.9, 1.0, 0.35), 2.0)
+		if frost_ground:
+			# 凍てつく大地：地面に霜の結晶がきらきら
+			for i in 24:
+				var a := TAU * i / 24.0 + i * 0.7
+				var p := Vector2.from_angle(a) * frost_radius * (0.25 + 0.7 * fmod(i * 0.37, 1.0))
+				var tw := 0.35 + 0.35 * sin(_t * 3.0 + i)
+				draw_line(p + Vector2(-5, 0), p + Vector2(5, 0), Color(0.85, 0.97, 1.0, tw), 1.5)
+				draw_line(p + Vector2(0, -5), p + Vector2(0, 5), Color(0.85, 0.97, 1.0, tw), 1.5)
 
 	var wall := Color(0.62, 0.6, 0.56) if _flash <= 0.0 else Color(1, 0.7, 0.6)
 	var dark := Color(0.35, 0.33, 0.3)

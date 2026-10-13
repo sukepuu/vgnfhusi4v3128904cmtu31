@@ -224,6 +224,9 @@ func _try_thrust() -> bool:
 	if hits.is_empty():
 		return false
 	for e in hits:
+		# 捨て身の構え：突いた敵が爆発
+		if st.berserk:
+			game.explode(e.global_position, 70.0, st.spear_damage * 3.0, record, Color(1.0, 0.45, 0.3), 0.0, 260.0)
 		e.take_damage(st.spear_damage, hits[e] * 260.0, record)
 	_thrust = 0.18
 	return true
@@ -246,7 +249,10 @@ func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 			if bash > 0 and _bash_cd <= 0.0:
 				_bash_cd = 0.4
 				game.explode(global_position, 60.0 + 20.0 * bash, game.guard_stats.spear_damage * (0.7 + 0.3 * bash), record, Color(0.7, 1.0, 0.6), 0.0, 320.0)
-			return
+			# 捨て身の構え：盾で防いでも半分のダメージを受ける
+			if not game.guard_stats.berserk:
+				return
+			amount *= 0.5
 	record["taken"] += minf(amount, hp)
 	hp -= amount
 	_hurt_flash = 0.15

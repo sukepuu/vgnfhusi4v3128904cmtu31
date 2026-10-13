@@ -68,6 +68,8 @@ var stun_left := 0.0
 var mark_left := 0.0
 ## 混乱（虹の矢・ペットの踊り）：この時間のあいだ、ふらふらと変な方向へ歩く
 var confuse_left := 0.0
+## 居座り岩の上：この時間のあいだ足が30%遅くなる
+var slow_left := 0.0
 var _confuse_dir := Vector2.ZERO
 var _confuse_turn := 0.0
 
@@ -157,6 +159,7 @@ func _process(delta: float) -> void:
 	_contact_cd -= delta
 	mark_left -= delta
 	confuse_left -= delta
+	slow_left -= delta
 	if stun_left > 0.0:
 		# 落とし穴にはまって動けない（攻撃もできない）
 		stun_left -= delta
@@ -265,6 +268,8 @@ func _process(delta: float) -> void:
 			_confuse_dir = Vector2.from_angle(randf() * TAU)
 		move = _confuse_dir
 	speed_mult = castle.slow_factor_at(global_position)
+	if slow_left > 0.0:
+		speed_mult *= 0.7
 	position += (move * speed * speed_mult + knock) * delta
 	knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
 	_separate()

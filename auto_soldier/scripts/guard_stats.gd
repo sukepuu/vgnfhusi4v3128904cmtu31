@@ -24,3 +24,5 @@ var whirl := false
 var spikes := false
 ## はね返し盾（盾で防いだ弾を、来た方へはね返す）
 var reflect := false
+## 捨て身の構え：HPが1/3、盾で防いでも半分くらう。そのかわり槍が当たった敵が爆発（槍の3倍）
+var berserk := false

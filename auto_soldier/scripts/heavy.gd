@@ -46,6 +46,10 @@ var _quake_cd := 3.0
 ## 鉄球投げ：5秒ごとに転がる鉄球を投げる
 var iron_ball := false
 var _ball_cd := 2.0
+## 怒りの闘志：ダメージを受けるたびに与ダメージ +5%（最大+100%）。2秒ダメージがなければ元に戻る
+var rage_enabled := false
+var rage := 0.0
+var _rage_timer := 0.0
 
 
 func _ready() -> void:
@@ -69,6 +73,9 @@ func _process(delta: float) -> void:
 	_quake_cd -= delta
 	_exec_cd -= delta
 	_ball_cd -= delta
+	_rage_timer -= delta
+	if _rage_timer <= 0.0:
+		rage = 0.0
 	_hurt_flash -= delta
 	_invuln -= delta
 	_retarget_cd -= delta
@@ -110,7 +117,7 @@ func _process(delta: float) -> void:
 			_exec_cd = 4.0
 			var d := (big.global_position - global_position).normalized()
 			facing = d
-			big.take_damage(slash_damage * 6.0, d * 200.0, record)
+			big.take_damage(dmg() * 6.0, d * 200.0, record)
 			var fx := SlashScript.new()
 			fx.radius = 60.0
 			fx.arc = 0.6
@@ -123,7 +130,7 @@ func _process(delta: float) -> void:
 		if far != null:
 			_ball_cd = 5.0
 			var bd := (far.global_position - global_position).normalized()
-			game.spawn_missile("ball", global_position + bd * 30.0, bd * 560.0, slash_damage * 1.5, 24.0, 3.0, record)
+			game.spawn_missile("ball", global_position + bd * 30.0, bd * 560.0, dmg() * 1.5, 24.0, 3.0, record)
 	if quake_level > 0 and _quake_cd <= 0.0 and game.nearest_enemy(global_position, 140.0) != null:
 		_quake()
 		_quake_cd = 5.0
@@ -164,7 +171,7 @@ func _try_slash() -> bool:
 			continue
 		if slash_arc < TAU and absf(dir.angle_to(rel)) > slash_arc / 2.0 + 0.2:
 			continue
-		e.take_damage(slash_damage, rel.normalized() * 420.0, record)
+		e.take_damage(dmg(), rel.normalized() * 420.0, record)
 	if lifesteal > 0.0:
 		hp = minf(max_hp, hp + (record["dealt"] - dealt_before) * lifesteal)
 	# 斬撃で敵の弾もかき消す
@@ -197,13 +204,21 @@ func _toughest_enemy(max_dist: float) -> Node2D:
 ## 地割れ：周りの敵に大ダメージ＋気絶
 func _quake() -> void:
 	var r := 150.0 + 50.0 * (quake_level - 1)
-	game.explode(global_position, r, slash_damage * 0.6, record, Color(0.65, 0.5, 0.3), 2.0 + 1.5 * (quake_level - 1), 380.0)
+	game.explode(global_position, r, dmg() * 0.6, record, Color(0.65, 0.5, 0.3), 2.0 + 1.5 * (quake_level - 1), 380.0)
 	game.spawn_burst(global_position, Color(0.9, 0.8, 0.6), r / 1.6)
+
+
+## 今の攻撃力（怒りの闘志の上乗せ込み）
+func dmg() -> float:
+	return slash_damage * (1.0 + rage)
 
 
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 	if dead or _invuln > 0.0:
 		return
+	if rage_enabled:
+		rage = minf(1.0, rage + 0.05)
+		_rage_timer = 2.0
 	record["taken"] += minf(amount, hp)
 	hp -= amount
 	_hurt_flash = 0.15
@@ -231,6 +246,9 @@ func _draw() -> void:
 		draw_string(font, Vector2(-20, 6), str(ceili(respawn_left)), HORIZONTAL_ALIGNMENT_CENTER, 40, 16, Color(1, 1, 1, 0.8))
 		return
 	draw_circle(Vector2(0, 9), radius, Color(0, 0, 0, 0.35))
+	if rage > 0.0:
+		# 怒りのオーラ（たまるほど大きく赤く）
+		draw_circle(Vector2.ZERO, radius + 6.0 + rage * 10.0, Color(1.0, 0.2, 0.1, 0.15 + rage * 0.25))
 	var body := Color(0.45, 0.42, 0.55)
 	if _hurt_flash > 0.0:
 		body = Color(1, 1, 1)

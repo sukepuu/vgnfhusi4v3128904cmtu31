@@ -158,7 +158,7 @@ func _do_leap() -> void:
 		return
 	game.spawn_burst(h.global_position, Color(0.8, 0.7, 0.5), 30.0)
 	h.position = best.global_position
-	game.explode(h.global_position, 190.0, h.slash_damage * 4.0, h.record, Color(0.75, 0.55, 0.3), 2.0, 500.0)
+	game.explode(h.global_position, 190.0, h.dmg() * 4.0, h.record, Color(0.75, 0.55, 0.3), 2.0, 500.0)
 	game.spawn_burst(h.global_position, Color(1.0, 0.8, 0.4), 140.0)
 	_flash(Color(1.0, 0.8, 0.5))
 

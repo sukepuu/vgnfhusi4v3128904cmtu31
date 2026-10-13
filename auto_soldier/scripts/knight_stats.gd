@@ -23,3 +23,5 @@ var stun_hit := false
 var heal_on_hit := false
 ## とどめの一撃：HPが2割以下の敵（ボス以外）は突進で一撃で倒す
 var execute := false
+## 連行突撃：突進で当たった敵を、突進が終わるまで一緒に連れていく（ボス以外）
+var carry := false

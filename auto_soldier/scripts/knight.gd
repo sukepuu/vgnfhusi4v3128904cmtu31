@@ -28,6 +28,8 @@ var _star_cd := 0.0
 var _hurt_flash := 0.0
 var _invuln := 0.0
 var _trail: Array = []
+## 連行突撃で連れていっている敵
+var _carried: Array = []
 
 
 func _ready() -> void:
@@ -115,6 +117,13 @@ func _update_dash(delta: float, st) -> void:
 	position += _dash_dir * DASH_SPEED * delta
 	position = game.clamp_to_map(position, radius)
 	_dash_left -= delta
+	# 連行突撃：つかまえた敵を槍の先に引っかけて運ぶ
+	var k := 0
+	for c in _carried:
+		if is_instance_valid(c) and not c.dead:
+			c.position = global_position + _dash_dir * (radius + c.radius + 4.0) + _dash_dir.orthogonal() * (k % 3 - 1) * 14.0
+			c.knock = Vector2.ZERO
+			k += 1
 	# 隠密兵を1発で倒せる威力（敵が強くなるのに合わせて上がる）
 	var dmg: float = st.damage * game._hp_mult()
 	for e in game.enemies_near(global_position, radius + 50.0):
@@ -129,6 +138,8 @@ func _update_dash(delta: float, st) -> void:
 			if st.stun_hit:
 				e.stun(1.0)
 			e.take_damage(hit_dmg, _dash_dir * 350.0, record)
+			if st.carry and not e.is_boss and not e.dead and e.speed > 0.0:
+				_carried.append(e)
 			if st.heal_on_hit:
 				hp = minf(st.max_hp, hp + 8.0)
 	# 流れ星突撃：通った跡に星が残って弾ける
@@ -139,6 +150,11 @@ func _update_dash(delta: float, st) -> void:
 			game.spawn_blast(global_position + Vector2(randf_range(-10, 10), randf_range(-10, 10)), 0.35, 34.0, dmg * 0.15, record, Color(1.0, 0.95, 0.4), "star")
 	if _dash_left <= 0.0:
 		_dash_left = 0.0
+		# 運んでいた敵を、勢いよく放り出す
+		for c in _carried:
+			if is_instance_valid(c) and not c.dead:
+				c.knock = _dash_dir * 400.0
+		_carried.clear()
 		# 突撃の衝撃：止まった所で爆発
 		if st.quake:
 			game.explode(global_position, 90.0, dmg * 0.6, record, Color(1.0, 0.85, 0.4), 0.0, 300.0)

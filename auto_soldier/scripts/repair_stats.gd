@@ -12,3 +12,5 @@ var kusudama := false
 var first_aid := false
 ## 緊急修理：城のHPが3割より少ないとき、修理の速さが2倍
 var emergency := false
+## 工具投げ：城のHPが満タンのとき、近くの敵へ工具を投げる
+var tool_throw := false

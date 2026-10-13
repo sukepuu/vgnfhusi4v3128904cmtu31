@@ -111,6 +111,8 @@ var pet_giant := false
 var pet_homing := false
 var pet_frost := false
 var pet_heal := false
+## 体当たりペット：ペットに触れた敵にペットの3倍ダメージ
+var pet_body := false
 ## 毎フレーム更新する敵リスト（各スクリプトから参照）
 var enemies_cache: Array = []
 var _grid := {}

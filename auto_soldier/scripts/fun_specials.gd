@@ -24,6 +24,9 @@ var _dove_cd := 3.0
 var _snow_cd := 1.0
 var _dance_cd := 6.0
 var _kusu_cd := 8.0
+## 工兵：巨大からくり兵（20秒ごとに設置、10秒で消える）
+var automaton := false
+var _auto_cd := 5.0
 
 
 func _process(delta: float) -> void:
@@ -52,6 +55,11 @@ func _process(delta: float) -> void:
 		if _dance_cd <= 0.0:
 			_dance_cd = 5.0
 			_do_dance()
+	if automaton and not game.engineers.is_empty():
+		_auto_cd -= delta
+		if _auto_cd <= 0.0:
+			_auto_cd = 20.0
+			_place_automaton()
 	if kusudama and not game.repairers.is_empty():
 		_kusu_cd -= delta
 		if _kusu_cd <= 0.0:
@@ -73,7 +81,7 @@ func _do_roar() -> void:
 	f.radius = 220.0
 	game.effects.add_child(f)
 	# 斬撃（通常攻撃）の3倍のダメージを与えて、思いっきり吹き飛ばす
-	game.explode(h.global_position, 220.0, h.slash_damage * 3.0, h.record, Color(1.0, 0.6, 0.3), 0.0, 700.0)
+	game.explode(h.global_position, 220.0, h.dmg() * 3.0, h.record, Color(1.0, 0.6, 0.3), 0.0, 700.0)
 
 
 func _throw_snowball() -> void:
@@ -112,6 +120,18 @@ func _do_dance() -> void:
 			b.position = p.global_position + dir * 10.0
 			b.src = p.record
 			game.world.add_child(b)
+
+
+## 敵が一番集まっている所の少し手前（城側）に置く。敵がいなければ城の前
+func _place_automaton() -> void:
+	var castle: Node2D = game.castle
+	var best: Node2D = castle._densest_enemy(2000.0, 150.0)
+	var pos: Vector2 = castle.global_position + Vector2(0, -320)
+	if best != null:
+		pos = best.global_position + (castle.global_position - best.global_position).normalized() * 100.0
+	var dmg: float = game.engineer_stats.bomb_damage
+	game.spawn_placed("automaton", pos, dmg, 46.0, 10.0, game.engineers[0].record)
+	game.spawn_burst(pos, Color(1.0, 0.8, 0.4), 50.0)
 
 
 func _do_kusudama() -> void:

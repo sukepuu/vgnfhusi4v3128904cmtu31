@@ -13,9 +13,12 @@ var _working := false
 var _wall_cd := 2.0
 var _spark_cd := 0.0
 var _sparks: Array = []
+var _throw_cd := 1.0
+var record: Dictionary
 
 
 func _ready() -> void:
+	record = game.new_record("repair", "修理兵%d" % (index + 1))
 	_t = index * 0.7
 
 
@@ -43,6 +46,14 @@ func _process(delta: float) -> void:
 		if _working and _spark_cd <= 0.0:
 			_spark_cd = 0.25
 			_sparks.append({"p": Vector2(randf_range(-6, 6), -14), "v": Vector2(randf_range(-40, 40), randf_range(-90, -40)), "t": 0.4})
+	# 工具投げ：城が満タンでヒマなときは、近くの敵へ工具を投げつける
+	if st.tool_throw and castle.hp >= castle.max_hp:
+		_throw_cd -= delta
+		if _throw_cd <= 0.0:
+			var t: Node2D = game.nearest_enemy(global_position, 520.0)
+			if t != null:
+				_throw_cd = 1.0
+				_throw(t)
 	# 応急手当：フィールド全体の味方のHPを、城と同じ量だけ回復
 	if st.first_aid:
 		_first_aid(st.heal_per_sec * delta)
@@ -61,6 +72,16 @@ func _process(delta: float) -> void:
 		s["p"] += s["v"] * delta
 	_sparks = _sparks.filter(func(s: Dictionary) -> bool: return s["t"] > 0.0)
 	queue_redraw()
+
+
+func _throw(t: Node2D) -> void:
+	var dir := (t.global_position - global_position).normalized()
+	# ブーメランは毎秒1100ずつ減速するので、敵の少し向こうまで届く速さで投げる
+	var dist := global_position.distance_to(t.global_position) + 30.0
+	var spd := sqrt(2.0 * 1100.0 * dist)
+	var b: Node2D = game.spawn_missile("boomerang", global_position, dir * spd, 18.0 * (1.0 + game.elapsed / 150.0), 10.0, 3.0, record)
+	b.look = "wrench"
+	b.thrower = self
 
 
 func _first_aid(amount: float) -> void:

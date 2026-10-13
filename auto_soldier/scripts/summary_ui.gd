@@ -146,12 +146,11 @@ func _rebuild() -> void:
 		if used:
 			col = Upgrades.CAT_COLOR[cat_key]
 		_grid.add_child(_cell(entry[0], col))
-		# 修理部隊は攻撃しないのでダメージは「-」
 		var d: float = dealt.get(key, 0.0)
-		_grid.add_child(_cell("-" if key == "repair" else _fmt(d), col, 18, true))
+		_grid.add_child(_cell(_fmt(d), col, 18, true))
 		_grid.add_child(_cell("%d" % normal.get(key, 0), col, 18, true))
 		# 城（本体）には特別強化がない
-		_grid.add_child(_cell("-" if key == "castle" else "%d / 7" % special.get(key, 0), col, 18, true))
+		_grid.add_child(_cell("-" if key == "castle" else "%d / 8" % special.get(key, 0), col, 18, true))
 
 
 func _fmt(v: float) -> String:

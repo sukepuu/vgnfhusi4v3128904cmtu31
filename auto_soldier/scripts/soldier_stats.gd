@@ -37,3 +37,5 @@ var shadow := false
 var boomerang := false
 ## 勝利の花火（敵を倒すと、たまに花火が上がる）
 var fireworks := false
+## 触爆（触れた敵が爆発して、周りに射撃の3倍ダメージ）
+var touch_blast := false

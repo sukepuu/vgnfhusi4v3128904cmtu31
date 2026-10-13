@@ -163,6 +163,13 @@ func _update_stuck(delta: float) -> void:
 func _draw() -> void:
 	match kind:
 		"boomerang":
+			if look == "wrench":
+				# くるくる回るスパナ（修理兵の工具投げ）
+				var d := Vector2.from_angle(_spin)
+				draw_line(-d * 9.0, d * 9.0, Color(0.7, 0.72, 0.78), 4.0)
+				draw_arc(d * 11.0, 4.5, 0.0, TAU * 0.75, 8, Color(0.7, 0.72, 0.78), 3.0)
+				draw_arc(-d * 11.0, 4.5, 0.0, TAU * 0.75, 8, Color(0.7, 0.72, 0.78), 3.0)
+				return
 			# くの字型
 			var a := Vector2.from_angle(_spin)
 			var b := a.rotated(1.9)

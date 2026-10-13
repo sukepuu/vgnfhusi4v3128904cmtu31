@@ -98,6 +98,9 @@ func _shoot(target: Node2D, st) -> void:
 		b.mark_on_hit = st.mark
 		b.bounces = st.bounces
 		b.bounce_target = target
+		if st.blast_arrow:
+			b.explode_radius = 70.0
+			b.explode_ratio = 3.0
 		b.position = global_position + offset + dir * 12.0
 		game.world.add_child(b)
 	_draw_t = 0.15

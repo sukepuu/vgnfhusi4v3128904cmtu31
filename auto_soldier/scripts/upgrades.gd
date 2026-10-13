@@ -189,6 +189,21 @@ const SPECIAL := [
 	{"id": "sp_fun_kusudama", "cat": "repair", "special": true, "name": "くす玉割り", "desc": "12秒ごとに城の上でくす玉が割れて紙吹雪。城と味方のHPが20回復", "max": 1, "req": "repairer"},
 	# ---- 15秒ごとの必殺技（各種類の6つ目）
 	{"id": "sp_ult_flock", "cat": "pet", "special": true, "name": "必殺・鳥の大群", "desc": "15秒ごとに、ペット1匹につき6羽の鳥を呼ぶ。鳥は敵を追いかけ、当たった敵にくっついて2回つつく（ペットの3倍の威力）", "max": 1, "req": "pet"},
+	# ---- 8つ目の特別強化
+	{"id": "sp_touch_blast", "cat": "soldier", "special": true, "name": "触爆", "desc": "遊撃兵に触れた敵が爆発し、周りの敵に射撃の3倍ダメージ", "max": 1},
+	{"id": "sp_berserk_guard", "cat": "guard", "special": true, "name": "捨て身の構え", "desc": "迎撃兵の最大HPが1/3になり、盾で防いでも半分のダメージを受ける。そのかわり槍が当たった敵が爆発し、周りに槍の3倍ダメージ", "max": 1, "req": "guard"},
+	{"id": "sp_blast_arrow", "cat": "sniper", "special": true, "name": "爆裂矢", "desc": "矢が当たった敵が爆発し、周りの敵に矢の3倍ダメージ", "max": 1, "req": "sniper"},
+	{"id": "sp_rage", "cat": "heavy", "special": true, "name": "怒りの闘志", "desc": "ダメージを受けるたびに重装兵の与ダメージ +5%（最大+100%）。2秒ダメージを受けないと元に戻る", "max": 1, "req": "heavy"},
+	{"id": "sp_counter_wall", "cat": "builder", "special": true, "name": "反撃壁", "desc": "敵の弾が壁に当たると、その場所から近くの敵へ弾を撃ち返す", "max": 1, "req": "builder"},
+	{"id": "sp_automaton", "cat": "engineer", "special": true, "name": "巨大からくり兵", "desc": "20秒ごとに、ボスくらい大きなからくり兵を置く（10秒で消える）。ゆっくり歩き、全方位斬り→高速連射をくり返す。消えるときに大爆発", "max": 1, "req": "engineer"},
+	{"id": "sp_tower_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂矢", "desc": "矢倉の矢が当たった敵が爆発し、周りの敵に矢の3倍ダメージ", "max": 1, "req": "tower"},
+	{"id": "sp_double_cannon", "cat": "castle", "special": true, "name": "大砲・二連砲", "desc": "大砲が一度に2発撃つ（2発目は別の密集地へ）", "max": 1, "req": "cannon"},
+	{"id": "sp_stay_rock", "cat": "castle", "special": true, "name": "投石器・居座り岩", "desc": "着弾地点に大岩が5秒間残り、上にいる敵にダメージを与え続け、移動速度 -30%", "max": 1, "req": "catapult"},
+	{"id": "sp_mega_bolt", "cat": "castle", "special": true, "name": "バリスタ・巨大弩砲", "desc": "8秒ごとに、3倍の大きさ・3倍の威力の矢を、HPが一番多い敵へゆっくり（速さ1/3）撃つ", "max": 1, "req": "ballista"},
+	{"id": "sp_frost_ground", "cat": "castle", "special": true, "name": "結界・凍てつく大地", "desc": "結界の中の地面が凍りつき、中にいる敵にずっとダメージを与える（吹雪と重ねがけできる）", "max": 1, "req": "frost"},
+	{"id": "sp_pet_body", "cat": "pet", "special": true, "name": "体当たりペット", "desc": "ペットに触れた敵に、ペットの弾の3倍ダメージ", "max": 1, "req": "pet"},
+	{"id": "sp_carry", "cat": "knight", "special": true, "name": "連行突撃", "desc": "突進で当たった敵（ボス以外）を、突進が終わるまで槍の先に引っかけて連れていく", "max": 1, "req": "knight"},
+	{"id": "sp_tool_throw", "cat": "repair", "special": true, "name": "工具投げ", "desc": "城のHPが満タンのとき、修理兵が近くの敵へスパナを投げつける（行って戻ってくる）", "max": 1, "req": "repairer"},
 	{"id": "sp_ult_cavalry", "cat": "knight", "special": true, "name": "必殺・百騎突撃", "desc": "15秒ごとに、一番下の敵のあたりを騎士の幻8騎が横一列で駆け抜け、通った敵を全部はねる（突進の2.5倍の威力）", "max": 1, "req": "knight"},
 	{"id": "sp_ult_overhaul", "cat": "repair", "special": true, "name": "必殺・大修繕", "desc": "15秒ごとに、城のHPを最大HPの10%回復し、味方のHPを全回復する（壁は直さない）", "max": 1, "req": "repairer"},
 	{"id": "sp_ult_storm", "cat": "soldier", "special": true, "name": "必殺・剣の大嵐", "desc": "15秒ごとに、遊撃兵全員が周りを巻き込む巨大な回転斬り（剣の5倍の威力・大きく吹き飛ばす）", "max": 1},
@@ -532,6 +547,38 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.ballista_interval *= 0.85
 		"sp_ult_cavalry":
 			game.ultimates.cavalry = true
+		# ---- 8つ目の特別強化
+		"sp_touch_blast":
+			st.touch_blast = true
+		"sp_berserk_guard":
+			game.guard_stats.berserk = true
+			game.guard_stats.max_hp /= 3.0
+			for g in game.guards:
+				g.hp = minf(g.hp, game.guard_stats.max_hp)
+		"sp_blast_arrow":
+			game.sniper_stats.blast_arrow = true
+		"sp_rage":
+			game.heavy.rage_enabled = true
+		"sp_counter_wall":
+			game.walls.counter = true
+		"sp_automaton":
+			game.fun.automaton = true
+		"sp_tower_blast":
+			castle.tower_blast = true
+		"sp_double_cannon":
+			castle.double_cannon = true
+		"sp_stay_rock":
+			castle.stay_rock = true
+		"sp_mega_bolt":
+			castle.mega_bolt = true
+		"sp_frost_ground":
+			castle.frost_ground = true
+		"sp_pet_body":
+			game.pet_body = true
+		"sp_carry":
+			game.knight_stats.carry = true
+		"sp_tool_throw":
+			game.repair_stats.tool_throw = true
 		"sp_ult_overhaul":
 			game.ultimates.overhaul = true
 		# ---- おもしろ強化

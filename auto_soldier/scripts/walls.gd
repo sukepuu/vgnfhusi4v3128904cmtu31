@@ -28,6 +28,8 @@ var explode_on_block := false
 var golden := false
 ## ビックリ箱壁（防ぐたびに、たまにビックリ箱が飛び出して敵を吹き飛ばす）
 var jack := false
+## 反撃壁（敵の弾を防ぐたびに、その場所から近くの敵へ弾を撃ち返す）
+var counter := false
 ## 見張り櫓（築城兵が壁の外に矢を撃つ櫓を建てる）
 var watchtower := false
 const MAX_WATCHTOWERS := 4
@@ -115,6 +117,26 @@ func absorb(i: int, pos: Vector2 = Vector2.INF, amount: float = 1.0) -> void:
 		var mid: float = (w["a0"] + w["a1"]) / 2.0
 		game.spawn_burst(point_at(mid), Color(0.7, 0.65, 0.55), 20.0)
 		walls.remove_at(i)
+
+
+## 反撃壁：pos から一番近い敵へ弾を撃つ
+func counter_shot(pos: Vector2) -> void:
+	var t: Node2D = game.nearest_enemy(pos, 600.0)
+	if t == null:
+		return
+	var wi := hit_test(pos, 20.0)
+	var src: Dictionary = walls[wi]["src"] if wi >= 0 else {}
+	var dir := (t.global_position - pos).normalized()
+	var b := BulletScript.new()
+	b.game = game
+	b.velocity = dir * 700.0
+	b.damage = 25.0 * (1.0 + game.elapsed / 180.0)
+	b.radius = 5.0
+	b.color = Color(1.0, 0.9, 0.5)
+	b.life = 1.0
+	b.position = pos + dir * 10.0
+	b.src = src
+	game.world.add_child(b)
 
 
 ## 壁 i の耐久を n 減らす（ボス用）

@@ -88,6 +88,9 @@ func _process(delta: float) -> void:
 		if wi >= 0:
 			# 壁が1発分防ぐ
 			game.walls.absorb(wi, global_position)
+			# 反撃壁：防いだ場所から、敵へ弾を撃ち返す
+			if game.walls.counter:
+				game.walls.counter_shot(global_position)
 			queue_free()
 			return
 		if game.castle.distance_to_point(global_position) < radius:

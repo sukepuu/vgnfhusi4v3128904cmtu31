@@ -39,6 +39,9 @@ func _process(delta: float) -> void:
 	# 癒しのさえずり：担当の遊撃兵のHPを少しずつ回復
 	if game.pet_heal and not owner_soldier.dead:
 		owner_soldier.hp = minf(game.stats.max_hp, owner_soldier.hp + 2.0 * delta)
+	# 体当たりペット：触れた敵にペットの3倍ダメージ（同じ敵は0.5秒に1回）
+	if game.pet_body:
+		_body_slam(delta)
 	_cd -= delta
 	if _cd <= 0.0:
 		var target := _nearest_enemy()
@@ -79,6 +82,23 @@ func _shoot_one(target: Node2D, k: int) -> void:
 		b.explode_radius = 45.0
 		b.explode_ratio = 0.6
 	game.world.add_child(b)
+
+
+var _slam_cd := {}
+
+
+func _body_slam(delta: float) -> void:
+	for e in _slam_cd.keys():
+		_slam_cd[e] -= delta
+		if _slam_cd[e] <= 0.0 or not is_instance_valid(e):
+			_slam_cd.erase(e)
+	var r := 9.0 * scale.x
+	for e in game.enemies_near(global_position, r + 40.0):
+		if not is_instance_valid(e) or e.dead or _slam_cd.has(e):
+			continue
+		if global_position.distance_to(e.global_position) < r + e.radius + 3.0:
+			_slam_cd[e] = 0.5
+			e.take_damage(game.pet_damage * 3.0, (e.global_position - global_position).normalized() * 200.0, record)
 
 
 func _nearest_enemy() -> Node2D:

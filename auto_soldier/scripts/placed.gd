@@ -6,9 +6,12 @@ extends Node2D
 ## mine      ：大砲の機雷。敵が触れると爆発
 ## snowman   ：結界の雪だるま。敵が近づくと爆発して周りを凍らせる
 ## scarecrow ：工兵のかかし。敵の気を引いて、代わりに殴られてくれる
+## boulder   ：投石器の居座り岩。上にいる敵にダメージを与え続け、足を30%遅くする
+## automaton ：工兵の巨大からくり兵。ゆっくり歩き、全方位斬り→高速連射をくり返す。消えるときに大爆発
 ## 見張り櫓とかかしには耐久があり、敵に攻撃される（味方と同じあつかい）
 
 const BulletScript := preload("res://scripts/bullet.gd")
+const SlashScript := preload("res://scripts/slash_effect.gd")
 
 var game: Node2D
 var kind := "spikes"
@@ -22,6 +25,10 @@ var _t := 0.0
 var _cd := 0.0
 var _aim := Vector2.UP
 var _forever := false
+## からくり兵：今の動き（"slash" 全方位斬り / "fire" 高速連射）と、その残り回数
+var _mode := "slash"
+var _mode_count := 0
+var _gear := 0.0
 ## 耐久（見張り櫓・かかしだけ。0になったら壊れる）
 var hp := 0.0
 var max_hp := 0.0
@@ -50,6 +57,10 @@ func _process(delta: float) -> void:
 	if not _forever:
 		life -= delta
 		if life <= 0.0:
+			if kind == "automaton":
+				# 消えるときに大爆発
+				game.explode(global_position, 170.0, damage * 1.5, src, Color(1.0, 0.6, 0.2), 0.0, 450.0)
+				game.spawn_burst(global_position, Color(1.0, 0.9, 0.5), 90.0)
 			queue_free()
 			return
 	match kind:
@@ -66,6 +77,14 @@ func _process(delta: float) -> void:
 		"sentry":
 			if _cd <= 0.0 and _fire(330.0, damage, 720.0, Color(1.0, 0.95, 0.5)):
 				_cd = 0.25
+		"boulder":
+			if _cd <= 0.0:
+				_cd = 0.5
+				for e in _enemies_inside(radius):
+					e.take_damage(damage * 0.5, Vector2.ZERO, src)
+					e.slow_left = 0.6
+		"automaton":
+			_update_automaton(delta)
 		"mine", "snowman":
 			if not _enemies_inside(radius).is_empty():
 				if kind == "mine":
@@ -76,6 +95,41 @@ func _process(delta: float) -> void:
 				queue_free()
 				return
 	queue_redraw()
+
+
+## からくり兵：一番近い敵へゆっくり歩きながら、全方位斬り3回 → 高速連射12発 をくり返す
+func _update_automaton(delta: float) -> void:
+	_gear += delta * 4.0
+	var t: Node2D = game.nearest_enemy(global_position, 900.0)
+	if t != null:
+		_aim = (t.global_position - global_position).normalized()
+		if global_position.distance_to(t.global_position) > 90.0:
+			position += _aim * 45.0 * delta
+			position = game.clamp_to_map(position, radius)
+	if _cd > 0.0:
+		return
+	if _mode == "slash":
+		_cd = 0.6
+		game.explode(global_position, 130.0, damage * 0.35, src, Color(0.9, 0.85, 0.7), 0.0, 300.0)
+		var fx := SlashScript.new()
+		fx.radius = 130.0
+		fx.arc = TAU
+		fx.duration = 0.25
+		fx.position = global_position
+		game.effects.add_child(fx)
+		_mode_count += 1
+		if _mode_count >= 3:
+			_mode = "fire"
+			_mode_count = 0
+	else:
+		_cd = 0.08
+		if t != null:
+			_fire(600.0, damage * 0.1, 800.0, Color(1.0, 0.8, 0.4))
+		_mode_count += 1
+		if _mode_count >= 12:
+			_mode = "slash"
+			_mode_count = 0
+			_cd = 0.4
 
 
 ## 敵の攻撃を受ける（見張り櫓・かかし）
@@ -170,6 +224,33 @@ func _draw() -> void:
 				var d := Vector2.from_angle(TAU * i / 6.0)
 				draw_line(d * 8.0, d * 12.0, Color(0.35, 0.35, 0.38), 2.0)
 			draw_circle(Vector2.ZERO, 3.0, Color(1.0, 0.2, 0.2) if blink else Color(0.4, 0.1, 0.1))
+		"boulder":
+			# 地面に残った大岩（足元に砂ぼこりの輪）
+			draw_circle(Vector2.ZERO, radius, Color(0.55, 0.45, 0.3, 0.18))
+			draw_arc(Vector2.ZERO, radius, 0.0, TAU, 32, Color(0.6, 0.5, 0.35, 0.5), 2.0)
+			draw_circle(Vector2(0, 8), 26.0, Color(0, 0, 0, 0.3))
+			draw_circle(Vector2.ZERO, 26.0, Color(0.45, 0.42, 0.4))
+			draw_circle(Vector2(-8, -8), 9.0, Color(0.58, 0.55, 0.52))
+			draw_line(Vector2(-6, 4), Vector2(8, -2), Color(0.3, 0.28, 0.26), 2.0)
+			draw_line(Vector2(8, -2), Vector2(14, 8), Color(0.3, 0.28, 0.26), 2.0)
+		"automaton":
+			# ボスと同じくらい大きな、木と鉄のからくり兵
+			var r := 46.0
+			draw_circle(Vector2(0, 14), r, Color(0, 0, 0, 0.3))
+			for i in 8:
+				var d := Vector2.from_angle(_gear + TAU * i / 8.0)
+				draw_line(d * r * 0.8, d * (r + 8.0), Color(0.45, 0.4, 0.35), 7.0)
+			draw_circle(Vector2.ZERO, r, Color(0.6, 0.45, 0.28))
+			draw_arc(Vector2.ZERO, r, 0.0, TAU, 48, Color(0.3, 0.22, 0.12), 4.0)
+			draw_circle(Vector2.ZERO, r * 0.45, Color(0.5, 0.5, 0.55))
+			draw_arc(Vector2.ZERO, r * 0.45, _gear, _gear + TAU * 0.8, 16, Color(0.75, 0.75, 0.8), 3.0)
+			# 光る目と、連射用の砲身
+			draw_circle(Vector2(-12, -14), 5.0, Color(1.0, 0.85, 0.3))
+			draw_circle(Vector2(12, -14), 5.0, Color(1.0, 0.85, 0.3))
+			draw_line(_aim * r * 0.4, _aim * (r + 16.0), Color(0.25, 0.25, 0.28), 10.0)
+			# 残り時間のバー
+			draw_rect(Rect2(Vector2(-30, -r - 14), Vector2(60, 5)), Color(0, 0, 0, 0.6))
+			draw_rect(Rect2(Vector2(-30, -r - 14), Vector2(60 * clampf(life / 10.0, 0.0, 1.0), 5)), Color(1.0, 0.8, 0.3))
 		"scarecrow":
 			# 揺れるかかし（叩かれると大きく揺れる）
 			var sway := sin(_t * 3.0) * 0.12 + (sin(_t * 40.0) * 0.3 if _hurt > 0.0 else 0.0)

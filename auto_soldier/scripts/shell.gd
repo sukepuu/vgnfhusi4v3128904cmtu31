@@ -32,6 +32,8 @@ var meteor := false
 var bounces := 0
 ## 牛投げ（投石器のおもしろ強化）：岩のかわりに牛が飛んでいき、着地したら走り出す
 var cow := false
+## 居座り岩（投石器）：着弾地点に岩が5秒残る
+var stay_rock := false
 
 var _t := 0.0
 var _height := 0.0
@@ -83,6 +85,8 @@ func _explode() -> void:
 			break
 		var mp := target + Vector2.from_angle(TAU * i / mines + randf() * 0.8) * randf_range(50.0, 110.0)
 		game.spawn_placed("mine", mp, mine_damage, 26.0, 20.0, src)
+	if stay_rock:
+		game.spawn_placed("boulder", target, damage * 0.3, blast_radius * 0.6, 5.0, src)
 	if roll_damage > 0.0:
 		var away: Vector2 = (target - game.castle.global_position).normalized()
 		var m: Node2D = game.spawn_missile("ball", target, away.rotated(randf_range(-0.3, 0.3)) * 420.0, roll_damage, 30.0, 3.0, src)

@@ -16,7 +16,7 @@ var doves := false
 var snowball := false
 ## ペット：ペットの踊り（虹色に光ってくるくる回り、5秒ごとに全方位へ玉を撃つ）
 var pet_dance := false
-## 修理：修理玉（20秒ごとに城の前へ玉を置く。10秒で回復した城のHPの6倍のダメージを、HPが一番多い敵へ撃つ）
+## 修理：修理玉（20秒ごとに城の前へ玉を置く。10秒で回復した城のHPの20倍のダメージを、HPが一番多い敵へ撃つ）
 var repair_orb := false
 
 var _roar_cd := 5.0

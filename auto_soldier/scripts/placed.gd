@@ -111,10 +111,10 @@ func _orb_charge() -> float:
 	return game.castle.healed_total - _heal_start
 
 
-## 修理玉：たまった量の6倍のダメージの弾を、HPが一番多い敵へゆっくり撃つ（貫通無限。途中の敵にも当たり、狙った敵に当たったあともそのまま飛んでいく）
+## 修理玉：たまった量の20倍のダメージの弾を、HPが一番多い敵へゆっくり撃つ（貫通無限。途中の敵にも当たり、狙った敵に当たったあともそのまま飛んでいく）
 func _fire_orb() -> void:
-	# 威力は、たまった量（10秒で城が回復したHP）の6倍
-	var dmg := _orb_charge() * 6.0
+	# 威力は、たまった量（10秒で城が回復したHP）の20倍
+	var dmg := _orb_charge() * 20.0
 	var t: Node2D = game.castle._toughest_enemy_in(global_position, INF)
 	if dmg <= 0.0 or t == null:
 		game.spawn_burst(global_position, Color(0.5, 1.0, 0.6), 20.0)

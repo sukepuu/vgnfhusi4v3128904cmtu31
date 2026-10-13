@@ -166,7 +166,7 @@ const SPECIAL := [
 	{"id": "sp_fun_fireworks", "cat": "soldier", "special": true, "name": "勝利の花火", "desc": "遊撃兵が敵を倒すと、30%で花火が打ち上がる（弾けた所に小ダメージ）", "max": 1},
 	{"id": "sp_fun_reflect", "cat": "guard", "special": true, "name": "はね返し盾", "desc": "盾で防いだ弾を「カキーン！」と虹色の弾で打ち返す", "max": 1, "req": "guard"},
 	{"id": "sp_fun_firework_arrow", "cat": "sniper", "special": true, "name": "花火矢", "desc": "4回に1回、矢と一緒に花火も撃ち込む", "max": 1, "req": "sniper"},
-	{"id": "sp_fun_roar", "cat": "heavy", "special": true, "name": "雄叫び", "desc": "10秒ごとに「ウオオオ！」と叫んで、周りの敵を思いっきり吹き飛ばす（ダメージはほぼなし）", "max": 1, "req": "heavy"},
+	{"id": "sp_fun_roar", "cat": "heavy", "special": true, "name": "雄叫び", "desc": "10秒ごとに雄叫びを上げ、周りの敵に斬撃3倍のダメージを与えて思いっきり吹き飛ばす", "max": 1, "req": "heavy"},
 	{"id": "sp_fun_jack", "cat": "builder", "special": true, "name": "ビックリ箱壁", "desc": "壁が攻撃を防ぐと、35%でビックリ箱が飛び出して敵を吹き飛ばす", "max": 1, "req": "builder"},
 	{"id": "sp_fun_scarecrow", "cat": "engineer", "special": true, "name": "かかし", "desc": "罠と一緒にかかしを立てる。敵の気を引いて、代わりに殴られてくれる（耐久60）", "max": 1, "req": "engineer"},
 	{"id": "sp_fun_doves", "cat": "castle", "special": true, "name": "矢倉・伝書鳩部隊", "desc": "6秒ごとに、矢倉から敵を追いかけてつつく白い鳩が飛び立つ", "max": 1, "req": "tower"},

@@ -699,7 +699,7 @@ func spawn_damage_text(pos: Vector2, amount: float, col: Color) -> void:
 	effects.add_child(t)
 
 
-## 浮かび上がる文字（「ウオオオ！」など）
+## 浮かび上がる文字（「モー！」など）
 func spawn_text(pos: Vector2, text: String, col: Color, size: int = 18) -> void:
 	if effects.get_child_count() > 150:
 		return

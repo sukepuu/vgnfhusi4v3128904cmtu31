@@ -3,7 +3,7 @@ extends Node2D
 ## firework：start から打ち上がって end で弾ける花火（弾けた所の敵に小ダメージ）
 ## jack    ：ビックリ箱（バネでピエロが飛び出す）
 ## kusudama：くす玉が割れて紙吹雪が舞う
-## roar    ：「ウオオオ！」の広がる輪
+## roar    ：雄叫びの広がる輪
 
 var game: Node2D
 var kind := "firework"

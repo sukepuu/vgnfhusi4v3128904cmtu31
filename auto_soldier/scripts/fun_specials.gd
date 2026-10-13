@@ -8,7 +8,7 @@ const BulletScript := preload("res://scripts/bullet.gd")
 
 var game: Node2D
 
-## 重装：雄叫び（10秒ごとに「ウオオオ！」と叫んで周りの敵を吹き飛ばす）
+## 重装：雄叫び（10秒ごとに叫んで、周りの敵に斬撃3倍のダメージを与えて吹き飛ばす）
 var roar := false
 ## 矢倉：伝書鳩部隊（6秒ごとに敵を追いかけてつつく鳩を放つ）
 var doves := false
@@ -72,9 +72,8 @@ func _do_roar() -> void:
 	var f := _fx("roar", h.global_position)
 	f.radius = 220.0
 	game.effects.add_child(f)
-	game.spawn_text(h.global_position + Vector2(0, -40), "ウオオオ！", Color(1.0, 0.6, 0.3), 26)
-	# ダメージはほぼなし。思いっきり吹き飛ばすだけ
-	game.explode(h.global_position, 220.0, 1.0, h.record, Color(1.0, 0.6, 0.3), 0.0, 700.0)
+	# 斬撃（通常攻撃）の3倍のダメージを与えて、思いっきり吹き飛ばす
+	game.explode(h.global_position, 220.0, h.slash_damage * 3.0, h.record, Color(1.0, 0.6, 0.3), 0.0, 700.0)
 
 
 func _throw_snowball() -> void:

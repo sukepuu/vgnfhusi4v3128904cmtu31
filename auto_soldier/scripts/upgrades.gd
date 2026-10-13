@@ -78,7 +78,7 @@ const LIST := [
 		"desc_up": "大砲をもう1門追加（最大3門）", "max": 3, "weight": 1.3},
 	{"id": "catapult", "cat": "castle", "name": "投石器", "desc": "大砲より広い範囲に岩を落とす（発射間隔は長い）",
 		"desc_up": "投石器をもう1台追加（最大3台）", "max": 3},
-	{"id": "ballista", "cat": "castle", "name": "バリスタ", "desc": "城にバリスタを設置。発射間隔は長いが、高威力・射程無限で敵を何体でも貫通する",
+	{"id": "ballista", "cat": "castle", "name": "バリスタ", "desc": "城にバリスタを設置。HPが一番多い敵を最優先で狙う。発射間隔は長いが、高威力・射程無限で敵を何体でも貫通する",
 		"desc_up": "バリスタをもう1基追加、全バリスタの威力 +30%（最大3基）", "max": 3},
 	{"id": "artillery", "cat": "castle", "name": "砲術", "desc": "大砲と投石器の威力 +30%、発射間隔 -10%", "max": 4, "req_any": ["cannon", "catapult"]},
 	{"id": "frost", "cat": "castle", "name": "氷結の結界", "desc": "城のまわりの敵の動きを遅くする",

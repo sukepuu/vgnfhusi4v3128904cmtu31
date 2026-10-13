@@ -276,13 +276,16 @@ func _update_ballista(delta: float) -> void:
 		if _ballista_cds[i] > 0.0:
 			continue
 		var from := global_position + _ballista_local_pos(i)
-		var aim := _best_pierce_dir(from)
-		if aim == Vector2.ZERO:
+		# HPが一番多い敵を最優先で狙う（射程は無限）
+		var big := _toughest_enemy_in(global_position, INF)
+		if big == null:
 			continue
+		var aim := (big.global_position - from).normalized()
 		_ballista_aims[i] = aim
-		# 連装なら少しずつ角度をずらして複数発
+		# 連装なら少しずつ横にずらして複数発。どれも狙った敵の真ん中へ向かう
 		for k in ballista_shots:
-			var dir := aim.rotated((k - (ballista_shots - 1) / 2.0) * 0.07)
+			var offset := aim.orthogonal() * (k - (ballista_shots - 1) / 2.0) * 12.0
+			var dir := (big.global_position - (from + offset)).normalized()
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 1000.0
@@ -299,7 +302,7 @@ func _update_ballista(delta: float) -> void:
 				b.confuse_on_hit = 1.5
 			b.src = _equip_record("ballista", "バリスタ", i)
 			b.life = 2.5
-			b.position = from
+			b.position = from + offset
 			if blast_bolt:
 				b.first_blast_radius = 140.0
 				b.first_blast_damage = ballista_damage * 1.5

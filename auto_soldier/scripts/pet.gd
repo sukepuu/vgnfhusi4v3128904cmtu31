@@ -27,8 +27,9 @@ func _process(delta: float) -> void:
 	# 担当の兵士のまわりを回る。兵士が倒れているあいだは城の前で待つ
 	var center: Vector2 = game.castle.gate_position() if owner_soldier.dead else owner_soldier.position
 	# 同じ兵士のペット同士は等間隔に並んで回る
+	# （回る角度はゲーム全体の時間で決める。ペットごとの時間だと、あとから来たペットとずれてしまう）
 	var n: int = maxi(game.pets_per_soldier, 1)
-	var ang := _t * 1.6 + TAU * index / n
+	var ang: float = game.elapsed * 1.6 + TAU * index / n
 	var target_pos: Vector2 = center + Vector2.from_angle(ang) * 60.0
 	position = position.lerp(target_pos, 1.0 - exp(-10.0 * delta))
 

@@ -56,7 +56,7 @@ var _wall_cd := 0.0
 var dead := false
 
 var knock := Vector2.ZERO
-## 射撃のノックバックのクールタイム（0.5秒に1回だけ押し戻される）
+## 射撃のノックバックのクールタイム（1.5秒に1回だけ押し戻される）
 var _shot_kb_cd := 0.0
 var _facing := Vector2.RIGHT
 var _shoot_cd := 1.5
@@ -609,11 +609,11 @@ func _shoot(dir: Vector2, dmg: float, spd: float = 260.0, r: float = 7.0, col: C
 	return b
 
 
-## 射撃によるノックバック。0.5秒に1回だけで、下側（城の方）へは押さない
+## 射撃によるノックバック。1.5秒に1回だけで、下側（城の方）へは押さない
 func shot_knockback(kb: Vector2) -> void:
 	if dead or _shot_kb_cd > 0.0 or _kb_mult() <= 0.0:
 		return
-	_shot_kb_cd = 0.5
+	_shot_kb_cd = 1.5
 	kb.y = minf(kb.y, 0.0)
 	knock += no_castle_push(kb * _kb_mult())
 

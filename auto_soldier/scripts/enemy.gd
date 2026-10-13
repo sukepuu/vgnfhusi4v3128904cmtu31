@@ -574,7 +574,16 @@ func shot_knockback(kb: Vector2) -> void:
 		return
 	_shot_kb_cd = 0.5
 	kb.y = minf(kb.y, 0.0)
-	knock += kb * _kb_mult()
+	knock += no_castle_push(kb * _kb_mult())
+
+
+## 押す力から「城に近づく向き」の分を取りのぞく（攻撃で城側へは押されない）
+func no_castle_push(v: Vector2) -> Vector2:
+	var to_castle: Vector2 = (game.castle.global_position - global_position).normalized()
+	var toward := v.dot(to_castle)
+	if toward > 0.0:
+		v -= to_castle * toward
+	return v
 
 
 ## 攻撃で押される強さの倍率。大型は吹き飛びにくい
@@ -610,7 +619,7 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 			src["kills"] += 1
 	hp -= amount
 	_flash = 0.1
-	knock += knockback * _kb_mult()
+	knock += no_castle_push(knockback * _kb_mult())
 	# ボスは下側（城の方）には押されない
 	if is_boss and knock.y > 0.0:
 		knock.y = 0.0

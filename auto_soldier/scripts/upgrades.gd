@@ -68,7 +68,7 @@ const LIST := [
 	# ---- 工兵部隊
 	{"id": "engineer", "cat": "engineer", "name": "工兵部隊", "desc": "フィールドを回って、爆弾（範囲ダメージ）と落とし穴（範囲ダメージ＋10秒足止め）を交互に仕掛ける工兵が加わる",
 		"desc_up": "工兵が1人増える（最大3人）", "max": 3, "weight": 1.5},
-	{"id": "trap_dmg", "cat": "engineer", "name": "高性能火薬", "desc": "工兵の攻撃すべての威力 +40%（爆弾・落とし穴・毒沼・子爆弾・自動砲台・からくり兵・絨毯爆撃など。仕掛け済みの罠にも反映）", "max": 5, "req": "engineer"},
+	{"id": "trap_dmg", "cat": "engineer", "name": "高性能火薬", "desc": "工兵の攻撃すべての威力 +20%（爆弾・落とし穴・毒沼・子爆弾・自動砲台・からくり兵・絨毯爆撃など。仕掛け済みの罠にも反映）", "max": 5, "req": "engineer"},
 	{"id": "trap_speed", "cat": "engineer", "name": "手際", "desc": "罠の設置時間 -20%、工兵の移動速度 +15%", "max": 4, "req": "engineer"},
 	{"id": "trap_range", "cat": "engineer", "name": "広域罠", "desc": "罠の効果範囲 +20%、反応する距離 +15%", "max": 3, "req": "engineer"},
 	{"id": "pit_stun", "cat": "engineer", "name": "深い落とし穴", "desc": "落とし穴の足止め時間 +3秒", "max": 3, "req": "engineer"},
@@ -426,9 +426,9 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"heavy_whirl":
 			game.heavy.slash_arc = TAU
 		"trap_dmg":
-			game.engineer_stats.bomb_damage *= 1.4
-			game.engineer_stats.pit_damage *= 1.4
-			game.engineer_stats.power_mult *= 1.4
+			game.engineer_stats.bomb_damage *= 1.2
+			game.engineer_stats.pit_damage *= 1.2
+			game.engineer_stats.power_mult *= 1.2
 		"trap_speed":
 			game.engineer_stats.plant_time *= 0.8
 			game.engineer_stats.move_speed *= 1.15

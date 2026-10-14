@@ -804,10 +804,14 @@ func _rerolled_choices(old: Array, special: bool) -> Array:
 	return choices
 
 
-## オート選択で1つ選ぶ。優先設定があるのに、3つの中に最優先も優先もなければ1回だけリロールして引き直す
+## オート選択で1つ選ぶ。3つの中に最優先がなければ（優先しかなくても）1回だけリロールして引き直す。
+## 最優先を1つも設定していないときは、優先がなければリロールする
 func _auto_pick_from(choices: Array, special: bool) -> Dictionary:
 	var u: Dictionary = Upgrades.auto_choose(choices, auto_priority)
-	if not auto_priority.is_empty() and Upgrades.priority_of(u, auto_priority) == 0:
+	var want := 0
+	for v in auto_priority.values():
+		want = maxi(want, int(v))
+	if want > 0 and Upgrades.priority_of(u, auto_priority) < want:
 		var again := _rerolled_choices(choices, special)
 		if not again.is_empty():
 			u = Upgrades.auto_choose(again, auto_priority)

@@ -128,6 +128,9 @@ var level := 1
 var xp := 0
 ## 経験値の獲得倍率と、まだ入っていない端数
 const XP_GAIN := 1.3
+## XP_TIME_START_MIN 分を過ぎたら、1分ごとに経験値の獲得量が +XP_TIME_PER_MIN（5%）ずつ増える
+const XP_TIME_START_MIN := 10.0
+const XP_TIME_PER_MIN := 0.05
 var _xp_frac := 0.0
 var xp_to_next := xp_needed(1)
 var kills := 0
@@ -730,9 +733,14 @@ func xp_needed(lv: int) -> int:
 	return maxi(1, roundi((4.0 + lv * 3.0 + lv * lv / 8.0) / 1.44))
 
 
+## 今の経験値の獲得倍率（基本1.3倍。10分を過ぎたら1分ごとに+5%：20分で1.5倍、30分で2倍…）
+func xp_mult() -> float:
+	return XP_GAIN * (1.0 + XP_TIME_PER_MIN * maxf(0.0, elapsed / 60.0 - XP_TIME_START_MIN))
+
+
 func add_xp(amount: int) -> void:
-	# 経験値の獲得量は1.3倍。端数はためておいて、1たまったら入る
-	_xp_frac += amount * XP_GAIN
+	# 端数はためておいて、1たまったら入る
+	_xp_frac += amount * xp_mult()
 	var whole := int(floor(_xp_frac))
 	_xp_frac -= whole
 	xp += whole

@@ -70,8 +70,9 @@ var stun_left := 0.0
 var mark_left := 0.0
 ## 混乱（虹の矢・ペットの踊り）：この時間のあいだ、ふらふらと変な方向へ歩く
 var confuse_left := 0.0
-## 居座り岩の上：この時間のあいだ足が30%遅くなる
+## 居座り岩・トゲの柵の上：この時間のあいだ足が slow_ratio ぶん遅くなる
 var slow_left := 0.0
+var slow_ratio := 0.0
 var _confuse_dir := Vector2.ZERO
 var _confuse_turn := 0.0
 
@@ -292,7 +293,7 @@ func _process(delta: float) -> void:
 		var ratio := clampf(hp / maxf(max_hp, 1.0), 0.0, 1.0)
 		speed_mult *= 0.5 + 0.5 * clampf((1.0 - ratio) / 0.8, 0.0, 1.0)
 	if slow_left > 0.0:
-		speed_mult *= 0.7
+		speed_mult *= 1.0 - slow_ratio
 	position += (move * speed * speed_mult + knock) * delta
 	knock = knock.move_toward(Vector2.ZERO, 1400.0 * delta)
 	_separate()
@@ -326,7 +327,7 @@ func _nearest_guard(max_dist: float) -> Node2D:
 	return best
 
 
-## 壁に触れたら、壁の耐久を削って、この敵はHP半分・大きく弾き飛ばされて3秒気絶（false を返す）
+## 壁に触れたら、壁の耐久を削って、この敵はHP半分・大きく弾き飛ばされて1秒気絶（false を返す）
 func _check_wall() -> bool:
 	var wi: int = game.walls.hit_test(global_position, radius)
 	if wi < 0:
@@ -351,9 +352,9 @@ func _check_wall() -> bool:
 	take_damage(hp * 0.5, Vector2.ZERO, src)
 	if dead:
 		return false
-	# 3秒気絶して、上側のランダムな方向へ大きく弾き飛ばされる（だいたい170くらい）
+	# 1秒気絶して、上側のランダムな方向へ大きく弾き飛ばされる（だいたい170くらい）
 	# （knock は毎秒1400ずつ弱まるので、進む距離 = 速さ² ÷ 2800）
-	stun(3.0)
+	stun(1.0)
 	knock = Vector2.from_angle(randf_range(PI + 0.35, TAU - 0.35)) * sqrt(2800.0 * 170.0)
 	return false
 
@@ -675,6 +676,15 @@ func _kb_mult() -> float:
 func confuse(seconds: float) -> void:
 	# ボスはほとんど混乱しない
 	confuse_left = maxf(confuse_left, seconds * (0.2 if is_boss else 1.0))
+
+
+## しばらく足を遅くする（ratio = 遅くする割合。重なったら強いほう）
+func slow(seconds: float, ratio: float) -> void:
+	if slow_left <= 0.0:
+		slow_ratio = ratio
+	else:
+		slow_ratio = maxf(slow_ratio, ratio)
+	slow_left = maxf(slow_left, seconds)
 
 
 func stun(seconds: float) -> void:

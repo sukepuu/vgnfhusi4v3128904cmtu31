@@ -215,7 +215,7 @@ func _toughest_enemy(max_dist: float) -> Node2D:
 ## 地割れ：周りの敵に大ダメージ＋気絶
 func _quake() -> void:
 	var r := 150.0 + 50.0 * (quake_level - 1)
-	game.explode(global_position, r, dmg() * 0.6, record, Color(0.65, 0.5, 0.3), 2.0 + 1.5 * (quake_level - 1), 380.0)
+	game.explode(global_position, r, dmg() * 0.6, record, Color(0.65, 0.5, 0.3), 1.0, 380.0)
 	game.spawn_burst(global_position, Color(0.9, 0.8, 0.6), r / 1.6)
 
 

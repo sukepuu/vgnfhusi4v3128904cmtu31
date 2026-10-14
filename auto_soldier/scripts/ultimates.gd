@@ -158,7 +158,7 @@ func _do_leap() -> void:
 		return
 	game.spawn_burst(h.global_position, Color(0.8, 0.7, 0.5), 30.0)
 	h.position = best.global_position
-	game.explode(h.global_position, 190.0, h.dmg() * 4.0, h.record, Color(0.75, 0.55, 0.3), 2.0, 500.0)
+	game.explode(h.global_position, 190.0, h.dmg() * 4.0, h.record, Color(0.75, 0.55, 0.3), 1.0, 500.0)
 	game.spawn_burst(h.global_position, Color(1.0, 0.8, 0.4), 140.0)
 	_flash(Color(1.0, 0.8, 0.5))
 
@@ -334,7 +334,7 @@ func _do_ice_age() -> void:
 	var rec: Dictionary = castle._equip_record("frost", "氷結の結界", 0)
 	for e in _alive_enemies():
 		if castle.global_position.distance_to(e.global_position) < r:
-			e.stun(3.0)
+			e.stun(1.0)
 			e.take_damage(dmg, Vector2.ZERO, rec)
 	_ice_ring = 0.8
 	_flash(Color(0.7, 0.95, 1.0))

@@ -81,7 +81,7 @@ func _process(delta: float) -> void:
 				_cd = 0.5
 				for e in _enemies_inside(radius):
 					e.take_damage(damage * 0.5, Vector2.ZERO, src)
-					e.stun(0.3)
+					e.slow(0.6, 0.2)
 		"watchtower":
 			# 時間とともに威力が上がる
 			if _cd <= 0.0 and _fire(400.0, damage * (1.0 + game.elapsed / 180.0), 680.0, Color(0.95, 0.85, 0.6)) != null:
@@ -94,7 +94,7 @@ func _process(delta: float) -> void:
 				_cd = 0.5
 				for e in _enemies_inside(radius):
 					e.take_damage(damage * 0.5, Vector2.ZERO, src)
-					e.slow_left = 0.6
+					e.slow(0.6, 0.3)
 		"automaton":
 			_update_automaton(delta)
 		"mine", "snowman":
@@ -102,7 +102,7 @@ func _process(delta: float) -> void:
 				if kind == "mine":
 					game.explode(global_position, 75.0, damage, src, Color(1.0, 0.55, 0.2), 0.0, 260.0)
 				else:
-					game.explode(global_position, 130.0, damage, src, Color(0.75, 0.95, 1.0), 2.5, 200.0)
+					game.explode(global_position, 130.0, damage, src, Color(0.75, 0.95, 1.0), 1.0, 200.0)
 					game.spawn_burst(global_position, Color(1, 1, 1), 40.0)
 				queue_free()
 				return

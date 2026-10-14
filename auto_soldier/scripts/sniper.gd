@@ -94,7 +94,7 @@ func _shoot(target: Node2D, st) -> void:
 		b.scale = Vector2(0.6, 0.6)
 		b.life = st.fire_range / st.arrow_speed + 0.3
 		b.src = record
-		b.stun_on_hit = 1.5 if st.pin else 0.0
+		b.stun_on_hit = 1.0 if st.pin else 0.0
 		b.mark_on_hit = st.mark
 		b.bounces = st.bounces
 		b.bounce_target = target

@@ -65,12 +65,12 @@ const LIST := [
 	{"id": "heavy_speed", "cat": "heavy", "name": "軽量化", "desc": "重装兵の移動速度 +20%", "max": 3, "req": "heavy"},
 	{"id": "heavy_whirl", "cat": "heavy", "name": "旋風斬り", "desc": "重装兵の斬撃が全方位360度になる", "max": 1, "req": "heavy"},
 	# ---- 工兵部隊
-	{"id": "engineer", "cat": "engineer", "name": "工兵部隊", "desc": "フィールドを回って、爆弾（範囲ダメージ）と落とし穴（範囲ダメージ＋10秒足止め）を交互に仕掛ける工兵が加わる",
+	{"id": "engineer", "cat": "engineer", "name": "工兵部隊", "desc": "フィールドを回って、爆弾（範囲ダメージ）と落とし穴（範囲ダメージ＋1秒足止め）を交互に仕掛ける工兵が加わる",
 		"desc_up": "工兵が1人増える（最大3人）", "max": 3, "weight": 1.5},
 	{"id": "trap_dmg", "cat": "engineer", "name": "高性能火薬", "desc": "工兵の攻撃すべての威力 +20%（爆弾・落とし穴・毒沼・子爆弾・自動砲台・からくり兵・絨毯爆撃など。仕掛け済みの罠にも反映）", "max": 5, "req": "engineer"},
 	{"id": "trap_speed", "cat": "engineer", "name": "手際", "desc": "罠の設置時間 -20%、工兵の移動速度 +15%", "max": 4, "req": "engineer"},
 	{"id": "trap_range", "cat": "engineer", "name": "広域罠", "desc": "罠の効果範囲 +20%、反応する距離 +15%", "max": 3, "req": "engineer"},
-	{"id": "pit_stun", "cat": "engineer", "name": "深い落とし穴", "desc": "落とし穴の足止め時間 +2秒", "max": 3, "req": "engineer"},
+	{"id": "pit_stun", "cat": "engineer", "name": "深い落とし穴", "desc": "落とし穴の足止め時間 +1秒", "max": 3, "req": "engineer"},
 	# ---- 城
 	{"id": "tower", "cat": "castle", "name": "矢倉", "desc": "城に矢倉が建ち、近づく敵を自動で射る",
 		"desc_up": "矢倉をもう1基追加、全矢倉の威力 +15%", "max": 4, "weight": 1.5},
@@ -100,10 +100,10 @@ const SPECIAL := [
 	{"id": "sp_trident", "cat": "guard", "special": true, "name": "三叉槍", "desc": "槍の突きが3方向に出る", "max": 1, "req": "guard"},
 	{"id": "sp_taunt", "cat": "guard", "special": true, "name": "挑発", "desc": "近くの敵が城より迎撃兵を狙うようになる（正面から来れば盾でダメージ20%）", "max": 1, "req": "guard"},
 	{"id": "sp_whirl_spear", "cat": "guard", "special": true, "name": "大旋風槍", "desc": "6秒ごとに槍を振り回し、周りの敵へ槍の3倍の大ダメージ", "max": 1, "req": "guard"},
-	{"id": "sp_spikes", "cat": "guard", "special": true, "name": "拒馬の柵", "desc": "8秒ごとに盾の前へトゲの柵を置く。上を通る敵の足を止めてダメージ（8秒残る）", "max": 1, "req": "guard"},
+	{"id": "sp_spikes", "cat": "guard", "special": true, "name": "拒馬の柵", "desc": "8秒ごとに盾の前へトゲの柵を置く。上を通る敵の移動速度を20%下げてダメージ（8秒残る）", "max": 1, "req": "guard"},
 	# ---- 重装部隊
 	{"id": "sp_multi_slash", "cat": "heavy", "special": true, "name": "連続斬り", "desc": "斬撃が3回連続で出る", "max": 1, "req": "heavy"},
-	{"id": "sp_quake", "cat": "heavy", "special": true, "name": "地割れ", "desc": "5秒ごとに地面を叩き、周りの敵に大ダメージ＋3.5秒気絶", "max": 1, "req": "heavy"},
+	{"id": "sp_quake", "cat": "heavy", "special": true, "name": "地割れ", "desc": "5秒ごとに地面を叩き、周りの敵に大ダメージ＋1秒気絶", "max": 1, "req": "heavy"},
 	{"id": "sp_lifesteal", "cat": "heavy", "special": true, "name": "吸命の剣", "desc": "斬撃で与えたダメージの10%ぶんHPが回復する", "max": 1, "req": "heavy"},
 	{"id": "sp_execute", "cat": "heavy", "special": true, "name": "一刀両断", "desc": "4秒ごとに、近くで一番HPの多い敵へ斬撃6倍の一撃", "max": 1, "req": "heavy"},
 	{"id": "sp_iron_ball", "cat": "heavy", "special": true, "name": "鉄球投げ", "desc": "5秒ごとにトゲ鉄球を投げる。転がりながら敵をひいて吹き飛ばす（斬撃1.5倍の威力）", "max": 1, "req": "heavy"},
@@ -144,15 +144,15 @@ const SPECIAL := [
 	{"id": "sp_blast_bolt", "cat": "castle", "special": true, "name": "バリスタ・炸裂大矢", "desc": "矢が最初に当たった敵の場所で大爆発（威力150%の範囲攻撃）", "max": 1, "req": "ballista"},
 	{"id": "sp_lightning", "cat": "castle", "special": true, "name": "バリスタ・雷撃", "desc": "5秒ごとに、バリスタ1基につき1本、敵から敵へ7回飛び移る雷を放つ（威力80%）", "max": 1, "req": "ballista"},
 	# ---- 氷結の結界
-	{"id": "sp_freeze", "cat": "castle", "special": true, "name": "結界・絶対零度", "desc": "12秒ごとに結界内の敵すべてを3.5秒間凍らせる", "max": 1, "req": "frost"},
+	{"id": "sp_freeze", "cat": "castle", "special": true, "name": "結界・絶対零度", "desc": "12秒ごとに結界内の敵すべてを1秒間凍らせる", "max": 1, "req": "frost"},
 	{"id": "sp_icicle", "cat": "castle", "special": true, "name": "結界・氷柱", "desc": "1.5秒ごとに結界内の敵2体へ氷柱が降る", "max": 1, "req": "frost"},
 	{"id": "sp_blizzard", "cat": "castle", "special": true, "name": "結界・吹雪", "desc": "結界の中の敵にずっとダメージを与え続ける", "max": 1, "req": "frost"},
 	{"id": "sp_ice_lance", "cat": "castle", "special": true, "name": "結界・氷槍", "desc": "3秒ごとに、結界内で一番HPの多い敵へ大ダメージの氷の槍", "max": 1, "req": "frost"},
-	{"id": "sp_snowman", "cat": "castle", "special": true, "name": "結界・雪だるま", "desc": "5秒ごとに結界のふちへ雪だるまを置く（最大6体）。敵が近づくと爆発して周りを凍らせる", "max": 1, "req": "frost"},
+	{"id": "sp_snowman", "cat": "castle", "special": true, "name": "結界・雪だるま", "desc": "5秒ごとに結界のふちへ雪だるまを置く（最大6体）。敵が近づくと爆発して周りを1秒凍らせる", "max": 1, "req": "frost"},
 	# ---- 狙撃
 	{"id": "sp_counter_battery", "cat": "sniper", "special": true, "name": "対砲兵狙撃", "desc": "迫撃砲を最優先で狙う。遠くの敵ほど矢が痛い（100離れるごとに威力 +10%）", "max": 1, "req": "sniper"},
 	{"id": "sp_headshot", "cat": "sniper", "special": true, "name": "急所狙い", "desc": "25%の確率で急所に当たり、ダメージ4倍", "max": 1, "req": "sniper"},
-	{"id": "sp_pin", "cat": "sniper", "special": true, "name": "縫い止め矢", "desc": "当たった敵を1.5秒間その場に縫い止める（動けない・攻撃できない）", "max": 1, "req": "sniper"},
+	{"id": "sp_pin", "cat": "sniper", "special": true, "name": "縫い止め矢", "desc": "当たった敵を1秒間その場に縫い止める（動けない・攻撃できない）", "max": 1, "req": "sniper"},
 	{"id": "sp_ricochet", "cat": "sniper", "special": true, "name": "跳弾矢", "desc": "狙った敵に当たった矢が、近くの別の敵へ最大3回跳ねる（跳ねるたびに威力70%）", "max": 1, "req": "sniper"},
 	{"id": "sp_mark", "cat": "sniper", "special": true, "name": "弱点看破", "desc": "矢が当たった敵に赤い印。6秒間、味方全員から受けるダメージ +35%", "max": 1, "req": "sniper"},
 	# ---- ペット・近衛・修理
@@ -208,14 +208,14 @@ const SPECIAL := [
 	{"id": "sp_ult_storm", "cat": "soldier", "special": true, "name": "必殺・剣の大嵐", "desc": "15秒ごとに、遊撃兵全員が周りを巻き込む巨大な回転斬り（剣の5倍の威力・大きく吹き飛ばす）", "max": 1},
 	{"id": "sp_ult_dome", "cat": "guard", "special": true, "name": "必殺・鉄壁の陣", "desc": "15秒ごとに、城をドームで6秒間包む。ドームに入った敵の弾・砲弾は消える。迎撃兵のHPも全回復", "max": 1, "req": "guard"},
 	{"id": "sp_ult_sky_arrow", "cat": "sniper", "special": true, "name": "必殺・天穿つ一矢", "desc": "15秒ごとに、狙撃兵が敵が一番多く並ぶ方向へ巨大な矢を放つ（12倍の威力で全部貫く）", "max": 1, "req": "sniper"},
-	{"id": "sp_ult_leap", "cat": "heavy", "special": true, "name": "必殺・大地砕き", "desc": "15秒ごとに、重装兵が近くの敵の群れへ飛び込み、地面を叩き割る（斬撃4倍の範囲攻撃＋2秒気絶）", "max": 1, "req": "heavy"},
+	{"id": "sp_ult_leap", "cat": "heavy", "special": true, "name": "必殺・大地砕き", "desc": "15秒ごとに、重装兵が近くの敵の群れへ飛び込み、地面を叩き割る（斬撃4倍の範囲攻撃＋1秒気絶）", "max": 1, "req": "heavy"},
 	{"id": "sp_ult_wall_burst", "cat": "builder", "special": true, "name": "必殺・城壁の大号令", "desc": "15秒ごとに、すべての壁の耐久が10回復し、全部の壁が外側へ大爆発する", "max": 1, "req": "builder"},
 	{"id": "sp_ult_carpet", "cat": "engineer", "special": true, "name": "必殺・絨毯爆撃", "desc": "15秒ごとに、敵が密集した所へ一直線に13個の爆弾が降りそそぐ", "max": 1, "req": "engineer"},
 	{"id": "sp_ult_thousand", "cat": "castle", "special": true, "name": "矢倉・必殺・千本矢", "desc": "15秒ごとに、フィールド中の敵30か所へ一斉に矢の雨が降る（矢倉の3倍の威力）", "max": 1, "req": "tower"},
 	{"id": "sp_ult_barrage", "cat": "castle", "special": true, "name": "大砲・必殺・一斉砲撃", "desc": "15秒ごとに、12発の砲弾を一気に撃ち込む（大砲の2倍の威力）", "max": 1, "req": "cannon"},
 	{"id": "sp_ult_meteor", "cat": "castle", "special": true, "name": "投石器・必殺・隕石落とし", "desc": "15秒ごとに、敵の群れへ巨大な燃える隕石を落とす（投石器の6倍の威力・超広範囲、跡が燃える）", "max": 1, "req": "catapult"},
 	{"id": "sp_ult_thunder", "cat": "castle", "special": true, "name": "バリスタ・必殺・雷神の大槍", "desc": "15秒ごとに、敵が一番多く並ぶ方向へ雷の大槍を放つ（バリスタの6倍の威力＋1秒しびれる）", "max": 1, "req": "ballista"},
-	{"id": "sp_ult_ice_age", "cat": "castle", "special": true, "name": "結界・必殺・氷河期", "desc": "15秒ごとに、結界の2倍以上の広さの敵をまとめて3秒凍らせてダメージ", "max": 1, "req": "frost"},
+	{"id": "sp_ult_ice_age", "cat": "castle", "special": true, "name": "結界・必殺・氷河期", "desc": "15秒ごとに、結界の2倍以上の広さの敵をまとめて1秒凍らせてダメージ", "max": 1, "req": "frost"},
 	# --- 9つ目の特別強化（面白くてしっかり強いもの）
 	{"id": "sp_boss_hunt", "cat": "soldier", "special": true, "name": "魔王狩り", "desc": "遊撃兵がボスを最優先で狙うようになる。遊撃兵のボスへのダメージ +10%", "max": 1},
 	{"id": "sp_giant_spear", "cat": "guard", "special": true, "name": "神槍投擲", "desc": "8秒ごとに、迎撃兵が一番近い敵の方へ巨大な槍を投げる。槍はゆっくり進み、通った敵を全部貫く（槍の5倍の威力）", "max": 1, "req": "guard"},
@@ -442,7 +442,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.engineer_stats.pit_radius *= 1.2
 			game.engineer_stats.trigger_radius *= 1.15
 		"pit_stun":
-			game.engineer_stats.stun_time += 2.0
+			game.engineer_stats.stun_time += 1.0
 		# ---- 特別強化（1回きり。効果の中身はそれぞれのスクリプトが処理する）
 		"sp_burst":
 			st.burst_level = 2
@@ -769,8 +769,8 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.cannon_level = new_level
 		"frost":
 			castle.frost_radius = 220.0 + 60.0 * new_level
-			# 減速はレベル1で20%、1レベルごとに+10%（最大レベル3で40%）
-			castle.frost_slow = 0.1 + 0.1 * new_level
+			# 減速はレベル1で10%、1レベルごとに+5%（最大レベル3で20%）
+			castle.frost_slow = 0.05 + 0.05 * new_level
 		"wall":
 			castle.max_hp += 100.0
 			castle.hp = castle.max_hp

@@ -16,6 +16,8 @@ var build_time := 20.0
 ## 壁1枚が防げる攻撃の回数
 var wall_max_hp := 10.0
 var wall_width := deg_to_rad(12.0)
+## 壁の基本の幅。大きな壁で幅が広がると、防げる回数も幅に合わせて増える（幅が2倍なら回数も2倍）
+const BASE_WIDTH := deg_to_rad(12.0)
 
 # --- 特別強化
 ## 砲台壁（壁から弾を撃つ）
@@ -174,16 +176,25 @@ func destroy(i: int) -> void:
 
 
 ## src = 建てた築城兵の戦績カード（防いだ回数を記録する）
+## 防げる回数は、建てたときの幅に合わせて増える（大きな壁）
 func add_wall(seg: Vector2, src: Dictionary = {}) -> void:
-	walls.append({"a0": seg.x, "a1": seg.y, "hp": wall_max_hp, "max": wall_max_hp, "flash": 0.0, "src": src})
+	var size_mult := wall_width / BASE_WIDTH
+	var mx := _wall_max_for(size_mult)
+	walls.append({"a0": seg.x, "a1": seg.y, "hp": mx, "max": mx, "size_mult": size_mult, "flash": 0.0, "src": src})
 
 
-## 耐久回数アップ（建っている壁にも反映）
+## 幅の倍率 size_mult の壁が防げる回数（整数に丸める）
+func _wall_max_for(size_mult: float) -> float:
+	return roundf(wall_max_hp * size_mult)
+
+
+## 耐久回数アップ（建っている壁にも反映。大きい壁ほどたくさん増える）
 func add_wall_hp(amount: float) -> void:
 	wall_max_hp += amount
 	for w in walls:
-		w["max"] += amount
-		w["hp"] += amount
+		var mx := _wall_max_for(w.get("size_mult", 1.0))
+		w["hp"] += mx - w["max"]
+		w["max"] = mx
 
 
 ## 次に壁を建てる場所（Vector2(開始角, 終了角)）を返す。全部埋まっていれば null。

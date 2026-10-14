@@ -146,7 +146,7 @@ func setup(k: String, hp_mult: float) -> void:
 			_pattern_left = 0.0
 		"boss4":
 			# 黒衣の大司教：画面の上のほうに浮かんで漂う。自分では戦わず、ほかの敵を強くする
-			max_hp = 1500.0; speed = 0.0; damage = 10.0; castle_damage = 0.0; radius = 40.0; xp_value = 80
+			max_hp = 3000.0; speed = 0.0; damage = 10.0; castle_damage = 0.0; radius = 40.0; xp_value = 80
 			color = Color(0.16, 0.12, 0.2)
 			is_boss = true
 			boss_title = "黒衣の大司教"
@@ -752,7 +752,7 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	game.spawn_damage_text(global_position, amount, Color(1, 1, 1))
 	if revive:
 		_revived = true
-		hp = max_hp * 0.5
+		hp = max_hp * BISHOP_REVIVE_HP
 		game.spawn_burst(global_position, Color(0.6, 0.3, 0.9), radius * 1.6)
 		queue_redraw()
 		return
@@ -767,7 +767,7 @@ func instant_kill(src: Dictionary = {}) -> void:
 		return
 	if not is_boss and not _revived and game.bishop_alive():
 		_revived = true
-		hp = max_hp * 0.5
+		hp = max_hp * BISHOP_REVIVE_HP
 		game.spawn_burst(global_position, Color(0.6, 0.3, 0.9), radius * 1.6)
 		queue_redraw()
 		return
@@ -808,18 +808,21 @@ func _update_bishop(delta: float) -> void:
 
 const BISHOP_VOLLEY_INTERVAL := 10.0
 const BISHOP_VOLLEY_SHOTS := 6
+## 大司教の力で復活した敵のHP（最大HPの30%）
+const BISHOP_REVIVE_HP := 0.3
 
 
 ## 号令：大司教以外のすべての敵が、全方位へ貫通無限の弾を撃つ（壁は素通り。城に当たったら消える）
 func _bishop_volley() -> void:
 	game.spawn_burst(global_position, Color(0.65, 0.3, 0.95), 160.0)
 	for e in game.enemies_cache:
-		if not is_instance_valid(e) or e.dead or e.kind == "boss4":
+		# 撃つのは大きい敵（大きい暗赤とボス）だけ。そのかわり1発の威力は敵の攻撃力の1.5倍
+		if not is_instance_valid(e) or e.dead or e.kind == "boss4" or not (e.kind == "brute" or e.is_boss):
 			continue
 		var base := randf() * TAU
 		for i in BISHOP_VOLLEY_SHOTS:
 			var dir := Vector2.from_angle(base + TAU * i / BISHOP_VOLLEY_SHOTS)
-			var b: Node2D = e._shoot(dir, maxf(2.0, e.damage * 0.5), 210.0, 6.0, Color(0.7, 0.35, 1.0), 2.5)
+			var b: Node2D = e._shoot(dir, maxf(6.0, e.damage * 1.5), 210.0, 9.0, Color(0.7, 0.35, 1.0), 2.5)
 			b.boss_pierce = true
 			b._boss_hits_left = 1000000
 			b.ignore_walls = true

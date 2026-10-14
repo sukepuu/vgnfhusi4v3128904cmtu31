@@ -127,7 +127,7 @@ var _grid := {}
 var level := 1
 var xp := 0
 ## 経験値の獲得倍率と、まだ入っていない端数
-const XP_GAIN := 1.3
+const XP_GAIN := 1.0
 ## XP_TIME_START_MIN 分から、経験値の獲得量が時間でなめらかに増える（1分ごとに +XP_TIME_PER_MIN = 10分ごとに+5%）
 const XP_TIME_START_MIN := 0.0
 const XP_TIME_PER_MIN := 0.005
@@ -743,7 +743,7 @@ func xp_needed(lv: int) -> int:
 	return maxi(1, roundi((4.0 + lv * 3.0 + lv * lv / 8.0) / 1.44))
 
 
-## 今の経験値の獲得倍率（基本1.3倍。10分を過ぎたら1分ごとに+5%：20分で1.5倍、30分で2倍…）
+## 今の経験値の獲得倍率（基本1倍。最初から10分ごとに+5%：30分で1.15倍、60分で1.3倍…）
 func xp_mult() -> float:
 	return XP_GAIN * (1.0 + XP_TIME_PER_MIN * maxf(0.0, elapsed / 60.0 - XP_TIME_START_MIN))
 

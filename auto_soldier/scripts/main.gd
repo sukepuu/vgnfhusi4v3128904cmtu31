@@ -632,7 +632,7 @@ const SPAWN_MAX := 11.0
 ## 出現ペースが上限になる時刻（秒）。約9分27秒
 const SPAWN_CAP_TIME := (SPAWN_MAX - SPAWN_BASE) / SPAWN_GROWTH
 ## 上限になったあと、敵のHP倍率が1分ごとに増える量（増え方はずっと一定）
-const HP_PER_MIN := 3.5
+const HP_PER_MIN := 8.0
 
 
 ## 敵のHP倍率。出現ペースが上限になるまでは1倍のまま（数が増えるだけ）。

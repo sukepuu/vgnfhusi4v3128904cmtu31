@@ -138,7 +138,7 @@ func setup(k: String, hp_mult: float) -> void:
 		"boss3":
 			# 分裂するたびにHPは半分、体は小さく、足は速くなる
 			var shrink := pow(0.5, split_gen)
-			max_hp = 420.0 * (1.0 + 0.3 * (boss_rank - 1)) * shrink; speed = 22.0 * pow(1.18, split_gen); damage = 20.0 * pow(0.75, split_gen)
+			max_hp = 294.0 * (1.0 + 0.3 * (boss_rank - 1)) * shrink; speed = 22.0 * pow(1.18, split_gen); damage = 20.0 * pow(0.75, split_gen)
 			castle_damage = 36.0 * pow(0.6, split_gen); radius = 44.0 * pow(0.78, split_gen)
 			xp_value = [40, 20, 10, 6, 4][split_gen]
 			color = Color(0.35, 0.75, 0.4).lerp(Color(0.6, 0.95, 0.5), split_gen / 4.0)

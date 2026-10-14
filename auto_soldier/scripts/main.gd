@@ -104,7 +104,7 @@ var pets: Array = []
 ## 遊撃兵1人あたりのペットの数（「ペットの仲間」を取るたびに+1）
 var pets_per_soldier := 0
 ## ペットの攻撃力（あとから付くペットにも反映）
-var pet_damage := 4.2
+var pet_damage := 2.94
 ## ペットの射撃間隔・射程（全ペット共通）
 var pet_interval := 0.8
 var pet_range := 420.0

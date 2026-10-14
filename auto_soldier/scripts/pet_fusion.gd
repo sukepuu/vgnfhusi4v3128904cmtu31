@@ -83,9 +83,13 @@ func _split() -> void:
 	game.spawn_burst(position, Color(0.5, 1.0, 0.7), _radius)
 
 
+## 合体ペットの火力の調整（ペットの弾の威力を0.7倍にしたうえで、合体ペット全体を前の1/7にするための値）
+const FUSION_SCALE := 1.0 / 4.9
+
+
 ## 合体したペット1匹ぶんあたりの強さの倍率（多いほど1匹あたりも少し強い）
 func _power() -> float:
-	return _n * (1.0 + 0.1 * _n)
+	return _n * (1.0 + 0.1 * _n) * FUSION_SCALE
 
 
 ## 行動：立ち止まって射撃（SHOOT_TIME秒）→ 一番近い敵へまっすぐ高速突進 → 立ち止まって射撃 … をくり返す

@@ -256,10 +256,10 @@ func _process(delta: float) -> void:
 		if wi >= 0 and _wall_cd <= 0.0:
 			game.walls.spike_hit(wi, global_position)
 			game.walls.damage_wall(wi, 7.0)
-			# ボス自身はダメージを受けず、ランダムな方向へ大きく弾かれる（だいたい200くらい・気絶はしない）
+			# ボス自身はダメージを受けず、ランダムな方向へ大きく弾かれる（だいたい100くらい・気絶はしない）
 			# 下側（城の方）へは弾かれない
 			# （knock は毎秒1400ずつ弱まるので、進む距離 = 速さ² ÷ 2800）
-			knock = Vector2.from_angle(randf_range(PI + 0.15, TAU - 0.15)) * sqrt(2800.0 * 200.0)
+			knock = Vector2.from_angle(randf_range(PI + 0.15, TAU - 0.15)) * sqrt(2800.0 * 100.0)
 			_wall_cd = 1.0
 		if castle.distance_to_point(global_position) < radius:
 			move = Vector2.ZERO

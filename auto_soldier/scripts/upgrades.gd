@@ -244,7 +244,9 @@ const SPECIAL := [
 	{"id": "sp_castle_robot", "cat": "castle", "special": true, "name": "城・城ロボ起動", "desc": "30秒ごとに城からロボットが出撃して、15秒間暴れまわる（城は動かない）", "max": 1},
 	# 城ロボの追加の特別強化（城ロボ起動を取っていると出る。オート選択などでは「城」のグループあつかい）
 	{"id": "sp_castle_robot_flight", "cat": "castle", "special": true, "name": "城・城ロボ フライトモード", "desc": "城ロボにロボットウイングが付いて空を飛ぶ。両手を上げて遠くの敵へ高速タックル → 両手から誘導ミサイルを30発 をくり返す", "max": 1, "req": "sp_castle_robot", "group": "castle"},
-	{"id": "sp_castle_robot_final", "cat": "castle", "special": true, "name": "城・城ロボ ファイナルモード", "desc": "城ロボが画面の真ん中に出撃して動かずに戦う。8本のビームをそれぞれ別の敵へ撃ち続けながら、両手から誘導ミサイルを撃ち続ける（攻撃の切れ目なし）", "max": 1, "req": "sp_castle_robot_flight", "group": "castle"},
+	{"id": "sp_castle_robot_final", "cat": "castle", "special": true, "name": "城・城ロボ ファイナルモード", "desc": "城ロボが画面の真ん中に出撃して動かずに戦う。8本のビームをそれぞれ別の敵へ撃ち続けながら、両手から誘導ミサイルを撃ち続ける（攻撃の切れ目なし）。矢倉・大砲・投石器・バリスタ・砲術の通常強化を全部最大まで取ると候補に出る", "max": 1, "req": "sp_castle_robot_flight", "group": "castle",
+		# 城の兵装（矢倉・大砲・投石器・バリスタ・砲術）の通常強化を全部最大まで取っていないと出ない
+		"req_maxed": ["tower", "cannon", "catapult", "ballista", "artillery"]},
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",
@@ -344,6 +346,8 @@ static func roll_special(levels: Dictionary, n: int) -> Array:
 			continue
 		if u.has("req") and levels.get(u["req"], 0) <= 0:
 			continue
+		if u.has("req_maxed") and not _all_maxed(u["req_maxed"], levels):
+			continue
 		available.append(u)
 	# 出やすさに合わせて、重なりなしでランダムに選ぶ
 	var result: Array = []
@@ -361,6 +365,15 @@ static func roll_special(levels: Dictionary, n: int) -> Array:
 		result.append(available[pick])
 		available.remove_at(pick)
 	return result
+
+
+## ids の通常強化が全部最大レベルまで取れているか
+static func _all_maxed(ids: Array, levels: Dictionary) -> bool:
+	for id in ids:
+		for u in LIST:
+			if u["id"] == id and int(levels.get(id, 0)) < int(u["max"]):
+				return false
+	return true
 
 
 ## 城の兵装（矢倉・大砲・投石器・バリスタ）の強化レベルの合計が、1つ増えるごとに「城ロボ起動」が出やすくなる割合

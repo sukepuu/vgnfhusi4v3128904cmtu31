@@ -29,7 +29,7 @@ const LIST := [
 	{"id": "wall_hp", "cat": "builder", "name": "石壁強化", "desc": "壁が防げる回数 +2発（建っている壁にも反映）", "max": 5, "req": "builder"},
 	{"id": "wall_width", "cat": "builder", "name": "大きな壁", "desc": "これから建てる壁の幅 +4度（少ない枚数で囲める）", "max": 3, "req": "builder"},
 	# ---- 迎撃部隊
-	{"id": "guard", "cat": "guard", "name": "迎撃部隊", "desc": "盾と槍を持ち、城の近くで敵を迎え撃つ兵士が加わる（前方からの攻撃は盾で無効）",
+	{"id": "guard", "cat": "guard", "name": "迎撃部隊", "desc": "盾と槍を持ち、城の近くで敵を迎え撃つ兵士が加わる（前方からの攻撃は盾でダメージ20%）",
 		"desc_up": "迎撃部隊の兵士が1人増える（最大3人）", "max": 3, "weight": 2.0},
 	{"id": "shield_arc", "cat": "guard", "name": "大盾", "desc": "盾で防げる範囲 +20度", "max": 4, "req": "guard"},
 	{"id": "spear_reach", "cat": "guard", "name": "長槍", "desc": "槍のリーチ +25", "max": 4, "req": "guard"},
@@ -98,7 +98,7 @@ const SPECIAL := [
 	# ---- 迎撃部隊
 	{"id": "sp_bash", "cat": "guard", "special": true, "name": "盾撃", "desc": "盾で攻撃を防ぐたびに、周りの敵へ衝撃波（槍の1.3倍の威力）", "max": 1, "req": "guard"},
 	{"id": "sp_trident", "cat": "guard", "special": true, "name": "三叉槍", "desc": "槍の突きが3方向に出る", "max": 1, "req": "guard"},
-	{"id": "sp_taunt", "cat": "guard", "special": true, "name": "挑発", "desc": "近くの敵が城より迎撃兵を狙うようになる（正面から来れば盾で無効）", "max": 1, "req": "guard"},
+	{"id": "sp_taunt", "cat": "guard", "special": true, "name": "挑発", "desc": "近くの敵が城より迎撃兵を狙うようになる（正面から来れば盾でダメージ20%）", "max": 1, "req": "guard"},
 	{"id": "sp_whirl_spear", "cat": "guard", "special": true, "name": "大旋風槍", "desc": "6秒ごとに槍を振り回し、周りの敵へ槍の3倍の大ダメージ", "max": 1, "req": "guard"},
 	{"id": "sp_spikes", "cat": "guard", "special": true, "name": "拒馬の柵", "desc": "8秒ごとに盾の前へトゲの柵を置く。上を通る敵の足を止めてダメージ（8秒残る）", "max": 1, "req": "guard"},
 	# ---- 重装部隊

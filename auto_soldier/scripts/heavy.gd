@@ -16,9 +16,9 @@ var target: Node2D = null
 var record: Dictionary
 
 # --- ステータス
-## 最大HP（前の1350の1/3）
-var max_hp := 450.0
-var hp := 450.0
+## 最大HP（前の1350の1/5）
+var max_hp := 270.0
+var hp := 270.0
 var regen := 4.0
 var move_speed := 60.0
 var slash_damage := 135.0

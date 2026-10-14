@@ -321,7 +321,7 @@ func _nearest_guard(max_dist: float) -> Node2D:
 	return best
 
 
-## 壁に触れたら、壁の耐久を削って、この敵はHP半分・大きく弾き飛ばされて5秒気絶（false を返す）
+## 壁に触れたら、壁の耐久を削って、この敵はHP半分・大きく弾き飛ばされて3秒気絶（false を返す）
 func _check_wall() -> bool:
 	var wi: int = game.walls.hit_test(global_position, radius)
 	if wi < 0:
@@ -346,9 +346,9 @@ func _check_wall() -> bool:
 	take_damage(hp * 0.5, Vector2.ZERO, src)
 	if dead:
 		return false
-	# 5秒気絶して、上側のランダムな方向へ大きく弾き飛ばされる（だいたい170くらい）
+	# 3秒気絶して、上側のランダムな方向へ大きく弾き飛ばされる（だいたい170くらい）
 	# （knock は毎秒1400ずつ弱まるので、進む距離 = 速さ² ÷ 2800）
-	stun(5.0)
+	stun(3.0)
 	knock = Vector2.from_angle(randf_range(PI + 0.35, TAU - 0.35)) * sqrt(2800.0 * 170.0)
 	return false
 

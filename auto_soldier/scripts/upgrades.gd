@@ -71,7 +71,7 @@ const LIST := [
 	{"id": "trap_dmg", "cat": "engineer", "name": "高性能火薬", "desc": "工兵の攻撃すべての威力 +20%（爆弾・落とし穴・毒沼・子爆弾・自動砲台・からくり兵・絨毯爆撃など。仕掛け済みの罠にも反映）", "max": 5, "req": "engineer"},
 	{"id": "trap_speed", "cat": "engineer", "name": "手際", "desc": "罠の設置時間 -20%、工兵の移動速度 +15%", "max": 4, "req": "engineer"},
 	{"id": "trap_range", "cat": "engineer", "name": "広域罠", "desc": "罠の効果範囲 +20%、反応する距離 +15%", "max": 3, "req": "engineer"},
-	{"id": "pit_stun", "cat": "engineer", "name": "深い落とし穴", "desc": "落とし穴の足止め時間 +3秒", "max": 3, "req": "engineer"},
+	{"id": "pit_stun", "cat": "engineer", "name": "深い落とし穴", "desc": "落とし穴の足止め時間 +2秒", "max": 3, "req": "engineer"},
 	# ---- 城
 	{"id": "tower", "cat": "castle", "name": "矢倉", "desc": "城に矢倉が建ち、近づく敵を自動で射る",
 		"desc_up": "矢倉をもう1基追加、全矢倉の威力 +15%", "max": 4, "weight": 1.5},
@@ -437,7 +437,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.engineer_stats.pit_radius *= 1.2
 			game.engineer_stats.trigger_radius *= 1.15
 		"pit_stun":
-			game.engineer_stats.stun_time += 3.0
+			game.engineer_stats.stun_time += 2.0
 		# ---- 特別強化（1回きり。効果の中身はそれぞれのスクリプトが処理する）
 		"sp_burst":
 			st.burst_level = 2
@@ -750,7 +750,8 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.cannon_level = new_level
 		"frost":
 			castle.frost_radius = 220.0 + 60.0 * new_level
-			castle.frost_slow = 0.25 + 0.1 * new_level
+			# 減速はレベル1で20%、1レベルごとに+10%（最大レベル3で40%）
+			castle.frost_slow = 0.1 + 0.1 * new_level
 		"wall":
 			castle.max_hp += 100.0
 			castle.hp = castle.max_hp

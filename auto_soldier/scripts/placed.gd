@@ -71,7 +71,7 @@ func _process(delta: float) -> void:
 				_fire_orb()
 			if kind == "automaton":
 				# 消えるときに大爆発（範囲510）
-				game.explode(global_position, 510.0, damage * 1.5, src, Color(1.0, 0.6, 0.2), 0.0, 450.0)
+				game.explode(global_position, 510.0, damage * 1.2, src, Color(1.0, 0.6, 0.2), 0.0, 450.0)
 				game.spawn_burst(global_position, Color(1.0, 0.9, 0.5), 270.0)
 			queue_free()
 			return
@@ -138,7 +138,8 @@ func _fire_orb() -> void:
 	game.world.add_child(b)
 
 
-## からくり兵：一番近い敵へゆっくり歩きながら、全方位斬り3回 → 高速連射12発 をくり返す
+## からくり兵：一番近い敵へゆっくり歩きながら、全方位斬り1回 → 高速連射12回 をくり返す
+## 威力（damage に対する倍率）：斬り0.28、弾1発0.2、消えるときの大爆発1.2
 func _update_automaton(delta: float) -> void:
 	_gear += delta * 4.0
 	var t: Node2D = game.nearest_enemy(global_position, 900.0)
@@ -152,7 +153,7 @@ func _update_automaton(delta: float) -> void:
 	if _mode == "slash":
 		_cd = 0.6
 		# 全方位斬り（範囲390）
-		game.explode(global_position, 390.0, damage * 0.35, src, Color(0.9, 0.85, 0.7), 0.0, 300.0)
+		game.explode(global_position, 390.0, damage * 0.28, src, Color(0.9, 0.85, 0.7), 0.0, 300.0)
 		var fx := SlashScript.new()
 		fx.radius = 390.0
 		fx.arc = TAU
@@ -201,7 +202,7 @@ func _automaton_volley() -> void:
 		var b := BulletScript.new()
 		b.game = game
 		b.velocity = dir * 800.0
-		b.damage = damage * 0.1
+		b.damage = damage * 0.2
 		# ふつうの弾の3倍の大きさ。10体まで貫通する
 		b.radius = 12.0
 		b.pierce = 10

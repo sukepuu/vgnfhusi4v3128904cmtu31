@@ -195,7 +195,8 @@ func _place_automaton() -> void:
 	var pos: Vector2 = castle.global_position + Vector2(0, -320)
 	if best != null:
 		pos = best.global_position + (castle.global_position - best.global_position).normalized() * 160.0
-	var dmg: float = game.engineer_stats.bomb_damage
+	# からくり兵の火力（斬り・射撃・最後の爆発すべて）は爆弾の威力の0.6倍
+	var dmg: float = game.engineer_stats.bomb_damage * 0.6
 	var life := 10.0
 	if _automaton_record.is_empty():
 		_automaton_record = game.new_record("engineer", "からくり兵")

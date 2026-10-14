@@ -38,7 +38,7 @@ var max_hp := 0.0
 var dead := false
 var _hurt := 0.0
 ## 耐久を持つ物の耐久
-const DURABILITY := {"watchtower": 50.0, "scarecrow": 60.0, "ice_statue": 5.0}
+const DURABILITY := {"watchtower": 50.0, "scarecrow": 60.0, "ice_statue": 3.0}
 ## 修理玉の大きさ（ボスの半径46の7割くらい）
 const ORB_RADIUS := 32.0
 ## 置いたときの持続時間（残り時間バーの表示用）
@@ -361,9 +361,9 @@ func _draw() -> void:
 			draw_circle(shake + Vector2(0, -16), 10.0, Color(0.75, 0.93, 1.0, 0.75))
 			draw_arc(shake, 16.0, 0.0, TAU, 24, Color(0.9, 0.98, 1.0), 2.0)
 			draw_circle(shake + Vector2(-5, -6), 4.0, Color(1, 1, 1, 0.7))
-			var cracks := int(max_hp - hp)
+			var cracks := int(max_hp - hp) * 2
 			for i in cracks:
-				var a := TAU * i / 5.0 + 0.4
+				var a := TAU * i / 6.0 + 0.4
 				draw_line(shake, shake + Vector2.from_angle(a) * 14.0, Color(0.3, 0.5, 0.7), 1.5)
 		"scarecrow":
 			# 揺れるかかし（叩かれると大きく揺れる）

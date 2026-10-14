@@ -144,7 +144,7 @@ const SPECIAL := [
 	{"id": "sp_blast_bolt", "cat": "castle", "special": true, "name": "バリスタ・炸裂大矢", "desc": "矢が最初に当たった敵の場所で大爆発（威力150%の範囲攻撃）", "max": 1, "req": "ballista"},
 	{"id": "sp_lightning", "cat": "castle", "special": true, "name": "バリスタ・雷撃", "desc": "5秒ごとに、バリスタ1基につき1本、敵から敵へ7回飛び移る雷を放つ（威力80%）", "max": 1, "req": "ballista"},
 	# ---- 氷結の結界
-	{"id": "sp_freeze", "cat": "castle", "special": true, "name": "結界・絶対零度", "desc": "10秒ごとに結界内の敵すべてを3.5秒間凍らせる", "max": 1, "req": "frost"},
+	{"id": "sp_freeze", "cat": "castle", "special": true, "name": "結界・絶対零度", "desc": "12秒ごとに結界内の敵すべてを3.5秒間凍らせる", "max": 1, "req": "frost"},
 	{"id": "sp_icicle", "cat": "castle", "special": true, "name": "結界・氷柱", "desc": "1.5秒ごとに結界内の敵2体へ氷柱が降る", "max": 1, "req": "frost"},
 	{"id": "sp_blizzard", "cat": "castle", "special": true, "name": "結界・吹雪", "desc": "結界の中の敵にずっとダメージを与え続ける", "max": 1, "req": "frost"},
 	{"id": "sp_ice_lance", "cat": "castle", "special": true, "name": "結界・氷槍", "desc": "3秒ごとに、結界内で一番HPの多い敵へ大ダメージの氷の槍", "max": 1, "req": "frost"},
@@ -230,7 +230,7 @@ const SPECIAL := [
 	{"id": "sp_cannon_bomb", "cat": "castle", "special": true, "name": "大砲・置き土産", "desc": "砲弾が着弾した場所に爆弾を置く。近くに敵が来ると爆発する（大砲の1.5倍の威力）", "max": 1, "req": "cannon"},
 	{"id": "sp_iron_chunk", "cat": "castle", "special": true, "name": "投石器・鉄塊投げ", "desc": "4発に1回、ふつうの岩と一緒に、HPが一番多い敵へ鉄塊を投げる（投石器の8倍の威力）", "max": 1, "req": "catapult"},
 	{"id": "sp_bolt_momentum", "cat": "castle", "special": true, "name": "バリスタ・破竹の大矢", "desc": "バリスタの矢が敵に当たるたびに、その矢の威力が +10% ずつ増えていく", "max": 1, "req": "ballista"},
-	{"id": "sp_ice_statue", "cat": "castle", "special": true, "name": "結界・氷像の囮", "desc": "結界の中で倒された敵が氷像になる。氷像はほかの敵に最優先で狙われる（5回攻撃されると砕ける）", "max": 1, "req": "frost"},
+	{"id": "sp_ice_statue", "cat": "castle", "special": true, "name": "結界・氷像の囮", "desc": "結界の中で倒された敵が20%の確率で氷像になる。氷像はほかの敵に最優先で狙われる（3回攻撃されると砕ける）", "max": 1, "req": "frost"},
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",

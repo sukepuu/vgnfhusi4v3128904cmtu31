@@ -708,8 +708,8 @@ func on_enemy_killed(e: Node2D) -> void:
 			hud.show_banner("BOSS 撃破！", Color(1.0, 0.85, 0.3))
 		spawn_burst(e.global_position, Color(1.0, 0.85, 0.3), 60.0)
 	spawn_burst(e.global_position, e.color, e.radius)
-	# 氷像の囮：結界の中で倒された敵（ボス以外）が氷像になる（同時に12体まで）
-	if castle.ice_statue and not e.is_boss and castle.frost_radius > 0.0 \
+	# 氷像の囮：結界の中で倒された敵（ボス以外）が20%の確率で氷像になる（同時に12体まで）
+	if castle.ice_statue and not e.is_boss and castle.frost_radius > 0.0 and randf() < 0.2 \
 			and castle.global_position.distance_to(e.global_position) < castle.frost_radius \
 			and get_tree().get_nodes_in_group("placed_ice_statue").size() < 12:
 		spawn_placed("ice_statue", e.global_position, 0.0, 16.0, 20.0, castle.record)

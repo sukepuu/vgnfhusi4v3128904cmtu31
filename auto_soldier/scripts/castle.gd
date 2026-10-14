@@ -577,7 +577,7 @@ func _update_frost_specials(delta: float) -> void:
 	if freeze_level > 0:
 		_freeze_cd -= delta
 		if _freeze_cd <= 0.0:
-			_freeze_cd = 10.0
+			_freeze_cd = 12.0
 			var t := 2.0 if freeze_level == 1 else 3.5
 			for e in game.enemies_cache:
 				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < frost_radius:

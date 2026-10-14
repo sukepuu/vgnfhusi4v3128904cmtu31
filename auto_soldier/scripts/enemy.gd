@@ -286,6 +286,10 @@ func _process(delta: float) -> void:
 			_confuse_dir = Vector2.from_angle(randf() * TAU)
 		move = _confuse_dir
 	speed_mult = castle.slow_factor_at(global_position)
+	# ボスはHPが減るほど速くなる（HP満タンで0.5倍 → 残り20%で1倍。それ以上は速くならない）
+	if is_boss:
+		var ratio := clampf(hp / maxf(max_hp, 1.0), 0.0, 1.0)
+		speed_mult *= 0.5 + 0.5 * clampf((1.0 - ratio) / 0.8, 0.0, 1.0)
 	if slow_left > 0.0:
 		speed_mult *= 0.7
 	position += (move * speed * speed_mult + knock) * delta

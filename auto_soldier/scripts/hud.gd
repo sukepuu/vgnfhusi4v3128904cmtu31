@@ -22,6 +22,9 @@ var _boss_label2: Label
 ## 3本目（黒衣の大司教とボス2体が同時にいるとき）
 var _boss_bar3: ProgressBar
 var _boss_label3: Label
+## 4本目（ボス3体同時＋黒衣の大司教のとき）
+var _boss_bar4: ProgressBar
+var _boss_label4: Label
 var _banner: Label
 var _banner_left := 0.0
 var _auto_btn: Button
@@ -146,6 +149,22 @@ func _ready() -> void:
 	_boss_label3.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_label3.visible = false
 	root.add_child(_boss_label3)
+	_boss_bar4 = _make_bar(Color(0.35, 0.6, 0.9))
+	_boss_bar4.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_boss_bar4.offset_left = -260
+	_boss_bar4.offset_right = 260
+	_boss_bar4.offset_top = 138
+	_boss_bar4.offset_bottom = 154
+	_boss_bar4.visible = false
+	root.add_child(_boss_bar4)
+	_boss_label4 = _make_label(16)
+	_boss_label4.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_boss_label4.offset_left = -260
+	_boss_label4.offset_right = 260
+	_boss_label4.offset_top = 136
+	_boss_label4.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_label4.visible = false
+	root.add_child(_boss_label4)
 
 	# 「BOSS出現！」などの大きな表示
 	_banner = _make_label(44)
@@ -325,7 +344,7 @@ func refresh() -> void:
 	for x in all_bosses:
 		if not kinds.has(x.kind):
 			kinds.append(x.kind)
-	var bars := [[_boss_bar, _boss_label], [_boss_bar2, _boss_label2], [_boss_bar3, _boss_label3]]
+	var bars := [[_boss_bar, _boss_label], [_boss_bar2, _boss_label2], [_boss_bar3, _boss_label3], [_boss_bar4, _boss_label4]]
 	for i in bars.size():
 		var show: bool = i < kinds.size()
 		bars[i][0].visible = show

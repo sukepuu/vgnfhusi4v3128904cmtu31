@@ -162,11 +162,13 @@ var boss: Node2D = null
 var bosses_spawned := 0
 ## このレベルごとにボスが出る
 const BOSS_EVERY := 10
-## Lv LEVEL_HP_FROM 以降は、レベル10ごとに敵全体（ボスも）のHPが +LEVEL_HP_STEP ずつ増える（Lv130で+5%、Lv140で+10%…）
+## Lv LEVEL_HP_FROM 以降は、レベル10ごとに敵全体（ボスも）のHPが +LEVEL_HP_STEP ずつ増える（Lv130で+15%、Lv140で+30%…）
 const LEVEL_HP_FROM := 130
-const LEVEL_HP_STEP := 0.05
+const LEVEL_HP_STEP := 0.15
 ## Lv DOUBLE_BOSS_FROM 以降は、ボスが2体同時に出る（そのかわり1体のHPは半分）
 const DOUBLE_BOSS_FROM := 130
+## Lv TRIPLE_BOSS_FROM 以降は、ボスが3体同時に出る（そのかわり1体のHPは1/3）
+const TRIPLE_BOSS_FROM := 160
 
 
 func _ready() -> void:
@@ -756,8 +758,7 @@ func level_hp_bonus() -> float:
 ## ボス出現（Lv10ごと）。破城の魔王 → 砲台要塞 → 分裂の魔獣 の順に来る。
 ## Lv130からは、この順番の次の2体が同時に出る（魔王&要塞 → 分裂&魔王 → 要塞&分裂 …）。1体のHPは半分
 func _spawn_boss() -> void:
-	var double := level >= DOUBLE_BOSS_FROM
-	var n := 2 if double else 1
+	var n := 3 if level >= TRIPLE_BOSS_FROM else (2 if level >= DOUBLE_BOSS_FROM else 1)
 	var titles := PackedStringArray()
 	var first: Node2D = null
 	for i in n:
@@ -767,8 +768,10 @@ func _spawn_boss() -> void:
 		# 何回目のボス戦か（2体同時でも、強さの段階はボス戦の回数で決める）
 		e.boss_rank = level / BOSS_EVERY
 		var kind: String = ["boss3", "boss", "boss2"][bosses_spawned % 3]
-		e.setup(kind, _boss_hp_mult() * level_hp_bonus() * (0.5 if double else 1.0))
-		var x: float = MAP_RECT.get_center().x + (0.0 if n == 1 else (-260.0 if i == 0 else 260.0))
+		# 2体同時なら1体のHPは半分、3体同時なら1/3
+		e.setup(kind, _boss_hp_mult() * level_hp_bonus() / n)
+		# 横に並べる（1体なら真ん中、2体なら左右、3体なら左・真ん中・右）
+		var x: float = MAP_RECT.get_center().x + (i - (n - 1) / 2.0) * (520.0 if n == 2 else 360.0)
 		e.position = Vector2(x, MAP_RECT.position.y + (110.0 if kind == "boss2" else 60.0))
 		world.add_child(e)
 		titles.append("「%s」" % e.boss_title)

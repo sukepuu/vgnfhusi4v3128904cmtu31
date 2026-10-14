@@ -345,8 +345,36 @@ static func roll_special(levels: Dictionary, n: int) -> Array:
 		if u.has("req") and levels.get(u["req"], 0) <= 0:
 			continue
 		available.append(u)
-	available.shuffle()
-	return available.slice(0, n)
+	# 出やすさに合わせて、重なりなしでランダムに選ぶ
+	var result: Array = []
+	while result.size() < n and not available.is_empty():
+		var total := 0.0
+		for u in available:
+			total += special_weight(u, levels)
+		var r := randf() * total
+		var pick: int = available.size() - 1
+		for i in available.size():
+			r -= special_weight(available[i], levels)
+			if r <= 0.0:
+				pick = i
+				break
+		result.append(available[pick])
+		available.remove_at(pick)
+	return result
+
+
+## 城の兵装（矢倉・大砲・投石器・バリスタ）の強化レベルの合計が、1つ増えるごとに「城ロボ起動」が出やすくなる割合
+const ROBOT_WEIGHT_PER_LEVEL := 0.5
+
+
+## 特別強化の出やすさ（ふつうは1）。城ロボ起動は、城の兵装をたくさん取っているほど出やすい
+static func special_weight(u: Dictionary, levels: Dictionary) -> float:
+	if u["id"] == "sp_castle_robot":
+		var n := 0
+		for k in ["tower", "cannon", "catapult", "ballista"]:
+			n += int(levels.get(k, 0))
+		return 1.0 + ROBOT_WEIGHT_PER_LEVEL * n
+	return 1.0
 
 
 static func describe(u: Dictionary, current_level: int) -> String:

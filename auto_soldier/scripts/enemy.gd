@@ -756,6 +756,29 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 		queue_redraw()
 		return
 	if hp <= 0.0:
+		_die()
+
+
+## ダメージなしで、その場で倒す（近衛兵の突進が隠密兵に当たったとき）。
+## 黒衣の大司教がいれば、ふつうに倒したときと同じく1回だけ復活する
+func instant_kill(src: Dictionary = {}) -> void:
+	if dead:
+		return
+	if not is_boss and not _revived and game.bishop_alive():
+		_revived = true
+		hp = max_hp * 0.5
+		game.spawn_burst(global_position, Color(0.6, 0.3, 0.9), radius * 1.6)
+		queue_redraw()
+		return
+	if not src.is_empty():
+		var rec: Dictionary = game.records[src["rec_idx"]] if src.has("sp_id") else src
+		rec["kills"] += 1
+	hp = 0.0
+	_die()
+
+
+func _die() -> void:
+	if true:
 		dead = true
 		remove_from_group("enemies")
 		# 分裂の魔獣は、倒されたことを知らせる前に分かれる（残りの体がいるかの判定のため）

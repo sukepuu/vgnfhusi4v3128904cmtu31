@@ -40,7 +40,7 @@ const LIST := [
 	{"id": "pet_eye", "cat": "pet", "name": "ペットの目", "desc": "ペットの射程 +20%", "max": 3, "req": "pet"},
 	{"id": "pet_multi", "cat": "pet", "name": "連射ペット", "desc": "ペットが一度に撃つ弾 +1発", "max": 3, "req": "pet"},
 	# 【近衛】
-	{"id": "knight", "cat": "knight", "name": "近衛部隊", "desc": "フィールドの一番下にいる敵を最優先で狙い、近くから一直線に高速突進して貫く騎士が加わる（隠密兵は必ず1発で倒す）",
+	{"id": "knight", "cat": "knight", "name": "近衛部隊", "desc": "フィールドの一番下にいる敵を最優先で狙い、近くから一直線に高速突進して貫く騎士が加わる（隠密兵は当たっただけで倒れる）",
 		"desc_up": "近衛部隊の騎士が1人増える（最大3人）", "max": 3, "weight": 1.5},
 	{"id": "knight_dmg", "cat": "knight", "name": "剛突", "desc": "突進の威力 +35%", "max": 5, "req": "knight"},
 	{"id": "knight_rate", "cat": "knight", "name": "疾駆", "desc": "突進の間隔 -15%", "max": 4, "req": "knight"},
@@ -227,7 +227,7 @@ const SPECIAL := [
 	{"id": "sp_provoke", "cat": "heavy", "special": true, "name": "仁王立ち", "desc": "10秒ごとに、まわりの敵を挑発して5秒のあいだ重装兵を狙わせる。近くの敵1体につき、重装兵の与ダメージ +5%", "max": 1, "req": "heavy"},
 	{"id": "sp_spike_wall", "cat": "builder", "special": true, "name": "剣山の壁", "desc": "敵が壁に触れると、壁からトゲが飛び出して周りの敵に大ダメージ（壁1枚につき6秒に1回）", "max": 1, "req": "builder"},
 	{"id": "sp_automaton_squad", "cat": "engineer", "special": true, "name": "からくり兵団", "desc": "巨大からくり兵を一度に2体置くようになる", "max": 1, "req": "sp_automaton"},
-	{"id": "sp_overwork", "cat": "repair", "special": true, "name": "背水の修繕", "desc": "修理兵1人につき、城のHPが毎秒20ずつ減るようになる（HP1より下にはならない）。かわりに修理兵1人の回復量 +19/秒", "max": 1, "req": "repairer"},
+	{"id": "sp_overwork", "cat": "repair", "special": true, "name": "背水の修繕", "desc": "修理兵1人につき、城のHPが毎秒50ずつ減るようになる（最大HPの50%より下にはならない）。かわりに修理兵1人の回復量 +20/秒", "max": 1, "req": "repairer"},
 	{"id": "sp_pet_fusion", "cat": "pet", "special": true, "name": "ペット大合体", "desc": "20秒ごとに、全ペットが合体して10秒間巨大ペットになる。立ち止まって特大弾を連射→まっすぐ高速突進をくり返す。\n合体したペットが多いほど強く大きくなり、ペットの強化の効果も乗る", "max": 1, "req": "pet"},
 	{"id": "sp_tower_lock", "cat": "castle", "special": true, "name": "矢倉・執念の矢", "desc": "狙った敵を倒せなかったら、次も同じ敵を狙う。同じ敵を狙い続けるほど矢が強くなる（1回ごとに+20%、最大3倍）", "max": 1, "req": "tower"},
 	{"id": "sp_cannon_bomb", "cat": "castle", "special": true, "name": "大砲・置き土産", "desc": "砲弾が着弾した場所に爆弾を置く。近くに敵が来ると爆発する（大砲の1.5倍の威力）", "max": 1, "req": "cannon"},
@@ -747,7 +747,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.fun.automaton_squad = true
 		"sp_overwork":
 			castle.overwork = true
-			game.repair_stats.heal_per_sec += 19.0
+			game.repair_stats.heal_per_sec += 20.0
 		"sp_pet_fusion":
 			game.start_pet_fusion()
 		"sp_tower_lock":

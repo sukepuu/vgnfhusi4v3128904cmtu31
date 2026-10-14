@@ -252,6 +252,7 @@ func _do_meteor() -> void:
 	s.meteor = true
 	s.flight_time = 1.8
 	s.fire_time = 5.0
+	s.fire_sp = ""
 	s.fire_dps = castle.catapult_damage * 0.8
 
 
@@ -304,7 +305,7 @@ func _do_cavalry() -> void:
 	var rect: Rect2 = game.MAP_RECT
 	var from_left := randf() < 0.5
 	var sgn := 1.0 if from_left else -1.0
-	var dmg: float = game.knight_stats.damage * game._hp_mult() * 2.5
+	var dmg: float = game.knight_damage() * 2.5
 	for i in 8:
 		var y := clampf(low_y + (i - 3.5) * 34.0, rect.position.y + 20.0, rect.end.y - 20.0)
 		var x := (rect.position.x + 10.0 if from_left else rect.end.x - 10.0) - (i % 2) * 40.0 * sgn

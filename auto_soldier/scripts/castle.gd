@@ -18,9 +18,9 @@ var regen := 1.0
 var healed_total := 0.0
 ## 受けるダメージの倍率（修理部隊の「鉄壁補強」で下がる）
 var damage_taken_mult := 1.0
-## 背水の修繕：修理兵1人につき、城のHPが毎秒 OVERWORK_DRAIN ずつ減る（HP1より下にはならない）
+## 背水の修繕：修理兵1人につき、城のHPが毎秒 OVERWORK_DRAIN ずつ減る（最大HPの50%より下にはならない）
 var overwork := false
-const OVERWORK_DRAIN := 20.0
+const OVERWORK_DRAIN := 50.0
 
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0
@@ -92,6 +92,7 @@ var billiard := false
 var cow_throw := false
 var rainbow_bolt := false
 var _catapult_shots := 0
+var _catapult_shot_counts := [0, 1, 2]
 ## 8つ目の特別強化
 ## 矢倉：爆裂矢（当たった敵が爆発して矢の3倍ダメージ）
 var tower_blast := false
@@ -194,9 +195,9 @@ func _process(delta: float) -> void:
 		heal(minf(regen, 1.0) * delta, record)
 		if regen > 1.0:
 			heal((regen - 1.0) * delta, record, "sp_castle_fountain")
-	# 背水の修繕：城のHPが少しずつ減る（これで城が落ちることはない）
-	if overwork and hp > 1.0 and not game.repairers.is_empty():
-		hp = maxf(1.0, hp - OVERWORK_DRAIN * game.repairers.size() * delta)
+	# 背水の修繕：城のHPが減り続ける（最大HPの50%より下にはならない。50%を超えたらまたすぐ減る）
+	if overwork and hp > max_hp * 0.5 and not game.repairers.is_empty():
+		hp = maxf(max_hp * 0.5, hp - OVERWORK_DRAIN * game.repairers.size() * delta)
 	_update_towers(delta)
 	_update_cannon(delta)
 	_update_catapult(delta)
@@ -395,8 +396,10 @@ func _update_catapult(delta: float) -> void:
 			s.stay_rock = true
 		# 牛投げ：3回に1回、岩のかわりに牛を投げる
 		_catapult_shots += 1
+		# 牛投げ・鉄塊投げは投石器1台ずつ数える（全台の合計で数えると、いつも同じ台だけが投げてしまうため）
+		_catapult_shot_counts[i] += 1
 		# 鉄塊投げ：4発に1回、HPが一番多い敵へ鉄塊も投げる
-		if iron_chunk and _catapult_shots % 4 == 0:
+		if iron_chunk and _catapult_shot_counts[i] % 4 == 0:
 			var big := _toughest_enemy_in(wpos(), INF)
 			if big != null:
 				# 威力：落ちた所の範囲に投石器×4、追いかけた敵への直撃に投石器×64
@@ -404,7 +407,7 @@ func _update_catapult(delta: float) -> void:
 				iron.iron = true
 				iron.chase = big
 				iron.direct_bonus = catapult_damage * 64.0
-		if cow_throw and _catapult_shots % 3 == 0:
+		if cow_throw and _catapult_shot_counts[i] % 3 == 0:
 			s.cow = true
 		if rolling_rock:
 			s.roll_damage = catapult_damage * 1.2

@@ -19,6 +19,8 @@ var src: Dictionary = {}
 var stun := 0.0
 var fire_dps := 0.0
 var fire_time := 0.0
+## 燃える跡のダメージを、どの特別強化の戦績に入れるか（空なら src のまま。隕石落としの跡など）
+var fire_sp := "sp_incendiary"
 var split_count := 0
 ## 巨岩直撃：着弾地点の真ん中の敵1体への追加ダメージ
 var direct_bonus := 0.0
@@ -90,7 +92,7 @@ func _explode() -> void:
 		# 着地した牛が、6秒間近くの敵へ何度も突進する
 		game.spawn_missile("cow", target, Vector2.ZERO, damage * 0.5, 66.0, 6.0, game.sp_src(src, "sp_fun_cow"))
 	if fire_time > 0.0:
-		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), game.sp_src(src, "sp_incendiary"))
+		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), src if fire_sp == "" else game.sp_src(src, fire_sp))
 	for i in mines:
 		# 置きすぎないように上限つき
 		if game.get_tree().get_nodes_in_group("placed_mine").size() >= 36:

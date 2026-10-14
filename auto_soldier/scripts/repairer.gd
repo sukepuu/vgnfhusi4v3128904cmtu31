@@ -41,7 +41,7 @@ func _process(delta: float) -> void:
 	if castle.hp < castle.max_hp:
 		# 緊急修理：城が危ないときは2倍の速さで直す
 		# 戦績の回復量は、ふつうの修理・背水の修繕で増えたぶん・緊急修理で増えたぶんに分けて記録
-		var overwork_part: float = 19.0 if castle.overwork else 0.0
+		var overwork_part: float = 20.0 if castle.overwork else 0.0
 		castle.heal((st.heal_per_sec - overwork_part) * delta, record)
 		if overwork_part > 0.0:
 			castle.heal(overwork_part * delta, record, "sp_overwork")

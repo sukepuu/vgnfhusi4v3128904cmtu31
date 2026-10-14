@@ -791,6 +791,11 @@ func _spawn_bishop() -> void:
 	hud.show_banner("⚠ BOSS「黒衣の大司教」出現！ ⚠", Color(0.75, 0.45, 1.0))
 
 
+## 近衛兵の突進の威力：遊撃兵の射撃の威力の2倍（剛突の倍率をかける）
+func knight_damage() -> float:
+	return stats.bullet_damage * 2.0 * knight_stats.damage
+
+
 ## 黒衣の大司教が生きているか
 func bishop_alive() -> bool:
 	for e in enemies_cache:

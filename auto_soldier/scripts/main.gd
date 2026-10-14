@@ -532,7 +532,7 @@ func _fill_pets() -> void:
 
 func _update_spawning(delta: float) -> void:
 	# 時間とともに出現ペースが上がる
-	var rate := minf(0.8 + elapsed * 0.018, 11.0)
+	var rate := minf(SPAWN_BASE + elapsed * SPAWN_GROWTH, SPAWN_MAX)
 	_spawn_acc += rate * delta
 	while _spawn_acc >= 1.0:
 		_spawn_acc -= 1.0
@@ -625,13 +625,20 @@ func _random_spawn_pos() -> Vector2:
 	return Vector2(MAP_RECT.end.x - m, y)
 
 
-## 敵のHP倍率が1分ごとに増える量（増え方はずっと一定）
-const HP_PER_MIN := 2.1
+## 敵の出現ペース（1秒に何体）：SPAWN_BASE から毎秒 SPAWN_GROWTH ずつ増え、SPAWN_MAX で頭打ち
+const SPAWN_BASE := 0.8
+const SPAWN_GROWTH := 0.018
+const SPAWN_MAX := 11.0
+## 出現ペースが上限になる時刻（秒）。約9分27秒
+const SPAWN_CAP_TIME := (SPAWN_MAX - SPAWN_BASE) / SPAWN_GROWTH
+## 上限になったあと、敵のHP倍率が1分ごとに増える量（増え方はずっと一定）
+const HP_PER_MIN := 3.5
 
 
-## 敵のHP倍率。時間に比例して一定のペースで上がる（1分ごとに +HP_PER_MIN）
+## 敵のHP倍率。出現ペースが上限になるまでは1倍のまま（数が増えるだけ）。
+## 上限になったら、そこから1分ごとに +HP_PER_MIN ずつ一定のペースで上がる
 func _hp_mult() -> float:
-	return 1.0 + HP_PER_MIN * elapsed / 60.0
+	return 1.0 + HP_PER_MIN * maxf(0.0, elapsed - SPAWN_CAP_TIME) / 60.0
 
 
 func _spawn_enemy(kind: String, pos: Vector2) -> void:

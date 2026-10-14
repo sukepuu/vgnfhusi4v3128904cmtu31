@@ -16,7 +16,7 @@ var _soldier_label: Label
 var _game_over: Control
 var _boss_bar: ProgressBar
 var _boss_label: Label
-## 2体目のボス用（Lv160からの2体同時）。1本目のすぐ下に出る
+## 2体目のボス用（Lv130からの2体同時）。1本目のすぐ下に出る
 var _boss_bar2: ProgressBar
 var _boss_label2: Label
 var _banner: Label

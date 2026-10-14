@@ -163,7 +163,7 @@ const BOSS_EVERY := 10
 const LEVEL_HP_FROM := 130
 const LEVEL_HP_STEP := 0.05
 ## Lv DOUBLE_BOSS_FROM 以降は、ボスが2体同時に出る（そのかわり1体のHPは半分）
-const DOUBLE_BOSS_FROM := 160
+const DOUBLE_BOSS_FROM := 130
 
 
 func _ready() -> void:
@@ -746,7 +746,7 @@ func level_hp_bonus() -> float:
 
 
 ## ボス出現（Lv10ごと）。破城の魔王 → 砲台要塞 → 分裂の魔獣 の順に来る。
-## Lv160からは、この順番の次の2体が同時に出る（魔王&要塞 → 分裂&魔王 → 要塞&分裂 …）。1体のHPは半分
+## Lv130からは、この順番の次の2体が同時に出る（魔王&要塞 → 分裂&魔王 → 要塞&分裂 …）。1体のHPは半分
 func _spawn_boss() -> void:
 	var double := level >= DOUBLE_BOSS_FROM
 	var n := 2 if double else 1

@@ -39,7 +39,7 @@ func _process(delta: float) -> void:
 	scale = Vector2(1.7, 1.7) if game.pet_giant else Vector2.ONE
 	# 癒しのさえずり：担当の遊撃兵のHPを少しずつ回復
 	if game.pet_heal and not owner_soldier.dead:
-		owner_soldier.hp = minf(game.stats.max_hp, owner_soldier.hp + 2.0 * delta)
+		game.heal_unit(owner_soldier, game.stats.max_hp, 2.0 * delta, record, "sp_pet_heal")
 	# 体当たりペット：触れた敵にペットの3倍ダメージ（同じ敵は0.5秒に1回）
 	if game.pet_body:
 		_body_slam(delta)

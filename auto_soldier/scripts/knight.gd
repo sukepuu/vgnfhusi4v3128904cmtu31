@@ -159,7 +159,7 @@ func _update_dash(delta: float, st) -> void:
 			if st.carry and not e.is_boss and not e.dead and e.speed > 0.0:
 				_carried.append(e)
 			if st.heal_on_hit:
-				hp = minf(st.max_hp, hp + 8.0)
+				game.heal_unit(self, st.max_hp, 8.0, record, "sp_knight_heal")
 	# 流れ星突撃：通った跡に星が残って弾ける
 	if st.star_trail:
 		_star_cd -= delta

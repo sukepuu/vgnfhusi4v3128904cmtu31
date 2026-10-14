@@ -138,7 +138,7 @@ func _do_dome() -> void:
 	# 迎撃兵も全回復
 	for g in game.guards:
 		if not g.dead:
-			g.hp = game.guard_stats.max_hp
+			game.heal_unit(g, game.guard_stats.max_hp, INF, g.record, "sp_ult_dome")
 	game.spawn_burst(game.castle.global_position, Color(0.5, 1.0, 0.6), DOME_RADIUS / 2.0)
 
 
@@ -167,7 +167,10 @@ func _do_wall_burst() -> void:
 	var walls: Node2D = game.walls
 	var dmg := 150.0 * _time_mult()
 	for w in walls.walls:
+		var before: float = w["hp"]
 		w["hp"] = minf(w["max"], w["hp"] + 10.0)
+		if not w["src"].is_empty():
+			w["src"]["wall_fixed"] += int(w["hp"] - before)
 		var p: Vector2 = walls.point_at((w["a0"] + w["a1"]) / 2.0)
 		game.explode(p + (p - game.castle.global_position).normalized() * 30.0, 110.0, dmg, game.sp_src(w["src"], "sp_ult_wall_burst"), Color(1.0, 0.85, 0.4), 0.0, 400.0)
 
@@ -311,18 +314,19 @@ func _do_cavalry() -> void:
 
 func _do_overhaul() -> void:
 	var castle: Node2D = game.castle
-	castle.heal(castle.max_hp * 0.10)
+	var rec: Dictionary = game.repairers[0].record if not game.repairers.is_empty() else {}
+	castle.heal(castle.max_hp * 0.10, rec, "sp_ult_overhaul")
 	for s in game.soldiers:
 		if not s.dead:
-			s.hp = game.stats.max_hp
+			game.heal_unit(s, game.stats.max_hp, INF, rec, "sp_ult_overhaul")
 	for g in game.guards:
 		if not g.dead:
-			g.hp = game.guard_stats.max_hp
+			game.heal_unit(g, game.guard_stats.max_hp, INF, rec, "sp_ult_overhaul")
 	for k in game.knights:
 		if not k.dead:
-			k.hp = game.knight_stats.max_hp
+			game.heal_unit(k, game.knight_stats.max_hp, INF, rec, "sp_ult_overhaul")
 	if game.heavy != null and not game.heavy.dead:
-		game.heavy.hp = game.heavy.max_hp
+		game.heal_unit(game.heavy, game.heavy.max_hp, INF, rec, "sp_ult_overhaul")
 	game.spawn_burst(castle.global_position, Color(0.5, 1.0, 0.6), 160.0)
 	_flash(Color(0.6, 1.0, 0.7))
 

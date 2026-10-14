@@ -365,9 +365,26 @@ func nearest_ally(pos: Vector2, max_dist: float) -> Node2D:
 ## 戦績カードを1枚作る。弾や罠にこのカードを持たせて、与えたダメージを記録する
 func new_record(cat: String, name_text: String) -> Dictionary:
 	var r := {"cat": cat, "name": name_text, "dealt": 0.0, "taken": 0.0, "kills": 0,
-		"blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0, "idx": records.size()}
+		"blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0, "healed": 0.0, "wall_fixed": 0, "idx": records.size()}
 	records.append(r)
 	return r
+
+
+## 回復した量を戦績カードに記録する（sp_id を渡すと、特別強化ごとの回復量にも入れる）
+func add_heal(rec: Dictionary, amount: float, sp_id: String = "") -> void:
+	if rec.is_empty() or amount <= 0.0:
+		return
+	rec["healed"] += amount
+	if sp_id != "":
+		var by: Dictionary = rec.get_or_add("sp_healed", {})
+		by[sp_id] = float(by.get(sp_id, 0.0)) + amount
+
+
+## 味方 unit のHPを amount 回復して（最大 max_hp まで）、回復した量を rec に記録する
+func heal_unit(unit: Node2D, max_hp: float, amount: float, rec: Dictionary, sp_id: String = "") -> void:
+	var before: float = unit.hp
+	unit.hp = minf(max_hp, unit.hp + amount)
+	add_heal(rec, unit.hp - before, sp_id)
 
 
 ## 特別強化ぶんのダメージを分けて記録するための戦績カード。

@@ -177,7 +177,10 @@ func _process(delta: float) -> void:
 	_flash -= delta
 	# 自然回復（毎秒 regen ずつ）。修理玉がためる「回復した量」にも入る
 	if regen > 0.0 and hp > 0.0 and hp < max_hp:
-		heal(regen * delta)
+		# 生命の泉で増えたぶん（基本の毎秒1を超えたぶん）は生命の泉の回復として記録
+		heal(minf(regen, 1.0) * delta, record)
+		if regen > 1.0:
+			heal((regen - 1.0) * delta, record, "sp_castle_fountain")
 	# 背水の修繕：城のHPが少しずつ減る（これで城が落ちることはない）
 	if overwork and hp > 1.0 and not game.repairers.is_empty():
 		hp = maxf(1.0, hp - OVERWORK_DRAIN * game.repairers.size() * delta)
@@ -217,11 +220,13 @@ func slow_factor_at(p: Vector2) -> float:
 	return 1.0
 
 
-## 城のHPを回復する（回復した量は healed_total に足していく）
-func heal(amount: float) -> void:
+## 城のHPを回復する（回復した量は healed_total に足していく）。
+## rec = 回復させた味方の戦績カード（回復量を記録する）、sp_id = 回復させた特別強化
+func heal(amount: float, rec: Dictionary = {}, sp_id: String = "") -> void:
 	var before := hp
 	hp = minf(max_hp, hp + amount)
 	healed_total += hp - before
+	game.add_heal(rec, hp - before, sp_id)
 
 
 func take_damage(amount: float) -> void:
@@ -875,6 +880,7 @@ func _do_last_stand() -> void:
 	for b in get_tree().get_nodes_in_group("enemy_bullets"):
 		b.queue_free()
 	hp = max_hp * 0.2
+	game.add_heal(record, hp, "sp_castle_last_stand")
 	_flash = 0.5
 	game.spawn_burst(global_position, Color(1.0, 0.9, 0.5), 260.0)
 	game.hud.show_banner("不屈の城！", Color(1.0, 0.85, 0.3))

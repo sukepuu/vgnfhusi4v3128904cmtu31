@@ -107,7 +107,7 @@ func _update_body(delta: float) -> void:
 	if game.pet_heal:
 		for s in game.soldiers:
 			if not s.dead:
-				s.hp = minf(game.stats.max_hp, s.hp + 2.0 * game.pets_per_soldier * delta)
+				game.heal_unit(s, game.stats.max_hp, 2.0 * game.pets_per_soldier * delta, record, "sp_pet_heal")
 	_mode_left -= delta
 	if _mode == "shoot":
 		_shoot_update(delta)

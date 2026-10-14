@@ -56,6 +56,8 @@ func _process(delta: float) -> void:
 			if w["rep"] >= 3.0:
 				w["rep"] = 0.0
 				w["hp"] = minf(w["max"], w["hp"] + 1.0)
+				if not w["src"].is_empty():
+					w["src"]["wall_fixed"] += 1
 	queue_redraw()
 
 

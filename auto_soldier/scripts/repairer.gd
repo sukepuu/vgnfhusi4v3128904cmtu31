@@ -40,8 +40,13 @@ func _process(delta: float) -> void:
 	# 城の回復（移動中も少しずつ）
 	if castle.hp < castle.max_hp:
 		# 緊急修理：城が危ないときは2倍の速さで直す
-		var rate: float = st.heal_per_sec * (2.0 if st.emergency and castle.hp < castle.max_hp * 0.3 else 1.0)
-		castle.heal(rate * delta)
+		# 戦績の回復量は、ふつうの修理・背水の修繕で増えたぶん・緊急修理で増えたぶんに分けて記録
+		var overwork_part: float = 3.0 if castle.overwork else 0.0
+		castle.heal((st.heal_per_sec - overwork_part) * delta, record)
+		if overwork_part > 0.0:
+			castle.heal(overwork_part * delta, record, "sp_overwork")
+		if st.emergency and castle.hp < castle.max_hp * 0.3:
+			castle.heal(st.heal_per_sec * delta, record, "sp_emergency")
 		_spark_cd -= delta
 		if _working and _spark_cd <= 0.0:
 			_spark_cd = 0.25
@@ -66,6 +71,7 @@ func _process(delta: float) -> void:
 				if w["hp"] < w["max"]:
 					w["hp"] = minf(w["max"], w["hp"] + 1.0)
 					w["flash"] = 0.1
+					record["wall_fixed"] += 1
 					break
 	for s in _sparks:
 		s["t"] -= delta
@@ -87,16 +93,16 @@ func _throw(t: Node2D) -> void:
 func _first_aid(amount: float) -> void:
 	for s in game.soldiers:
 		if not s.dead:
-			s.hp = minf(game.stats.max_hp, s.hp + amount)
+			game.heal_unit(s, game.stats.max_hp, amount, record, "sp_first_aid")
 	for g in game.guards:
 		if not g.dead:
-			g.hp = minf(game.guard_stats.max_hp, g.hp + amount)
+			game.heal_unit(g, game.guard_stats.max_hp, amount, record, "sp_first_aid")
 	for k in game.knights:
 		if not k.dead:
-			k.hp = minf(game.knight_stats.max_hp, k.hp + amount)
+			game.heal_unit(k, game.knight_stats.max_hp, amount, record, "sp_first_aid")
 	var h: Node2D = game.heavy
 	if h != null and not h.dead:
-		h.hp = minf(h.max_hp, h.hp + amount)
+		game.heal_unit(h, h.max_hp, amount, record, "sp_first_aid")
 
 
 func _draw() -> void:

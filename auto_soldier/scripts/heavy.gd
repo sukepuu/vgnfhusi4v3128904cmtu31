@@ -90,7 +90,8 @@ func _process(delta: float) -> void:
 	_hurt_flash -= delta
 	_invuln -= delta
 	_retarget_cd -= delta
-	hp = minf(max_hp, hp + regen * delta)
+	if not dead:
+		game.heal_unit(self, max_hp, regen * delta, record)
 
 	if _retarget_cd <= 0.0 or not _target_valid():
 		target = _choose_target(post_position())
@@ -186,7 +187,7 @@ func _try_slash(src: Dictionary = {}) -> bool:
 			continue
 		e.take_damage(dmg(), rel.normalized() * 420.0, src)
 	if lifesteal > 0.0:
-		hp = minf(max_hp, hp + (record["dealt"] - dealt_before) * lifesteal)
+		game.heal_unit(self, max_hp, (record["dealt"] - dealt_before) * lifesteal, record, "sp_lifesteal")
 	# 斬撃で敵の弾もかき消す
 	for b in get_tree().get_nodes_in_group("enemy_bullets"):
 		var to_b: Vector2 = b.global_position - global_position

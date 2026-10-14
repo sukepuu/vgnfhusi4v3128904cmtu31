@@ -243,6 +243,42 @@ const CAT_COLOR := {
 	"guard": Color(0.6, 1.0, 0.65), "heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), "castle": Color(1.0, 0.7, 0.45)}
 
 
+## オート選択設定などで使う「部隊・兵装」の一覧（表示名, キー）
+const GROUPS := [
+	["遊撃", "soldier"], ["ペット", "pet"], ["迎撃", "guard"], ["狙撃", "sniper"], ["近衛", "knight"],
+	["重装", "heavy"], ["工兵", "engineer"], ["築城", "builder"], ["修理", "repair"],
+	["矢倉", "tower"], ["大砲", "cannon"], ["投石器", "catapult"], ["バリスタ", "ballista"],
+	["氷結の結界", "frost"], ["城（本体）", "castle"]]
+## 城の通常強化がどの兵装のものか（砲術は大砲と投石器の両方に効く）
+const CASTLE_UPGRADE_GROUPS := {"tower": ["tower"], "cannon": ["cannon"], "catapult": ["catapult"], "ballista": ["ballista"],
+	"artillery": ["cannon", "catapult"], "frost": ["frost"], "wall": ["castle"]}
+
+
+## 強化がどの部隊・兵装のものか（複数のこともある）
+static func groups_of(u: Dictionary) -> Array:
+	if u["cat"] != "castle":
+		return [u["cat"]]
+	if u.get("special", false):
+		return [u.get("req", "castle")]
+	return CASTLE_UPGRADE_GROUPS.get(u["id"], ["castle"])
+
+
+## オート選択：候補の中から、優先度（2=最優先、1=優先、0=なし）が一番高いものを選ぶ。同じならランダム
+static func auto_choose(choices: Array, priority: Dictionary) -> Dictionary:
+	var best: Array = []
+	var best_p := -1
+	for u in choices:
+		var p := 0
+		for g in groups_of(u):
+			p = maxi(p, int(priority.get(g, 0)))
+		if p > best_p:
+			best_p = p
+			best = [u]
+		elif p == best_p:
+			best.append(u)
+	return best[randi() % best.size()]
+
+
 ## まだ上限に達していない強化から、出やすさに応じてランダムに n 個選ぶ
 static func roll(levels: Dictionary, n: int, game: Node2D) -> Array:
 	var available: Array = []

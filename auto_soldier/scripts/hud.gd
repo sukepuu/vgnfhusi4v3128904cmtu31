@@ -128,25 +128,35 @@ func _ready() -> void:
 	stats_btn.pressed.connect(func() -> void: game.toggle_stats())
 	root.add_child(stats_btn)
 
-	# オート選択ボタン（部隊戦績ボタンの下）
+	# 強化状態ボタン（部隊戦績ボタンの下）
+	var up_btn := Button.new()
+	up_btn.text = "強化状態（U）"
+	up_btn.add_theme_font_size_override("font_size", 16)
+	up_btn.position = Vector2(16, 124)
+	up_btn.size = Vector2(170, 34)
+	up_btn.focus_mode = Control.FOCUS_NONE
+	up_btn.pressed.connect(func() -> void: game.toggle_upgrades())
+	root.add_child(up_btn)
+
+	# オート選択ボタン（強化状態ボタンの下）
 	_auto_btn = Button.new()
 	_auto_btn.add_theme_font_size_override("font_size", 16)
-	_auto_btn.position = Vector2(16, 124)
+	_auto_btn.position = Vector2(16, 164)
 	_auto_btn.size = Vector2(230, 34)
 	_auto_btn.focus_mode = Control.FOCUS_NONE
 	_auto_btn.pressed.connect(func() -> void: game.set_auto_pick(not game.auto_pick))
 	root.add_child(_auto_btn)
 	update_auto_button()
 
-	# 強化状態ボタン（オート選択ボタンの下）
-	var up_btn := Button.new()
-	up_btn.text = "強化状態（U）"
-	up_btn.add_theme_font_size_override("font_size", 16)
-	up_btn.position = Vector2(16, 164)
-	up_btn.size = Vector2(170, 34)
-	up_btn.focus_mode = Control.FOCUS_NONE
-	up_btn.pressed.connect(func() -> void: game.toggle_upgrades())
-	root.add_child(up_btn)
+	# オート選択設定ボタン（オート選択ボタンの下）
+	var auto_set_btn := Button.new()
+	auto_set_btn.text = "オート選択設定"
+	auto_set_btn.add_theme_font_size_override("font_size", 16)
+	auto_set_btn.position = Vector2(16, 204)
+	auto_set_btn.size = Vector2(170, 34)
+	auto_set_btn.focus_mode = Control.FOCUS_NONE
+	auto_set_btn.pressed.connect(func() -> void: game.toggle_auto_pick_settings())
+	root.add_child(auto_set_btn)
 
 	# 速度切り替えボタン（画面右下）
 	_speed_btn = Button.new()

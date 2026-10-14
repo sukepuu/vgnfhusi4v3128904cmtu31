@@ -21,6 +21,7 @@ const BurstScript := preload("res://scripts/burst_effect.gd")
 const Upgrades := preload("res://scripts/upgrades.gd")
 const StatsScript := preload("res://scripts/stats_ui.gd")
 const UpgradesUIScript := preload("res://scripts/upgrades_ui.gd")
+const AutoPickUIScript := preload("res://scripts/auto_pick_ui.gd")
 const HazardScript := preload("res://scripts/hazard.gd")
 const BlastScript := preload("res://scripts/blast.gd")
 const MissileScript := preload("res://scripts/missile.gd")
@@ -62,6 +63,7 @@ var hud: CanvasLayer
 var level_up_ui: CanvasLayer
 var stats_ui: CanvasLayer
 var upgrades_ui: CanvasLayer
+var auto_pick_ui: CanvasLayer
 ## ゲームオーバー時の戦績まとめ画面
 var summary_ui: CanvasLayer
 ## 部隊戦績（個体ごとの与ダメージ・被ダメージなど）。new_record() で追加する
@@ -137,6 +139,8 @@ var _pending_levels: Array = []
 var game_over := false
 ## オート選択モード：レベルアップの強化をランダムで自動的に選ぶ
 var auto_pick := false
+## オート選択の優先設定（部隊・兵装のキー → 2=最優先、1=優先）。リトライしても覚えておく
+static var auto_priority := {}
 ## 今出ている強化の候補（リロール用）
 var _shown_choices: Array = []
 var _shown_special := false
@@ -209,6 +213,10 @@ func _ready() -> void:
 	upgrades_ui = UpgradesUIScript.new()
 	upgrades_ui.game = self
 	add_child(upgrades_ui)
+
+	auto_pick_ui = AutoPickUIScript.new()
+	auto_pick_ui.game = self
+	add_child(auto_pick_ui)
 
 	summary_ui = SummaryScript.new()
 	summary_ui.game = self
@@ -363,21 +371,26 @@ func set_auto_pick(on: bool) -> void:
 	auto_pick = on
 	hud.update_auto_button()
 	# 選択画面が出ている最中に有効にしたら、その場で自動選択
-	if on and level_up_ui.visible and not level_up_ui._ids.is_empty():
-		var ids: Array = level_up_ui._ids
-		level_up_ui._pick(ids[randi() % ids.size()])
+	if on and level_up_ui.visible and not _shown_choices.is_empty():
+		level_up_ui._pick(Upgrades.auto_choose(_shown_choices, auto_priority)["id"])
 
 
 func toggle_stats() -> void:
-	if level_up_ui.visible or upgrades_ui.visible:
+	if level_up_ui.visible or upgrades_ui.visible or auto_pick_ui.visible:
 		return
 	stats_ui.toggle()
 
 
 func toggle_upgrades() -> void:
-	if level_up_ui.visible or stats_ui.visible:
+	if level_up_ui.visible or stats_ui.visible or auto_pick_ui.visible:
 		return
 	upgrades_ui.toggle()
+
+
+func toggle_auto_pick_settings() -> void:
+	if level_up_ui.visible or stats_ui.visible or upgrades_ui.visible:
+		return
+	auto_pick_ui.toggle()
 
 
 # ---------------------------------------------------------------- 兵士・ペット
@@ -726,8 +739,8 @@ func _open_level_up() -> void:
 		castle.hp = castle.max_hp
 		return
 	if auto_pick:
-		# オート選択：画面を止めずにランダムで選ぶ
-		var u: Dictionary = choices[randi() % choices.size()]
+		# オート選択：画面を止めずに選ぶ（オート選択設定で優先にしたものを先に取る。同じならランダム）
+		var u: Dictionary = Upgrades.auto_choose(choices, auto_priority)
 		hud.show_notice("オート選択：【%s】%s%s" % [Upgrades.CAT_LABEL[u["cat"]], "★" if u.get("special", false) else "", u["name"]])
 		_on_upgrade_chosen(u["id"])
 		return
@@ -928,6 +941,7 @@ func on_castle_destroyed() -> void:
 	level_up_ui.hide()
 	stats_ui.close_panel()
 	upgrades_ui.close_panel()
+	auto_pick_ui.close_panel()
 	get_tree().paused = true
 	hud.show_game_over()
 

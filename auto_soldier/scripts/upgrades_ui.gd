@@ -121,7 +121,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		if visible:
 			close_panel()
-		elif not game.level_up_ui.visible and not game.stats_ui.visible:
+		elif not game.level_up_ui.visible and not game.stats_ui.visible and not game.auto_pick_ui.visible:
 			open_panel()
 	elif event.keycode == KEY_ESCAPE and visible:
 		get_viewport().set_input_as_handled()

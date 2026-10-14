@@ -650,17 +650,19 @@ const SPAWN_GROWTH := 0.034
 const SPAWN_MAX := 11.0
 ## 出現ペースが上限になる時刻（秒）。5分
 const SPAWN_CAP_TIME := (SPAWN_MAX - SPAWN_BASE) / SPAWN_GROWTH
-## 敵のHP倍率：最初から一定のペースで上がり、HP_SWITCH_MIN 分からペースが変わる
-## 0〜10分は1分ごとに +HP_EARLY_PER_MIN、10分からは1分ごとに +HP_LATE_PER_MIN
+## 敵のHP倍率：0〜10分は1分ごとに +HP_EARLY_PER_MIN。
+## HP_SWITCH_MIN 分からは、上がり幅そのものが1分ごとに HP_ACCEL ずつ大きくなる
+## （10分で毎分+0.5 → 20分で毎分+3 → 40分で毎分+8 → 60分で毎分+13 …）
 const HP_EARLY_PER_MIN := 0.5
 const HP_SWITCH_MIN := 10.0
-const HP_LATE_PER_MIN := 8.0
+const HP_ACCEL := 0.25
 
 
-## 敵のHP倍率（5分で×3.5、10分で×6、20分で×86、30分で×166）
+## 敵のHP倍率（5分で×3.5、10分で×6、20分で×24、30分で×66、40分で×134、60分で×344）
 func _hp_mult() -> float:
 	var m := elapsed / 60.0
-	return 1.0 + HP_EARLY_PER_MIN * minf(m, HP_SWITCH_MIN) + HP_LATE_PER_MIN * maxf(0.0, m - HP_SWITCH_MIN)
+	var d := maxf(0.0, m - HP_SWITCH_MIN)
+	return 1.0 + HP_EARLY_PER_MIN * minf(m, HP_SWITCH_MIN) + HP_EARLY_PER_MIN * d + HP_ACCEL / 2.0 * d * d
 
 
 func _spawn_enemy(kind: String, pos: Vector2) -> void:

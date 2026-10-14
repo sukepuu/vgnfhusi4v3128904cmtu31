@@ -135,7 +135,7 @@ func _update_dash(delta: float, st) -> void:
 			c.position = global_position + _dash_dir * (radius + c.radius + 4.0) + _dash_dir.orthogonal() * (k % 3 - 1) * 14.0
 			c.knock = Vector2.ZERO
 			k += 1
-	# 隠密兵を1発で倒せる威力（敵が強くなるのに合わせて上がる）
+	# 突進の威力（敵が強くなるのに合わせて上がる）
 	var dmg: float = st.damage * game._hp_mult()
 	for e in game.enemies_near(global_position, radius + 50.0):
 		if not is_instance_valid(e) or e.dead or _dash_hit.has(e):
@@ -143,13 +143,18 @@ func _update_dash(delta: float, st) -> void:
 		if global_position.distance_to(e.global_position) < radius + e.radius + 6.0:
 			_dash_hit[e] = true
 			var hit_dmg := dmg
-			# とどめの一撃：弱った敵（ボス以外）は一撃で倒す
-			if st.execute and not e.is_boss and e.hp <= e.max_hp * 0.2:
+			var executed := false
+			# 隠密兵は必ず1発で倒す
+			if e.kind == "stealth":
 				hit_dmg = maxf(dmg, e.hp + 1.0)
+			# とどめの一撃：弱った敵（ボス以外）は一撃で倒す
+			elif st.execute and not e.is_boss and e.hp <= e.max_hp * 0.2 and e.hp + 1.0 > dmg:
+				hit_dmg = e.hp + 1.0
+				executed = true
 			if st.stun_hit:
 				e.stun(1.0)
 			var hit_src: Dictionary = record
-			if hit_dmg > dmg:
+			if executed:
 				hit_src = game.sp_src(record, "sp_knight_execute")
 			elif _dash_sp != "":
 				hit_src = game.sp_src(record, _dash_sp)

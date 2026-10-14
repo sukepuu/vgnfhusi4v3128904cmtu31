@@ -40,7 +40,7 @@ const LIST := [
 	{"id": "pet_eye", "cat": "pet", "name": "ペットの目", "desc": "ペットの射程 +20%", "max": 3, "req": "pet"},
 	{"id": "pet_multi", "cat": "pet", "name": "連射ペット", "desc": "ペットが一度に撃つ弾 +1発", "max": 3, "req": "pet"},
 	# 【近衛】
-	{"id": "knight", "cat": "knight", "name": "近衛部隊", "desc": "フィールドの一番下にいる敵を最優先で狙い、近くから一直線に高速突進して貫く騎士が加わる（隠密兵を1発で倒せる威力）",
+	{"id": "knight", "cat": "knight", "name": "近衛部隊", "desc": "フィールドの一番下にいる敵を最優先で狙い、近くから一直線に高速突進して貫く騎士が加わる（隠密兵は必ず1発で倒す）",
 		"desc_up": "近衛部隊の騎士が1人増える（最大3人）", "max": 3, "weight": 1.5},
 	{"id": "knight_dmg", "cat": "knight", "name": "剛突", "desc": "突進の威力 +35%", "max": 5, "req": "knight"},
 	{"id": "knight_rate", "cat": "knight", "name": "疾駆", "desc": "突進の間隔 -15%", "max": 4, "req": "knight"},

@@ -139,6 +139,8 @@ const LASER_AFTER_ROBOT := 7.0
 var _laser_left := 0.0
 var _laser_angle := 0.0
 var _laser_hit := {}
+## ファイナルモードの2本目の城レーザー（下から始まる）に当たった敵
+var _laser_hit2 := {}
 const LASER_TIME := 2.0
 ## 城レーザーは正面（真上）から始まって、ぐるっと1周して正面で終わる
 const LASER_START := PI * 1.5
@@ -858,7 +860,10 @@ func _update_castle_specials(delta: float) -> void:
 			var prev := _laser_angle
 			_laser_left -= delta
 			_laser_angle = LASER_START + TAU * (1.0 - maxf(_laser_left, 0.0) / LASER_TIME)
-			_laser_sweep(prev, _laser_angle)
+			_laser_sweep(prev, _laser_angle, _laser_hit)
+			# ファイナルモードの城ロボからは、下から始まる2本目も同時に撃つ
+			if _laser_double():
+				_laser_sweep(prev + PI, _laser_angle + PI, _laser_hit2)
 		else:
 			_laser_cd -= delta
 			if _laser_cd <= 0.0 and not game.enemies_cache.is_empty():
@@ -867,6 +872,7 @@ func _update_castle_specials(delta: float) -> void:
 				_laser_left = LASER_TIME
 				_laser_angle = LASER_START
 				_laser_hit.clear()
+				_laser_hit2.clear()
 	# 城の火炎くしゃみ：15秒ごとに、マップの真ん中へ向けて2秒間の火炎放射
 	if sneeze:
 		if _flame_left > 0.0:
@@ -935,17 +941,21 @@ func _laser_origin() -> Vector2:
 
 
 ## 城レーザー：from 〜 to の角度のあいだにいる敵に1回ずつダメージ（威力はレベル×15）
-func _laser_sweep(from: float, to: float) -> void:
+func _laser_double() -> bool:
+	return robot_active() and robot.mode == "final"
+
+
+func _laser_sweep(from: float, to: float, hit: Dictionary) -> void:
 	var dmg := float(game.level) * 15.0
 	var origin := _laser_origin()
 	for e in game.enemies_cache:
-		if not is_instance_valid(e) or e.dead or _laser_hit.has(e):
+		if not is_instance_valid(e) or e.dead or hit.has(e):
 			continue
 		var a: float = (e.global_position - origin).angle()
 		# from〜to（0〜TAU の範囲を超えてもよいように、差で判定）
 		var d := fposmod(a - from, TAU)
 		if d <= fposmod(to - from, TAU) + 0.02:
-			_laser_hit[e] = true
+			hit[e] = true
 			e.take_damage(dmg, Vector2.ZERO, game.sp_src(record, "sp_castle_laser"))
 
 
@@ -981,11 +991,13 @@ func _draw_castle_specials() -> void:
 		_draw_flames()
 	if _laser_left > 0.0:
 		# 城レーザー：城（城ロボ起動中は城ロボ）から長い光線
-		var dir := Vector2.from_angle(_laser_angle)
 		var o := _laser_origin() - global_position
-		draw_line(o, o + dir * 2200.0, Color(1.0, 0.3, 0.3, 0.35), 34.0)
-		draw_line(o, o + dir * 2200.0, Color(1.0, 0.8, 0.6, 0.8), 12.0)
-		draw_line(o, o + dir * 2200.0, Color(1, 1, 1, 0.95), 4.0)
+		var angles := [_laser_angle, _laser_angle + PI] if _laser_double() else [_laser_angle]
+		for ang in angles:
+			var dir := Vector2.from_angle(ang)
+			draw_line(o, o + dir * 2200.0, Color(1.0, 0.3, 0.3, 0.35), 34.0)
+			draw_line(o, o + dir * 2200.0, Color(1.0, 0.8, 0.6, 0.8), 12.0)
+			draw_line(o, o + dir * 2200.0, Color(1, 1, 1, 0.95), 4.0)
 		draw_circle(o, 22.0, Color(1.0, 0.9, 0.7, 0.8))
 
 

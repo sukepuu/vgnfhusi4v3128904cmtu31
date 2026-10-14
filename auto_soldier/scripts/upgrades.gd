@@ -238,13 +238,13 @@ const SPECIAL := [
 	{"id": "sp_castle_fountain", "cat": "castle", "special": true, "name": "城・生命の泉", "desc": "城の自然回復が毎秒3になる", "max": 1},
 	{"id": "sp_castle_rage", "cat": "castle", "special": true, "name": "城・城の怒り", "desc": "城のHPが50%より少ないとき、味方全員（部隊・兵装）の与ダメージ +20%", "max": 1},
 	{"id": "sp_castle_last_stand", "cat": "castle", "special": true, "name": "城・不屈の城", "desc": "城のHPが0になったとき、ボス以外の敵を全部消して、HPが20%で立ち直る（1回のゲームで1回まで）", "max": 1},
-	{"id": "sp_castle_laser", "cat": "castle", "special": true, "name": "城・城レーザー", "desc": "30秒ごとに、城（城ロボ起動中は城ロボ）から、正面から1周してマップ全体を薙ぎ払うレーザーを撃つ（威力はレベル×15）。城ロボ起動を持っていると、城ロボが出撃してから7秒後に撃つ", "max": 1},
+	{"id": "sp_castle_laser", "cat": "castle", "special": true, "name": "城・城レーザー", "desc": "30秒ごとに、城（城ロボ起動中は城ロボ）から、正面から1周してマップ全体を薙ぎ払うレーザーを撃つ（威力はレベル×15。城ロボがファイナルモードのときは、上からと下から2本同時）。城ロボ起動を持っていると、城ロボが出撃してから7秒後に撃つ", "max": 1},
 	{"id": "sp_castle_sneeze", "cat": "castle", "special": true, "name": "城・城の火炎くしゃみ", "desc": "15秒ごとに城が火炎くしゃみ。城（城ロボ起動中は城ロボ）から、マップの真ん中へ向けて2秒間の火炎放射を吹き出す（威力はレベルに合わせて上がる）", "max": 1},
 	{"id": "sp_castle_store", "cat": "castle", "special": true, "name": "城・城の蓄え", "desc": "城がダメージを受けると、10ダメージごとに経験値 +1（背水の修繕で減る分は入らない）", "max": 1},
 	{"id": "sp_castle_robot", "cat": "castle", "special": true, "name": "城・城ロボ起動", "desc": "30秒ごとに城からロボットが出撃して、15秒間暴れまわる（城は動かない）", "max": 1},
 	# 城ロボの追加の特別強化（城ロボ起動を取っていると出る。オート選択などでは「城」のグループあつかい）
 	{"id": "sp_castle_robot_flight", "cat": "castle", "special": true, "name": "城・城ロボ フライトモード", "desc": "城ロボにロボットウイングが付いて空を飛ぶ。両手を上げて遠くの敵へ高速タックル → 両手から誘導ミサイルを30発 をくり返す", "max": 1, "req": "sp_castle_robot", "group": "castle"},
-	{"id": "sp_castle_robot_final", "cat": "castle", "special": true, "name": "城・城ロボ ファイナルモード", "desc": "城ロボが画面の真ん中に出撃して動かずに戦う。8本のビームをそれぞれ別の敵へ撃ち続けながら、両手から誘導ミサイルを撃ち続ける（攻撃の切れ目なし）。城に設置する各種兵装の通常強化を全て取得した場合のみ取得可能", "max": 1, "req": "sp_castle_robot_flight", "group": "castle",
+	{"id": "sp_castle_robot_final", "cat": "castle", "special": true, "name": "城・城ロボ ファイナルモード", "desc": "城ロボが画面の真ん中に出撃して動かずに戦う。10本のビームをそれぞれランダムな敵へ撃ち続け（途中にいる敵にも当たる）、城レーザーは上下2本同時に撃ちながら、両手から誘導ミサイルを撃ち続ける（攻撃の切れ目なし）。城に設置する各種兵装の通常強化を全て取得した場合のみ取得可能", "max": 1, "req": "sp_castle_robot_flight", "group": "castle",
 		# 候補には出るが、城の兵装（矢倉・大砲・投石器・バリスタ・砲術）の通常強化を全部最大まで取っていないと選べない
 		"req_maxed": ["tower", "cannon", "catapult", "ballista", "artillery"]},
 ]

@@ -198,7 +198,9 @@ func _random_target() -> Node2D:
 
 
 # ---------------- ファイナルモード ----------------
-const BEAM_COUNT := 8
+const BEAM_COUNT := 10
+## ビームの太さ（この幅に入った敵は、的までの途中でもダメージを受ける）
+const BEAM_WIDTH := 12.0
 const BEAM_TICK := 0.1
 const FINAL_MISSILE_INTERVAL := 0.07
 var _beam_targets: Array = []
@@ -210,21 +212,32 @@ func _final_src() -> Dictionary:
 
 
 func _update_final(delta: float) -> void:
-	# ビームの的を決める（倒した・いなくなった的は、まだ狙っていない近い敵に取り替える）
+	# ビームの的を決める（倒した・いなくなった的は、まだ狙っていないランダムな敵に取り替える）
 	_beam_targets = _beam_targets.filter(func(e) -> bool: return is_instance_valid(e) and not e.dead)
 	if _beam_targets.size() < BEAM_COUNT:
 		var cand: Array = game.enemies_cache.filter(func(e: Node2D) -> bool:
 			return is_instance_valid(e) and not e.dead and not _beam_targets.has(e))
-		cand.sort_custom(func(a: Node2D, b: Node2D) -> bool:
-			return global_position.distance_squared_to(a.global_position) < global_position.distance_squared_to(b.global_position))
+		cand.shuffle()
 		for e in cand.slice(0, BEAM_COUNT - _beam_targets.size()):
 			_beam_targets.append(e)
 	_beam_cd -= delta
 	if _beam_cd <= 0.0:
 		_beam_cd = BEAM_TICK
 		var dmg: float = 2.0 * game._hp_mult()
-		for e in _beam_targets:
-			e.take_damage(dmg, Vector2.ZERO, _final_src())
+		var from: Vector2 = global_position + _beam_origin()
+		# ビーム1本ごとに、胸から的までの線の上にいる敵すべてにダメージ
+		for t in _beam_targets.duplicate():
+			if not is_instance_valid(t) or t.dead:
+				continue
+			var to: Vector2 = t.global_position
+			var seg: Vector2 = to - from
+			var seg_len2: float = maxf(seg.length_squared(), 1.0)
+			for e in game.enemies_cache:
+				if not is_instance_valid(e) or e.dead:
+					continue
+				var k: float = clampf((e.global_position - from).dot(seg) / seg_len2, 0.0, 1.0)
+				if e.global_position.distance_to(from + seg * k) <= BEAM_WIDTH + e.radius:
+					e.take_damage(dmg, Vector2.ZERO, _final_src())
 	# 両手から誘導ミサイルを撃ち続ける
 	_missile_cd -= delta
 	if _missile_cd <= 0.0:

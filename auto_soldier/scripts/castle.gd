@@ -27,7 +27,7 @@ const OVERWORK_FLOOR := 0.4
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0
 var tower_interval := 0.9
-var tower_damage := 96.0
+var tower_damage := 192.0
 var tower_range := 520.0
 var _tower_cds: Array = [0.0, 0.3, 0.6, 0.15]
 var _tower_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
@@ -350,7 +350,7 @@ func _update_towers(delta: float) -> void:
 			b.src = _equip_record("tower", "矢倉", i)
 			if tower_blast:
 				b.explode_radius = 70.0
-				b.explode_ratio = 1.0
+				b.explode_ratio = 0.125
 				b.explode_src = game.sp_src(b.src, "sp_tower_blast")
 			if arrow_sp != "":
 				b.src = game.sp_src(b.src, arrow_sp)

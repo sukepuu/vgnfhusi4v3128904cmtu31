@@ -335,7 +335,7 @@ func _do_overhaul() -> void:
 func _do_ice_age() -> void:
 	var castle: Node2D = game.castle
 	var r: float = castle.frost_radius * 2.2
-	var dmg := 120.0 * _time_mult()
+	var dmg := 40.0 * _time_mult()
 	var rec: Dictionary = game.sp_src(castle._equip_record("frost", "氷結の結界", 0), "sp_ult_ice_age")
 	for e in _alive_enemies():
 		if castle.global_position.distance_to(e.global_position) < r:

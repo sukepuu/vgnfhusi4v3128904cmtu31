@@ -142,6 +142,9 @@ var store := false
 var _store_dmg := 0.0
 ## 城ロボ起動：30秒ごとにロボットが15秒間出撃する（そのあいだ兵装はロボットに付く）
 var robot_enabled := false
+## 城ロボ フライトモード・ファイナルモード（城ロボの戦い方が変わる）
+var robot_flight := false
+var robot_final := false
 var _robot_cd := 10.0
 var robot: Node2D = null
 var _ground_tick := 0.0
@@ -860,7 +863,9 @@ func _update_castle_specials(delta: float) -> void:
 			_robot_cd = 30.0
 			robot = RobotScript.new()
 			robot.game = game
-			robot.position = global_position + Vector2(0, -HALF.y - 60.0)
+			robot.mode = "final" if robot_final else ("flight" if robot_flight else "walk")
+			# ファイナルモードは画面の真ん中に出撃する
+			robot.position = game.MAP_RECT.get_center() if robot_final else global_position + Vector2(0, -HALF.y - 60.0)
 			game.world.add_child(robot)
 
 

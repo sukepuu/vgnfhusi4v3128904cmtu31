@@ -105,6 +105,8 @@ func _group_of_record(r: Dictionary) -> String:
 func _group_of_upgrade(u: Dictionary) -> String:
 	if u["cat"] != "castle":
 		return u["cat"]
+	if u.has("group"):
+		return u["group"]
 	if u.get("special", false):
 		return u.get("req", "castle")
 	return CASTLE_UPGRADE_GROUP.get(u["id"], "castle")

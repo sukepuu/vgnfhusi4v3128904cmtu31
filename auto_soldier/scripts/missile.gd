@@ -233,6 +233,15 @@ func _draw() -> void:
 				var peck := (absf(sin(_t * 12.0)) * 4.0) if _stuck_on != null else 0.0
 				draw_colored_polygon(PackedVector2Array([dir * (13.0 + peck), dir * (8.0 + peck) + side * 2.0, dir * (8.0 + peck) - side * 2.0]), Color(1.0, 0.7, 0.2))
 				return
+			if look == "rocket":
+				# 城ロボの誘導ミサイル：白い胴体に赤い先っぽ、後ろから火を噴く
+				var side := dir.orthogonal()
+				for i in 3:
+					draw_circle(-dir * (12.0 + i * 6.0), 4.5 - i, Color(1.0, 0.6 - i * 0.12, 0.15, 0.7 - i * 0.18))
+				draw_colored_polygon(PackedVector2Array([-dir * 9.0 + side * 5.0, -dir * 9.0 - side * 5.0, -dir * 5.0]), Color(0.6, 0.6, 0.65))
+				draw_line(-dir * 8.0, dir * 6.0, Color(0.92, 0.92, 0.95), 5.0)
+				draw_circle(dir * 7.0, 3.0, Color(1.0, 0.3, 0.25))
+				return
 			for i in 4:
 				draw_circle(-dir * (6.0 + i * 6.0), 5.0 - i, Color(1.0, 0.5 - i * 0.08, 0.1, 0.6 - i * 0.12))
 			draw_line(-dir * 10.0, dir * 8.0, Color(0.95, 0.85, 0.6), 3.0)

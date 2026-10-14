@@ -239,6 +239,9 @@ const SPECIAL := [
 	{"id": "sp_castle_sneeze", "cat": "castle", "special": true, "name": "城・城のくしゃみ", "desc": "15秒ごとに城がくしゃみをして、壁の内側くらいにいる敵を吹き飛ばす", "max": 1},
 	{"id": "sp_castle_store", "cat": "castle", "special": true, "name": "城・城の蓄え", "desc": "城がダメージを受けると、10ダメージごとに経験値 +1（背水の修繕で減る分は入らない）", "max": 1},
 	{"id": "sp_castle_robot", "cat": "castle", "special": true, "name": "城・城ロボ起動", "desc": "30秒ごとに城からロボットが出撃して、15秒間暴れまわる（城は動かない）", "max": 1},
+	# 城ロボの追加の特別強化（城ロボ起動を取っていると出る。オート選択などでは「城」のグループあつかい）
+	{"id": "sp_castle_robot_flight", "cat": "castle", "special": true, "name": "城・城ロボ フライトモード", "desc": "城ロボにロボットウイングが付いて空を飛ぶ。両手を上げて遠くの敵へ高速タックル → 両手から誘導ミサイルを30発 をくり返す", "max": 1, "req": "sp_castle_robot", "group": "castle"},
+	{"id": "sp_castle_robot_final", "cat": "castle", "special": true, "name": "城・城ロボ ファイナルモード", "desc": "城ロボが画面の真ん中に出撃して動かずに戦う。8本のビームをそれぞれ別の敵へ撃ち続けながら、両手から誘導ミサイルを撃ち続ける（攻撃の切れ目なし）", "max": 1, "req": "sp_castle_robot_flight", "group": "castle"},
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",
@@ -265,6 +268,8 @@ const CASTLE_UPGRADE_GROUPS := {"tower": ["tower"], "cannon": ["cannon"], "catap
 static func groups_of(u: Dictionary) -> Array:
 	if u["cat"] != "castle":
 		return [u["cat"]]
+	if u.has("group"):
+		return [u["group"]]
 	if u.get("special", false):
 		return [u.get("req", "castle")]
 	return CASTLE_UPGRADE_GROUPS.get(u["id"], ["castle"])
@@ -762,6 +767,10 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.store = true
 		"sp_castle_robot":
 			castle.robot_enabled = true
+		"sp_castle_robot_flight":
+			castle.robot_flight = true
+		"sp_castle_robot_final":
+			castle.robot_final = true
 		"tower":
 			castle.tower_count = new_level
 			if new_level > 1:

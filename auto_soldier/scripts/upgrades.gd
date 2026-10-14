@@ -45,6 +45,7 @@ const LIST := [
 	{"id": "knight_dmg", "cat": "knight", "name": "剛突", "desc": "突進の威力 +35%", "max": 5, "req": "knight"},
 	{"id": "knight_rate", "cat": "knight", "name": "疾駆", "desc": "突進の間隔 -15%", "max": 4, "req": "knight"},
 	{"id": "knight_reach", "cat": "knight", "name": "長駆", "desc": "突進で進む距離 +25%", "max": 3, "req": "knight"},
+	{"id": "knight_move", "cat": "knight", "name": "駿馬", "desc": "近衛兵の移動速度 +20%（突進していないときの歩く速さ）", "max": 3, "req": "knight"},
 	# 【修理】
 	{"id": "repairer", "cat": "repair", "name": "修理部隊", "desc": "城のまわりで修理をして、城のHPを毎秒3回復する修理兵が加わる",
 		"desc_up": "修理兵が1人増える（最大3人）", "max": 3, "weight": 1.8},
@@ -68,8 +69,10 @@ const LIST := [
 	{"id": "engineer", "cat": "engineer", "name": "工兵部隊", "desc": "フィールドを回って、爆弾（範囲ダメージ）と落とし穴（範囲ダメージ＋1秒足止め）を交互に仕掛ける工兵が加わる",
 		"desc_up": "工兵が1人増える（最大3人）", "max": 3, "weight": 1.5},
 	{"id": "trap_dmg", "cat": "engineer", "name": "高性能火薬", "desc": "工兵の攻撃すべての威力 +20%（爆弾・落とし穴・毒沼・子爆弾・自動砲台・からくり兵・絨毯爆撃など。仕掛け済みの罠にも反映）", "max": 5, "req": "engineer"},
-	{"id": "trap_speed", "cat": "engineer", "name": "手際", "desc": "罠の設置時間 -20%、工兵の移動速度 +15%", "max": 4, "req": "engineer"},
-	{"id": "trap_range", "cat": "engineer", "name": "広域罠", "desc": "罠の効果範囲 +20%、反応する距離 +15%", "max": 3, "req": "engineer"},
+	{"id": "trap_speed", "cat": "engineer", "name": "手際", "desc": "罠の設置時間 -20%", "max": 4, "req": "engineer"},
+	{"id": "engineer_move", "cat": "engineer", "name": "健脚", "desc": "工兵の移動速度 +15%", "max": 4, "req": "engineer"},
+	{"id": "trap_range", "cat": "engineer", "name": "広域罠", "desc": "罠の効果範囲 +20%", "max": 3, "req": "engineer"},
+	{"id": "trap_trigger", "cat": "engineer", "name": "敏感な起爆", "desc": "罠が反応する距離 +15%（敵が少し離れていても作動する）", "max": 3, "req": "engineer"},
 	{"id": "pit_stun", "cat": "engineer", "name": "深い落とし穴", "desc": "落とし穴の足止め時間 +1秒", "max": 3, "req": "engineer"},
 	# ---- 城
 	{"id": "tower", "cat": "castle", "name": "矢倉", "desc": "城に矢倉が建ち、近づく敵を自動で射る",
@@ -442,10 +445,12 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.engineer_stats.power_mult *= 1.2
 		"trap_speed":
 			game.engineer_stats.plant_time *= 0.8
+		"engineer_move":
 			game.engineer_stats.move_speed *= 1.15
 		"trap_range":
 			game.engineer_stats.bomb_radius *= 1.2
 			game.engineer_stats.pit_radius *= 1.2
+		"trap_trigger":
 			game.engineer_stats.trigger_radius *= 1.15
 		"pit_stun":
 			game.engineer_stats.stun_time += 1.0
@@ -586,6 +591,8 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.knight_stats.interval *= 0.85
 		"knight_reach":
 			game.knight_stats.dash_distance *= 1.25
+		"knight_move":
+			game.knight_stats.move_speed *= 1.2
 		"sp_chain_dash":
 			game.knight_stats.chain = 2
 		"sp_dash_quake":

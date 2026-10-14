@@ -401,7 +401,8 @@ func sp_src(rec: Dictionary, sp_id: String) -> Dictionary:
 	var cache: Dictionary = rec["_sp_src"]
 	if not cache.has(sp_id):
 		cache[sp_id] = {"cat": rec["cat"], "name": rec["name"], "sp_id": sp_id, "rec_idx": rec["idx"],
-			"dealt": 0.0, "taken": 0.0, "kills": 0, "blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0}
+			"dealt": 0.0, "taken": 0.0, "kills": 0, "blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0,
+			"robot_boost": rec.get("robot_boost", false)}
 	return cache[sp_id]
 
 

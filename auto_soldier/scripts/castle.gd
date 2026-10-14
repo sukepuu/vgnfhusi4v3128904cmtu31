@@ -132,6 +132,8 @@ var _laser_left := 0.0
 var _laser_angle := 0.0
 var _laser_hit := {}
 const LASER_TIME := 2.0
+## 城レーザーは正面（真上）から始まって、ぐるっと1周して正面で終わる
+const LASER_START := PI * 1.5
 ## 城のくしゃみ：15秒ごとに、壁の内側くらいの敵を吹き飛ばす
 var sneeze := false
 var _sneeze_cd := 8.0
@@ -164,11 +166,19 @@ func _ready() -> void:
 	record = game.new_record("castle", "城（本体）")
 
 
+## 城ロボ起動中に与ダメージが上がる兵装と、その倍率
+const ROBOT_BOOST_EQUIPS := ["tower", "cannon", "catapult", "ballista"]
+const ROBOT_BOOST := 1.15
+
+
 ## 設備1基ごとの戦績カード（最初に使うときに作る）
 func _equip_record(key: String, label: String, i: int) -> Dictionary:
 	var k := "%s%d" % [key, i]
 	if not _equip_records.has(k):
 		_equip_records[k] = game.new_record("castle", "%s%d" % [label, i + 1])
+		# 城にくっついている兵装（城ロボ起動中は城ロボに付いて、与ダメージ +15%）
+		if key in ROBOT_BOOST_EQUIPS:
+			_equip_records[k]["robot_boost"] = true
 	return _equip_records[k]
 
 
@@ -824,14 +834,14 @@ func _update_castle_specials(delta: float) -> void:
 		if _laser_left > 0.0:
 			var prev := _laser_angle
 			_laser_left -= delta
-			_laser_angle = PI + TAU * (1.0 - maxf(_laser_left, 0.0) / LASER_TIME)
+			_laser_angle = LASER_START + TAU * (1.0 - maxf(_laser_left, 0.0) / LASER_TIME)
 			_laser_sweep(prev, _laser_angle)
 		else:
 			_laser_cd -= delta
 			if _laser_cd <= 0.0 and not game.enemies_cache.is_empty():
 				_laser_cd = 20.0
 				_laser_left = LASER_TIME
-				_laser_angle = PI
+				_laser_angle = LASER_START
 				_laser_hit.clear()
 	# 城のくしゃみ：15秒ごとに、壁の内側くらいの敵を外へ吹き飛ばす
 	if sneeze:
@@ -854,13 +864,21 @@ func _update_castle_specials(delta: float) -> void:
 			game.world.add_child(robot)
 
 
+## 城レーザーが出る場所（城ロボ起動中は城ロボから）
+func _laser_origin() -> Vector2:
+	if robot_active():
+		return robot.global_position + Vector2(0, -20)
+	return global_position + Vector2(0, -HALF.y)
+
+
 ## 城レーザー：from 〜 to の角度のあいだにいる敵に1回ずつダメージ（威力はレベル×10）
 func _laser_sweep(from: float, to: float) -> void:
 	var dmg := float(game.level) * 10.0
+	var origin := _laser_origin()
 	for e in game.enemies_cache:
 		if not is_instance_valid(e) or e.dead or _laser_hit.has(e):
 			continue
-		var a: float = (e.global_position - global_position).angle()
+		var a: float = (e.global_position - origin).angle()
 		# from〜to（0〜TAU の範囲を超えてもよいように、差で判定）
 		var d := fposmod(a - from, TAU)
 		if d <= fposmod(to - from, TAU) + 0.02:
@@ -897,9 +915,9 @@ func _draw_castle_specials() -> void:
 		var a := 0.15 + 0.12 * absf(sin(_t * 5.0))
 		draw_rect(Rect2(-HALF - Vector2(6, 6), HALF * 2.0 + Vector2(12, 12)), Color(1.0, 0.25, 0.15, a), false, 6.0)
 	if _laser_left > 0.0:
-		# 城レーザー：城から長い光線
+		# 城レーザー：城（城ロボ起動中は城ロボ）から長い光線
 		var dir := Vector2.from_angle(_laser_angle)
-		var o := Vector2(0, -HALF.y)
+		var o := _laser_origin() - global_position
 		draw_line(o, o + dir * 2200.0, Color(1.0, 0.3, 0.3, 0.35), 34.0)
 		draw_line(o, o + dir * 2200.0, Color(1.0, 0.8, 0.6, 0.8), 12.0)
 		draw_line(o, o + dir * 2200.0, Color(1, 1, 1, 0.95), 4.0)

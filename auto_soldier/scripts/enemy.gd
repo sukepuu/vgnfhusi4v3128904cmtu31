@@ -705,6 +705,9 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	# 魔王狩り：遊撃兵からボスへのダメージ +10%
 	if is_boss and game.stats.boss_hunt and src.get("cat", "") == "soldier":
 		amount *= 1.1
+	# 城ロボ起動中：城にくっついている兵装（矢倉・大砲・投石器・バリスタ）の与ダメージ +15%
+	if src.get("robot_boost", false) and game.castle.robot_active():
+		amount *= game.castle.ROBOT_BOOST
 	if not src.is_empty():
 		var dealt := minf(amount, hp)
 		var killed := hp - amount <= 0.0

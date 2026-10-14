@@ -235,7 +235,7 @@ const SPECIAL := [
 	{"id": "sp_castle_fountain", "cat": "castle", "special": true, "name": "城・生命の泉", "desc": "城の自然回復が毎秒3になる", "max": 1},
 	{"id": "sp_castle_rage", "cat": "castle", "special": true, "name": "城・城の怒り", "desc": "城のHPが50%より少ないとき、味方全員（部隊・兵装）の与ダメージ +20%", "max": 1},
 	{"id": "sp_castle_last_stand", "cat": "castle", "special": true, "name": "城・不屈の城", "desc": "城のHPが0になったとき、ボス以外の敵を全部消して、HPが20%で立ち直る（1回のゲームで1回まで）", "max": 1},
-	{"id": "sp_castle_laser", "cat": "castle", "special": true, "name": "城・城レーザー", "desc": "20秒ごとに、城からマップ全体をぐるっと薙ぎ払うレーザーを撃つ（威力はレベル×10）", "max": 1},
+	{"id": "sp_castle_laser", "cat": "castle", "special": true, "name": "城・城レーザー", "desc": "20秒ごとに、城（城ロボ起動中は城ロボ）から、正面から1周してマップ全体を薙ぎ払うレーザーを撃つ（威力はレベル×10）", "max": 1},
 	{"id": "sp_castle_sneeze", "cat": "castle", "special": true, "name": "城・城のくしゃみ", "desc": "15秒ごとに城がくしゃみをして、壁の内側くらいにいる敵を吹き飛ばす", "max": 1},
 	{"id": "sp_castle_store", "cat": "castle", "special": true, "name": "城・城の蓄え", "desc": "城がダメージを受けると、10ダメージごとに経験値 +1（背水の修繕で減る分は入らない）", "max": 1},
 	{"id": "sp_castle_robot", "cat": "castle", "special": true, "name": "城・城ロボ起動", "desc": "30秒ごとに城からロボットが出撃して、15秒間暴れまわる（城は動かない）", "max": 1},

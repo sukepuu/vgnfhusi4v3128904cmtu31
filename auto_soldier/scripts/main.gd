@@ -625,10 +625,13 @@ func _random_spawn_pos() -> Vector2:
 	return Vector2(MAP_RECT.end.x - m, y)
 
 
-## 敵のHP倍率。時間とともに上がる（上がるペースを1.3倍にしている）
+## 敵のHP倍率が1分ごとに増える量（増え方はずっと一定）
+const HP_PER_MIN := 2.1
+
+
+## 敵のHP倍率。時間に比例して一定のペースで上がる（1分ごとに +HP_PER_MIN）
 func _hp_mult() -> float:
-	var t := elapsed * 1.3
-	return 1.0 + t / 75.0 + pow(t / 170.0, 2.0)
+	return 1.0 + HP_PER_MIN * elapsed / 60.0
 
 
 func _spawn_enemy(kind: String, pos: Vector2) -> void:

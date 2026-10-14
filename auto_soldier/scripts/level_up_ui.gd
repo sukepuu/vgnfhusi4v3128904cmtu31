@@ -10,6 +10,8 @@ const Upgrades := preload("res://scripts/upgrades.gd")
 var _box: VBoxContainer
 var _title: Label
 var _ids: Array = []
+## 選べない候補（id → true）
+var _locked := {}
 var _reroll_btn: Button
 ## この画面でリロールをもう使ったか（1画面につき1回まで）
 var _rerolled := false
@@ -69,6 +71,7 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int, special
 		if c is Button and c != _reroll_btn:
 			c.queue_free()
 	_ids.clear()
+	_locked.clear()
 	for i in choices.size():
 		var u: Dictionary = choices[i]
 		var cur: int = levels.get(u["id"], 0)
@@ -84,6 +87,11 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int, special
 		btn.add_theme_color_override("font_color", col)
 		btn.add_theme_color_override("font_hover_color", col.lightened(0.4))
 		btn.pressed.connect(_pick.bind(u["id"]))
+		# 条件を満たしていない強化は、候補には出るが選べない（灰色）
+		if Upgrades.is_locked(u, levels):
+			btn.disabled = true
+			btn.text += "\n（まだ取得できません）"
+			_locked[u["id"]] = true
 		_box.add_child(btn)
 		_ids.append(u["id"])
 	# リロールボタンは選択肢の一番下へ
@@ -124,7 +132,7 @@ func _on_reroll() -> void:
 
 
 func _pick(id: String) -> void:
-	if not visible:
+	if not visible or _locked.has(id):
 		return
 	visible = false
 	chosen.emit(id)

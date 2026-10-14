@@ -882,6 +882,9 @@ func _open_level_up() -> void:
 	# Lv5ごとに特別強化（候補がなければ通常の強化）
 	if for_level % SPECIAL_EVERY == 0:
 		choices = Upgrades.roll_special(upgrade_levels, 3)
+		# 候補が「まだ取れないもの」だけなら、通常の強化にする
+		if choices.all(func(c: Dictionary) -> bool: return Upgrades.is_locked(c, upgrade_levels)):
+			choices = []
 		special = not choices.is_empty()
 	if choices.is_empty():
 		choices = Upgrades.roll(upgrade_levels, 3, self)
@@ -935,12 +938,16 @@ func _rerolled_choices(old: Array, special: bool) -> Array:
 ## オート選択で1つ選ぶ。3つの中に最優先がなければ（優先しかなくても）1回だけリロールして引き直す。
 ## 最優先を1つも設定していないときは、優先がなければリロールする
 func _auto_pick_from(choices: Array, special: bool) -> Dictionary:
+	# まだ取れない候補（条件未達成）はオート選択でも選ばない
+	var open: Array = choices.filter(func(c: Dictionary) -> bool: return not Upgrades.is_locked(c, upgrade_levels))
+	if not open.is_empty():
+		choices = open
 	var u: Dictionary = Upgrades.auto_choose(choices, auto_priority)
 	var want := 0
 	for v in auto_priority.values():
 		want = maxi(want, int(v))
 	if want > 0 and Upgrades.priority_of(u, auto_priority) < want:
-		var again := _rerolled_choices(choices, special)
+		var again: Array = _rerolled_choices(choices, special).filter(func(c: Dictionary) -> bool: return not Upgrades.is_locked(c, upgrade_levels))
 		if not again.is_empty():
 			u = Upgrades.auto_choose(again, auto_priority)
 	return u

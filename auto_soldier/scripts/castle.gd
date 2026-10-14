@@ -129,6 +129,9 @@ var _last_stand_used := false
 ## 城レーザー：20秒ごとにマップ全体を薙ぎ払う（威力はレベル×10）
 var laser := false
 var _laser_cd := 6.0
+## 城レーザーの間隔（城ロボを持っているときは、城ロボの出撃から LASER_AFTER_ROBOT 秒後に撃つ）
+const LASER_INTERVAL := 30.0
+const LASER_AFTER_ROBOT := 7.0
 var _laser_left := 0.0
 var _laser_angle := 0.0
 var _laser_hit := {}
@@ -138,6 +141,14 @@ const LASER_START := PI * 1.5
 ## 城のくしゃみ：15秒ごとに、壁の内側くらいの敵を吹き飛ばす
 var sneeze := false
 var _sneeze_cd := 8.0
+## 城の火炎くしゃみ：火炎放射の残り時間・ダメージの間隔
+var _flame_left := 0.0
+var _flame_tick := 0.0
+const FLAME_INTERVAL := 15.0
+const FLAME_TIME := 2.0
+const FLAME_LEN := 560.0
+const FLAME_HALF_ANGLE := 0.32
+const FLAME_TICK := 0.1
 ## 城の蓄え：城が受けたダメージ10ごとに経験値+1
 var store := false
 var _store_dmg := 0.0
@@ -836,7 +847,7 @@ func robot_active() -> bool:
 
 
 func _update_castle_specials(delta: float) -> void:
-	# 城レーザー：20秒ごとに、城から全方位をぐるっと薙ぎ払う
+	# 城レーザー：30秒ごとに、城から全方位をぐるっと薙ぎ払う（城ロボを持っていれば、城ロボの出撃から7秒後）
 	if laser:
 		if _laser_left > 0.0:
 			var prev := _laser_angle
@@ -846,20 +857,25 @@ func _update_castle_specials(delta: float) -> void:
 		else:
 			_laser_cd -= delta
 			if _laser_cd <= 0.0 and not game.enemies_cache.is_empty():
-				_laser_cd = 20.0
+				# 城ロボを持っているときは、次の城ロボの出撃まで待つ
+				_laser_cd = INF if robot_enabled else LASER_INTERVAL
 				_laser_left = LASER_TIME
 				_laser_angle = LASER_START
 				_laser_hit.clear()
-	# 城のくしゃみ：15秒ごとに、壁の内側くらいの敵を外へ吹き飛ばす
+	# 城の火炎くしゃみ：15秒ごとに、マップの真ん中へ向けて2秒間の火炎放射
 	if sneeze:
-		_sneeze_cd -= delta
-		if _sneeze_cd <= 0.0 and game.nearest_enemy(global_position, game.walls.RADIUS) != null:
-			_sneeze_cd = 15.0
-			var f: Node2D = game.spawn_fun_fx("sneeze", global_position + Vector2(0, -HALF.y))
-			f.radius = game.walls.RADIUS
-			for e in game.enemies_near(global_position, game.walls.RADIUS + 30.0):
-				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < game.walls.RADIUS:
-					e.apply_knock((e.global_position - global_position).normalized() * 900.0)
+		if _flame_left > 0.0:
+			_flame_left -= delta
+			_flame_tick -= delta
+			if _flame_tick <= 0.0:
+				_flame_tick = FLAME_TICK
+				_flame_damage()
+		else:
+			_sneeze_cd -= delta
+			if _sneeze_cd <= 0.0 and not game.enemies_cache.is_empty():
+				_sneeze_cd = FLAME_INTERVAL
+				_flame_left = FLAME_TIME
+				_flame_tick = 0.0
 	# 城ロボ起動：30秒ごとに15秒間出撃
 	if robot_enabled and not robot_active():
 		_robot_cd -= delta
@@ -871,6 +887,39 @@ func _update_castle_specials(delta: float) -> void:
 			# ファイナルモードは画面の真ん中に出撃する
 			robot.position = game.MAP_RECT.get_center() if robot_final else global_position + Vector2(0, -HALF.y - 60.0)
 			game.world.add_child(robot)
+			# 城レーザーは、城ロボの出撃から7秒後に撃つ
+			if laser and _laser_left <= 0.0:
+				_laser_cd = LASER_AFTER_ROBOT
+
+
+## 火炎くしゃみが出る場所（城の中心。城ロボ起動中は城ロボの中心）
+func _flame_origin() -> Vector2:
+	return robot.global_position if robot_active() else global_position
+
+
+## 火炎くしゃみの向き。いつもマップの真ん中を目がける。ファイナルモードの城ロボは右上・右下・左上・左下の4方向
+func _flame_dirs() -> Array:
+	if robot_active() and robot.mode == "final":
+		return [Vector2(1, -1).normalized(), Vector2(1, 1).normalized(), Vector2(-1, -1).normalized(), Vector2(-1, 1).normalized()]
+	var to: Vector2 = game.MAP_RECT.get_center() - _flame_origin()
+	return [to.normalized() if to.length() > 1.0 else Vector2.UP]
+
+
+## 火炎の中にいる敵にダメージ（0.1秒ごとに レベル×1.5。吹き飛ばしはしない）
+func _flame_damage() -> void:
+	var origin := _flame_origin()
+	var dmg := float(game.level) * 1.5
+	var src: Dictionary = game.sp_src(record, "sp_castle_sneeze")
+	for dir in _flame_dirs():
+		var mid: Vector2 = origin + dir * FLAME_LEN * 0.5
+		for e in game.enemies_near(mid, FLAME_LEN * 0.5 + 60.0):
+			if not is_instance_valid(e) or e.dead:
+				continue
+			var rel: Vector2 = e.global_position - origin
+			if rel.length() > FLAME_LEN + e.radius:
+				continue
+			if absf(dir.angle_to(rel)) <= FLAME_HALF_ANGLE or rel.length() < e.radius + 20.0:
+				e.take_damage(dmg, Vector2.ZERO, src)
 
 
 ## 城レーザーが出る場所（城ロボ起動中は城ロボから）
@@ -880,9 +929,9 @@ func _laser_origin() -> Vector2:
 	return global_position + Vector2(0, -HALF.y)
 
 
-## 城レーザー：from 〜 to の角度のあいだにいる敵に1回ずつダメージ（威力はレベル×10）
+## 城レーザー：from 〜 to の角度のあいだにいる敵に1回ずつダメージ（威力はレベル×15）
 func _laser_sweep(from: float, to: float) -> void:
-	var dmg := float(game.level) * 10.0
+	var dmg := float(game.level) * 15.0
 	var origin := _laser_origin()
 	for e in game.enemies_cache:
 		if not is_instance_valid(e) or e.dead or _laser_hit.has(e):
@@ -923,6 +972,8 @@ func _draw_castle_specials() -> void:
 		# 城の怒り：城が赤く脈打つ
 		var a := 0.15 + 0.12 * absf(sin(_t * 5.0))
 		draw_rect(Rect2(-HALF - Vector2(6, 6), HALF * 2.0 + Vector2(12, 12)), Color(1.0, 0.25, 0.15, a), false, 6.0)
+	if _flame_left > 0.0:
+		_draw_flames()
 	if _laser_left > 0.0:
 		# 城レーザー：城（城ロボ起動中は城ロボ）から長い光線
 		var dir := Vector2.from_angle(_laser_angle)
@@ -931,3 +982,28 @@ func _draw_castle_specials() -> void:
 		draw_line(o, o + dir * 2200.0, Color(1.0, 0.8, 0.6, 0.8), 12.0)
 		draw_line(o, o + dir * 2200.0, Color(1, 1, 1, 0.95), 4.0)
 		draw_circle(o, 22.0, Color(1.0, 0.9, 0.7, 0.8))
+
+
+## 火炎くしゃみの炎（根元から先へ広がる扇形を、色を重ねて描く。ゆらゆら揺れる）
+func _draw_flames() -> void:
+	var o := _flame_origin() - global_position
+	var fade := clampf(_flame_left / 0.3, 0.0, 1.0) * clampf((FLAME_TIME - _flame_left) / 0.2, 0.0, 1.0)
+	for dir in _flame_dirs():
+		var side: Vector2 = (dir as Vector2).orthogonal()
+		var layers := [[1.0, Color(1.0, 0.25, 0.05, 0.35)], [0.75, Color(1.0, 0.5, 0.1, 0.55)], [0.45, Color(1.0, 0.85, 0.3, 0.7)], [0.2, Color(1.0, 1.0, 0.85, 0.85)]]
+		for layer in layers:
+			var k: float = layer[0]
+			var col: Color = layer[1]
+			col.a *= fade
+			var pts := PackedVector2Array([o])
+			var n := 10
+			for i in n + 1:
+				var a := lerpf(-FLAME_HALF_ANGLE, FLAME_HALF_ANGLE, float(i) / n) * k
+				var wob := sin(_t * 18.0 + i * 1.7) * 25.0 * k
+				pts.append(o + dir.rotated(a) * (FLAME_LEN * (0.55 + 0.45 * k) + wob))
+			draw_colored_polygon(pts, col)
+		# 火の粉
+		for i in 8:
+			var d := fmod(_t * 1.6 + i * 0.137, 1.0)
+			var p: Vector2 = o + dir * FLAME_LEN * d + side * sin(_t * 9.0 + i) * FLAME_LEN * d * 0.25
+			draw_circle(p, 5.0 * (1.0 - d) + 2.0, Color(1.0, 0.8, 0.3, 0.8 * fade))

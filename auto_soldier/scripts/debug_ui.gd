@@ -5,6 +5,8 @@ extends CanvasLayer
 ## 「この状態で出撃する」を押すと、チェックした内容でゲームを最初から作り直して始める（main.debug_start）。
 
 const Upgrades := preload("res://scripts/upgrades.gd")
+## 「この設定を保存」で保存する場所（ゲームを閉じても残る）
+const SAVE_PATH := "user://debug_preset.json"
 
 ## 部隊・兵装を出す強化（見出しのチェックボックスになる）。遊撃と城（本体）は最初からあるのでなし
 const UNIT_IDS := {"pet": "pet", "guard": "guard", "sniper": "sniper", "knight": "knight", "heavy": "heavy",
@@ -21,6 +23,8 @@ var _rows := {}
 ## 部隊・兵装のキー → 強化の並び（VBox）
 var _bodies := {}
 var _arrows := {}
+var _save_note: Label
+var _load_btn: Button
 
 
 func _ready() -> void:
@@ -62,6 +66,20 @@ func _ready() -> void:
 	close.focus_mode = Control.FOCUS_NONE
 	close.pressed.connect(close_panel)
 	top.add_child(close)
+	var save := Button.new()
+	save.text = "この設定を保存"
+	save.custom_minimum_size = Vector2(180, 48)
+	save.add_theme_font_size_override("font_size", 18)
+	save.focus_mode = Control.FOCUS_NONE
+	save.pressed.connect(_save)
+	top.add_child(save)
+	_load_btn = Button.new()
+	_load_btn.text = "保存した設定を読み込む"
+	_load_btn.custom_minimum_size = Vector2(230, 48)
+	_load_btn.add_theme_font_size_override("font_size", 18)
+	_load_btn.focus_mode = Control.FOCUS_NONE
+	_load_btn.pressed.connect(_load)
+	top.add_child(_load_btn)
 	var title := Label.new()
 	title.text = "デバッグ設定"
 	title.add_theme_font_size_override("font_size", 28)
@@ -94,6 +112,8 @@ func _ready() -> void:
 	none_btn.focus_mode = Control.FOCUS_NONE
 	none_btn.pressed.connect(_set_all.bind(false))
 	info.add_child(none_btn)
+	_save_note = _label("", 18, Color(0.6, 1.0, 0.6))
+	info.add_child(_save_note)
 
 	# 部隊・兵装ごとの一覧（スクロール）
 	var scroll := ScrollContainer.new()
@@ -259,12 +279,57 @@ func _parse_time(text: String) -> float:
 	return maxf(sec, 0.0)
 
 
-func _sortie() -> void:
+## 今のメニューの内容
+func _current() -> Dictionary:
 	var levels := {}
 	for id in _rows:
 		if _rows[id][0].button_pressed:
 			levels[id] = int(_rows[id][1].value) if _rows[id][1] != null else 1
-	game.start_debug({"elapsed": _parse_time(_time_edit.text), "level": int(_level_spin.value), "levels": levels})
+	return {"elapsed": _parse_time(_time_edit.text), "level": int(_level_spin.value), "levels": levels}
+
+
+func _sortie() -> void:
+	game.start_debug(_current())
+
+
+## 今のメニューの内容をファイルに保存する
+func _save() -> void:
+	var cfg := _current()
+	var t := int(cfg["elapsed"])
+	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if f == null:
+		_save_note.text = "保存できませんでした"
+		return
+	f.store_string(JSON.stringify(cfg))
+	f.close()
+	_save_note.text = "保存しました（%02d:%02d・Lv%d・強化%d個）" % [t / 60, t % 60, cfg["level"], cfg["levels"].size()]
+	_load_btn.disabled = false
+
+
+## 保存した設定（なければ空）
+static func load_saved() -> Dictionary:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return {}
+	var data = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	return data if data is Dictionary else {}
+
+
+## 保存した設定をメニューに入れる（出撃はまだしない）
+func _load() -> void:
+	var cfg := load_saved()
+	if cfg.is_empty():
+		_save_note.text = "保存した設定がありません"
+		return
+	var t := int(cfg.get("elapsed", 0.0))
+	_time_edit.text = "%02d:%02d" % [t / 60, t % 60]
+	_level_spin.set_value_no_signal(int(cfg.get("level", 1)))
+	var levels: Dictionary = cfg.get("levels", {})
+	for id in _rows:
+		var lv := int(levels.get(id, 0))
+		_rows[id][0].set_pressed_no_signal(lv > 0)
+		if _rows[id][1] != null:
+			_rows[id][1].set_value_no_signal(lv if lv > 0 else _rows[id][1].max_value)
+	_save_note.text = "保存した設定を読み込みました"
 
 
 func open_panel() -> void:
@@ -273,6 +338,8 @@ func open_panel() -> void:
 	_was_paused = get_tree().paused
 	get_tree().paused = true
 	_refresh()
+	_save_note.text = ""
+	_load_btn.disabled = load_saved().is_empty()
 	visible = true
 
 

@@ -37,6 +37,7 @@ const RepairStats := preload("res://scripts/repair_stats.gd")
 const FunSpecialsScript := preload("res://scripts/fun_specials.gd")
 const FunFxScript := preload("res://scripts/fun_fx.gd")
 const SummaryScript := preload("res://scripts/summary_ui.gd")
+const DebugUIScript := preload("res://scripts/debug_ui.gd")
 ## このレベルごとに特別強化の3択が出る
 const SPECIAL_EVERY := 5
 
@@ -66,6 +67,9 @@ var upgrades_ui: CanvasLayer
 var auto_pick_ui: CanvasLayer
 ## ゲームオーバー時の戦績まとめ画面
 var summary_ui: CanvasLayer
+var debug_ui: CanvasLayer
+## デバッグ設定メニューの「この状態で出撃する」の内容（作り直したあとの _ready で使って空にする）
+static var debug_start := {}
 ## 部隊戦績（個体ごとの与ダメージ・被ダメージなど）。new_record() で追加する
 var records: Array = []
 
@@ -237,6 +241,13 @@ func _ready() -> void:
 	summary_ui = SummaryScript.new()
 	summary_ui.game = self
 	add_child(summary_ui)
+
+	debug_ui = DebugUIScript.new()
+	debug_ui.game = self
+	add_child(debug_ui)
+	if not debug_start.is_empty():
+		_apply_debug_start.call_deferred(debug_start)
+		debug_start = {}
 
 	queue_redraw()
 
@@ -1125,6 +1136,67 @@ func on_castle_destroyed() -> void:
 	auto_pick_ui.close_panel()
 	get_tree().paused = true
 	hud.show_game_over()
+
+
+# ---------------------------------------------------------------- デバッグ
+
+## デバッグ設定メニューを開く（敵を全部消してから）
+func open_debug() -> void:
+	if level_up_ui.visible or game_over:
+		return
+	stats_ui.close_panel()
+	upgrades_ui.close_panel()
+	auto_pick_ui.close_panel()
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(e) and not e.dead:
+			e.dead = true
+			e.remove_from_group("enemies")
+			e.queue_free()
+	for b in get_tree().get_nodes_in_group("enemy_bullets"):
+		b.queue_free()
+	boss = null
+	enemies_cache = []
+	debug_ui.open_panel()
+
+
+## デバッグ設定の内容で、ゲームを最初から作り直して始める
+func start_debug(cfg: Dictionary) -> void:
+	debug_start = cfg
+	restart()
+
+
+func _apply_debug_start(cfg: Dictionary) -> void:
+	elapsed = float(cfg["elapsed"])
+	level = int(cfg["level"])
+	xp = 0
+	_xp_frac = 0.0
+	xp_to_next = xp_needed(level)
+	# ボスの出現順・強さの段階、大司教・大群の時刻を、このレベル・時間に合わせる
+	var n_boss := 0
+	for lv in range(BOSS_EVERY, level + 1, BOSS_EVERY):
+		n_boss += 3 if lv >= TRIPLE_BOSS_FROM else (2 if lv >= DOUBLE_BOSS_FROM else 1)
+	if n_boss > BOSS_CURVE_UNTIL:
+		# 7体目のボスが出たころ（今のレベルの割合で見積もった時間）のHP倍率をもとにする
+		var keep := elapsed
+		elapsed = keep * float(BOSS_CURVE_UNTIL * BOSS_EVERY) / float(level)
+		bosses_spawned = BOSS_CURVE_UNTIL
+		_boss_hp_mult()
+		elapsed = keep
+	bosses_spawned = n_boss
+	_next_bishop = (floorf(elapsed / BISHOP_EVERY) + 1.0) * BISHOP_EVERY
+	_next_wave = (floorf(elapsed / 50.0) + 1.0) * 50.0
+	# 強化は、取る前の強化（req）がそろう順に、レベル1から順番に入れる
+	var want: Dictionary = cfg["levels"]
+	for u in Upgrades.LIST + Upgrades.SPECIAL:
+		if u.has("req") and not want.has(u["req"]) and want.has(u["id"]):
+			want[u["req"]] = 1
+	for u in Upgrades.LIST + Upgrades.SPECIAL:
+		var id: String = u["id"]
+		for lv in range(1, int(want.get(id, 0)) + 1):
+			upgrade_levels[id] = lv
+			Upgrades.apply(id, lv, self)
+	hud.show_notice("デバッグ：%02d:%02d・Lv%d で出撃" % [int(elapsed) / 60, int(elapsed) % 60, level])
+	hud.refresh()
 
 
 func restart() -> void:

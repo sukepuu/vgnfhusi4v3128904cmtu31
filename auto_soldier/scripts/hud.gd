@@ -29,6 +29,7 @@ var _banner: Label
 var _banner_left := 0.0
 var _auto_btn: Button
 var _auto_set_btn: Button
+var _debug_btn: Button
 ## デバッグ用：オート選択のボタンを表示しているか（M キーで切り替え。ふだんは隠しておく）
 static var debug_auto_visible := false
 var _speed_btn: Button
@@ -217,9 +218,20 @@ func _ready() -> void:
 	_auto_set_btn.focus_mode = Control.FOCUS_NONE
 	_auto_set_btn.pressed.connect(func() -> void: game.toggle_auto_pick_settings())
 	root.add_child(_auto_set_btn)
-	# オート選択まわりはデバッグ用。ふだんは隠しておく（M キーで表示）
+	# デバッグ設定ボタン（オート選択設定ボタンの下）
+	_debug_btn = Button.new()
+	_debug_btn.text = "デバッグ設定"
+	_debug_btn.add_theme_font_size_override("font_size", 16)
+	_debug_btn.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
+	_debug_btn.position = Vector2(16, 244)
+	_debug_btn.size = Vector2(170, 34)
+	_debug_btn.focus_mode = Control.FOCUS_NONE
+	_debug_btn.pressed.connect(func() -> void: game.open_debug())
+	root.add_child(_debug_btn)
+	# オート選択まわりとデバッグ設定はデバッグ用。ふだんは隠しておく（M キーで表示）
 	_auto_btn.visible = debug_auto_visible
 	_auto_set_btn.visible = debug_auto_visible
+	_debug_btn.visible = debug_auto_visible
 
 	# 速度切り替えボタン（画面右下）
 	_speed_btn = Button.new()
@@ -470,6 +482,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		debug_auto_visible = not debug_auto_visible
 		_auto_btn.visible = debug_auto_visible
 		_auto_set_btn.visible = debug_auto_visible
+		_debug_btn.visible = debug_auto_visible
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F and not _game_over.visible:
 		get_viewport().set_input_as_handled()
 		game.toggle_speed()

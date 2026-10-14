@@ -7,8 +7,12 @@ var move_speed := 110.0
 var plant_time := 6.0
 
 # --- 罠
-## 高性能火薬の倍率（工兵の攻撃すべてにかかる。爆弾・落とし穴の威力には直接かけてある）
+## 高性能火薬：爆弾・落とし穴以外の工兵の攻撃（毒沼・自動砲台・からくり兵・絨毯爆撃）の倍率（1回ごとに+10%）
+## 爆弾・落とし穴の威力は bomb_damage / pit_damage に直接 +50% ずつかけてある
 var power_mult := 1.0
+## 爆弾・落とし穴の元の威力（ほかの攻撃の威力の基準）
+const BASE_BOMB := 200.0
+const BASE_PIT := 100.0
 var bomb_damage := 200.0
 var bomb_radius := 110.0
 var pit_damage := 100.0

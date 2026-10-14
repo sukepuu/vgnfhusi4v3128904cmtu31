@@ -195,7 +195,7 @@ func _place_automaton() -> void:
 	var pos: Vector2 = castle.global_position + Vector2(0, -320)
 	if best != null:
 		pos = best.global_position + (castle.global_position - best.global_position).normalized() * 160.0
-	var dmg: float = game.engineer_stats.bomb_damage
+	var dmg: float = game.engineer_stats.BASE_BOMB * game.engineer_stats.power_mult
 	var life := 10.0
 	if _automaton_record.is_empty():
 		_automaton_record = game.new_record("engineer", "からくり兵")

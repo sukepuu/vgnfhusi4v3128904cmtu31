@@ -247,7 +247,7 @@ const SPECIAL := [
 	{"id": "sp_castle_robot_final", "cat": "castle", "special": true, "name": "城・城ロボ ファイナルモード", "desc": "城ロボが画面の真ん中に出撃して動かずに戦う。10本のビームをそれぞれランダムな敵へ撃ち続け（途中にいる敵にも当たる）、城レーザーは上下2本同時に撃ちながら、両手から誘導ミサイルを撃ち続ける（攻撃の切れ目なし）。城に設置する各種兵装の通常強化を全て取得した場合のみ取得可能", "max": 1, "req": "sp_castle_robot_flight", "group": "castle",
 		# 候補には出るが、城の兵装（矢倉・大砲・投石器・バリスタ・砲術）の通常強化を全部最大まで取っていないと選べない
 		"req_maxed": ["tower", "cannon", "catapult", "ballista", "artillery"]},
-	{"id": "sp_castle_robot_true", "cat": "castle", "special": true, "name": "城・城ロボ 真・ファイナルモード", "desc": "城ロボがずっと出撃したままになり、金色の真・ファイナルモード（15秒）→ 通常の城ロボ（10秒）→ 震えながら光をためる（5秒）をくり返す。真・ファイナルモードはファイナルモードの攻撃に加えて、出撃から10秒後に両目から太い虹色レーザーを体力が一番多い敵へ4秒間撃つ。城レーザーを持っていると、真・ファイナルモードの間は上下2本の城レーザーがずっと回り続ける", "max": 1, "req": "sp_castle_robot_final", "group": "castle"},
+	{"id": "sp_castle_robot_true", "cat": "castle", "special": true, "name": "城・城ロボ 真・ファイナルモード", "desc": "真の力を解放する", "max": 1, "req": "sp_castle_robot_final", "group": "castle"},
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",

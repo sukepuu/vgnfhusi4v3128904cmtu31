@@ -45,7 +45,6 @@ var _pattern_left := 0.0
 var _pattern_tick := 0.0
 var _pattern_count := 0
 var _spiral_angle := 0.0
-var _castle_shot_cd := 4.0
 ## 迫撃砲・砲台要塞の砲身の反動
 var _recoil := 0.0
 var _hp_mult := 1.0
@@ -134,7 +133,9 @@ func setup(k: String, hp_mult: float) -> void:
 			color = Color(0.3, 0.32, 0.4)
 			is_boss = true
 			boss_title = "砲台要塞"
-			_pattern_left = 2.0
+			# 出てきてすぐ、全方位ぐるぐる射撃から始める
+			_pattern = 3
+			_pattern_left = 0.0
 		"boss3":
 			# 分裂するたびにHPは半分、体は小さく、足は速くなる
 			# 最初の体のHPは 231。分かれた体ぜんぶの合計（最初の体の5倍 = 1155）が、破城の魔王（770）の1.5倍になる
@@ -443,67 +444,87 @@ func _lob_at_castle(dmg: float, area: float, size: float) -> void:
 
 
 ## 砲台要塞の技：いろんな弾幕を順番に。合間に城への砲撃
+## 砲台要塞の攻撃パターン（くり返し）：
+## 0 全方位ぐるぐる射撃×3 → 1 城狙いの連射 → 2 近くのキャラクターへ誘導弾10発 → 3 城狙いのビーム → 0 …
 func _fortress_skills(delta: float) -> void:
 	var rm := 1.0 + 0.3 * (boss_rank - 1)
+	# 城を狙う攻撃は、出るたびに少しずつ強くなる
+	var crm := 1.0 + 0.15 * (boss_rank - 1)
 	var dmg := 10.0 * rm
-	_castle_shot_cd -= delta
-	if _castle_shot_cd <= 0.0:
-		# 城狙いの砲撃は、出るたびに少しずつ強くなる
-		var crm := 1.0 + 0.15 * (boss_rank - 1)
-		# 城狙い：山なりの砲弾3発と、まっすぐ飛ぶ大砲弾
-		_castle_shot_cd = 9.0
-		for i in 3:
-			_lob_at_castle(6.0 * crm, 55.0, 11.0)
-		var to_castle: Vector2 = (game.castle.global_position - global_position).normalized()
-		var cannonball: Node2D = _shoot(to_castle, 14.0 * crm, 200.0, 15.0, Color(1.0, 0.3, 0.2), 6.0)
-		cannonball.castle_ratio = 1.0
+	var to_castle: Vector2 = (game.castle.global_position - global_position).normalized()
 	_pattern_left -= delta
 	_pattern_tick -= delta
 	if _pattern_left <= 0.0:
 		# 次の攻撃パターンへ（少し休んでから）
 		_pattern = (_pattern + 1) % 4
-		_pattern_left = 3.6
-		_pattern_tick = 0.6
+		_pattern_left = 99.0
+		_pattern_tick = 0.8
 		_pattern_count = 0
 		return
 	if _pattern_tick > 0.0:
 		return
 	match _pattern:
 		0:
-			# うずまき弾（2本の腕）
-			_pattern_tick = 0.08
-			_spiral_angle += 0.42
-			for arm in 2:
-				_shoot(Vector2.from_angle(_spiral_angle + PI * arm), dmg, 230.0, 7.0, Color(0.95, 0.5, 1.0), 4.0)
-			if _pattern_count > 30:
+			# 全方位ぐるぐる射撃：10本の腕（濃い弾幕）がぐるっと1周するのを3回（回るペースは前と同じ）
+			_pattern_tick = 0.07
+			_spiral_angle += TAU / 24.0
+			for arm in 10:
+				_shoot(Vector2.from_angle(_spiral_angle + TAU * arm / 10.0), dmg, 220.0, 7.0, Color(0.95, 0.5, 1.0), 4.5)
+			if _pattern_count >= 24 * 3 - 1:
 				_pattern_left = 0.0
 		1:
-			# 一番近い兵士（いなければ城）へ扇状の狙い撃ち×3回
-			_pattern_tick = 0.45
-			var t: Node2D = game.nearest_ally(global_position, INF)
-			var aim: Vector2 = ((t.global_position if t != null else game.castle.global_position) - global_position).normalized()
-			for k in 7:
-				_shoot(aim.rotated((k - 3) * 0.13), dmg, 300.0, 6.0, Color(1.0, 0.75, 0.3), 3.5)
-			if _pattern_count >= 2:
+			# 城狙いの連射（城に当たるとそのままのダメージ。壁があれば壁が防ぐ）
+			_pattern_tick = 0.12
+			var b: Node2D = _shoot(to_castle.rotated(randf_range(-0.05, 0.05)), 5.0 * crm, 380.0, 8.0, Color(1.0, 0.3, 0.2), 4.0)
+			b.castle_ratio = 1.0
+			if _pattern_count >= 15:
 				_pattern_left = 0.0
 		2:
-			# 全方位リング（交互にずらして3回）
-			_pattern_tick = 0.6
-			var n := 26
-			for k in n:
-				_shoot(Vector2.from_angle(TAU * (k + 0.5 * (_pattern_count % 2)) / n), dmg, 200.0, 8.0, Color(0.6, 0.85, 1.0), 4.5)
-			if _pattern_count >= 2:
+			# 一番近いキャラクターへ誘導弾を10発（いなければ城へまっすぐ）
+			_pattern_tick = 0.18
+			var t: Node2D = game.nearest_ally(global_position, INF)
+			var aim: Vector2 = (t.global_position - global_position).normalized() if t != null else to_castle
+			var m: Node2D = _shoot(aim.rotated(randf_range(-0.6, 0.6)), dmg * 1.2, 230.0, 8.0, Color(1.0, 0.45, 0.2), 6.0)
+			if t != null:
+				m.seek = t
+			if _pattern_count >= 9:
 				_pattern_left = 0.0
 		3:
-			# 乱れ撃ち：城の方へ大小の弾をばらまく
-			_pattern_tick = 0.1
-			var a := _facing.angle() + randf_range(-1.0, 1.0)
-			var big := randf() < 0.3
-			_shoot(Vector2.from_angle(a), dmg * (1.6 if big else 1.0), randf_range(180.0, 320.0), 11.0 if big else 6.0, Color(1.0, 0.4, 0.4), 4.5)
-			if _pattern_count > 22:
+			# 城狙いのビーム：1秒前に予告線を出してから、城までの線上にあるものを全部まとめて撃ち抜く
+			if _pattern_count == 0:
+				var warn: Node2D = game.spawn_fun_fx("beam_warn", global_position)
+				warn.end = game.castle.global_position
+				_pattern_tick = 1.0
+			else:
+				_fire_beam(dmg, crm)
 				_pattern_left = 0.0
 	_pattern_count += 1
 	_recoil = 0.15
+
+
+## 砲台要塞のビーム：城までの一直線上の味方・壁・城にまとめてダメージ
+func _fire_beam(dmg: float, crm: float) -> void:
+	var from := global_position
+	var to: Vector2 = game.castle.global_position
+	var fx: Node2D = game.spawn_fun_fx("beam", from)
+	fx.end = to
+	const WIDTH := 30.0
+	# 線上の味方（兵士・設置物など）
+	for a in game.allies():
+		if a.dead:
+			continue
+		var p: Vector2 = Geometry2D.get_closest_point_to_segment(a.global_position, from, to)
+		if p.distance_to(a.global_position) < WIDTH + a.radius:
+			a.take_damage(dmg * 3.0, from)
+	# 線が通る場所の壁（耐久を5削る）
+	var walls: Node2D = game.walls
+	var cross: Vector2 = to + (from - to).normalized() * walls.RADIUS
+	var wi: int = walls.hit_test(cross, WIDTH)
+	if wi >= 0:
+		walls.damage_wall(wi, 5.0)
+	# 城
+	game.castle.take_damage(30.0 * crm)
+	game.spawn_burst(to + (from - to).normalized() * 60.0, Color(1.0, 0.4, 0.3), 40.0)
 
 
 ## 弾幕兵：5秒ごとに全方位へ赤い弾を10発

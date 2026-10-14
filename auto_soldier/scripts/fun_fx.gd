@@ -4,6 +4,7 @@ extends Node2D
 ## jack    ：ビックリ箱（バネでピエロが飛び出す）
 ## roar    ：雄叫びの広がる輪
 ## spikes  ：剣山の壁から飛び出すトゲ
+## beam_warn / beam：砲台要塞のビームの予告線と、ビーム本体（start から end まで）
 
 var game: Node2D
 var kind := "firework"
@@ -31,6 +32,10 @@ func _life() -> float:
 	match kind:
 		"firework":
 			return rise_time + 0.8
+		"beam_warn":
+			return 1.0
+		"beam":
+			return 0.45
 		_:
 			return 0.7
 
@@ -88,6 +93,17 @@ func _draw() -> void:
 			draw_circle(top + Vector2(-4, -3), 1.8, Color(0, 0, 0, a))
 			draw_circle(top + Vector2(4, -3), 1.8, Color(0, 0, 0, a))
 			draw_colored_polygon(PackedVector2Array([top + Vector2(-10, -7), top + Vector2(0, -24), top + Vector2(10, -7)]), Color(0.3, 0.6, 1.0, a))
+		"beam_warn":
+			# 予告線（点滅しながらだんだん太く）
+			var k := _t / 1.0
+			var a := 0.35 + 0.35 * absf(sin(_t * 18.0))
+			draw_line(Vector2.ZERO, end - start, Color(1.0, 0.25, 0.2, a), 2.0 + 6.0 * k)
+		"beam":
+			# 太いビーム（だんだん細く消える）
+			var k := 1.0 - _t / 0.45
+			draw_line(Vector2.ZERO, end - start, Color(1.0, 0.35, 0.25, 0.5 * k), 60.0 * k)
+			draw_line(Vector2.ZERO, end - start, Color(1.0, 0.85, 0.7, 0.9 * k), 22.0 * k)
+			draw_line(Vector2.ZERO, end - start, Color(1, 1, 1, k), 8.0 * k)
 		"spikes":
 			# 全方位にトゲがシャキーンと伸びて、引っこむ
 			var k := minf(_t / 0.12, 1.0) * clampf((0.7 - _t) / 0.3, 0.0, 1.0)

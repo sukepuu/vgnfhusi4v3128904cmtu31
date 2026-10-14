@@ -630,17 +630,25 @@ func _random_spawn_pos() -> Vector2:
 
 ## ボスのHP倍率。7体目（Lv70）までは、前の「2乗で加速する」HPの曲線の8割にする
 ## （ふつうの敵のHPが9分半まで1倍なので、そのままだと序盤〜中盤のボスが柔らかすぎるため）。
-## 8体目からは、ふつうの敵と同じ倍率
+## 8体目からは、7体目の倍率をスタートにして、ふつうの敵の倍率が7体目のときから増えたぶんの
+## BOSS_LATE_RATIO 倍を足していく（切れ目なく、敵と同じ「だんだん加速する」上がり方で続く）
 const BOSS_CURVE_UNTIL := 7
 const BOSS_CURVE_RATIO := 0.8
+const BOSS_LATE_RATIO := 0.75
+## 7体目が出たときの、ボスの倍率とふつうの敵の倍率
+var _boss_last_curve_mult := 0.0
+var _boss_last_curve_hp := 0.0
 
 
 func _boss_hp_mult() -> float:
 	if bosses_spawned > BOSS_CURVE_UNTIL:
-		return _hp_mult()
+		return _boss_last_curve_mult + BOSS_LATE_RATIO * maxf(0.0, _hp_mult() - _boss_last_curve_hp)
 	var t := elapsed * 1.3
 	var old := 1.0 + t / 75.0 + pow(t / 170.0, 2.0)
-	return maxf(_hp_mult(), BOSS_CURVE_RATIO * old)
+	var mult := maxf(_hp_mult(), BOSS_CURVE_RATIO * old)
+	_boss_last_curve_mult = mult
+	_boss_last_curve_hp = _hp_mult()
+	return mult
 
 
 ## 敵の出現ペース（1秒に何体）：SPAWN_BASE から毎秒 SPAWN_GROWTH ずつ増え、SPAWN_MAX で頭打ち

@@ -19,8 +19,10 @@ var src: Dictionary = {}
 var thrower: Node2D = null
 ## 追尾する敵
 var target: Node2D = null
-## 鳥の体の色（ふつうは白い鳩。鳥の大群は青い鳥）
+## 鳥の体の色（ふつうは白い鳩。鳥の大群はペットと同じ緑の鳥）
 var bird_color := Color(0.95, 0.95, 0.98)
+## 鳥の羽の色（透明なら体の色を少し暗くした色）
+var bird_wing := Color(0, 0, 0, 0)
 ## 見た目（ball："iron" 鉄球 / "rock" 岩 / "cow" 牛、homing："arrow" 火矢 / "bird" 鳩）
 var look := "iron"
 
@@ -223,7 +225,7 @@ func _draw() -> void:
 				# パタパタ飛ぶ鳥（ふつうは白い鳩）
 				var flap := sin(_t * 22.0) * 7.0
 				var side := dir.orthogonal()
-				var wing := bird_color.darkened(0.06)
+				var wing := bird_wing if bird_wing.a > 0.0 else bird_color.darkened(0.06)
 				draw_colored_polygon(PackedVector2Array([side * 2.0, side * (12.0 + flap) - dir * 4.0, -dir * 6.0]), wing)
 				draw_colored_polygon(PackedVector2Array([-side * 2.0, -side * (12.0 + flap) - dir * 4.0, -dir * 6.0]), wing)
 				draw_circle(Vector2.ZERO, 6.0, bird_color)

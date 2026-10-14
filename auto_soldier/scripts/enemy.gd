@@ -106,13 +106,13 @@ func setup(k: String, hp_mult: float) -> void:
 			max_hp = 10.0; speed = 95.0; damage = 4.0; castle_damage = 4.0; radius = 9.0; xp_value = 1
 			color = Color(0.85, 0.95, 0.35)
 		"healer":
-			max_hp = 30.0; speed = 50.0; damage = 4.0; castle_damage = 6.0; radius = 14.0; xp_value = 3
+			max_hp = 150.0; speed = 50.0; damage = 4.0; castle_damage = 6.0; radius = 14.0; xp_value = 3
 			color = Color(1.0, 0.6, 0.8)
 		"bomber":
 			max_hp = 25.0; speed = 120.0; damage = 30.0; castle_damage = 30.0; radius = 13.0; xp_value = 2
 			color = Color(0.35, 0.1, 0.1)
 		"stealth":
-			max_hp = 15.0; speed = 80.0; damage = 8.0; castle_damage = 10.0; radius = 12.0; xp_value = 2
+			max_hp = 15.0; speed = 160.0; damage = 8.0; castle_damage = 10.0; radius = 12.0; xp_value = 2
 			color = Color(0.3, 0.35, 0.45)
 		"boss":
 			max_hp = 770.0 * (1.0 + 0.3 * (boss_rank - 1)); speed = 20.0; damage = 30.0
@@ -199,19 +199,23 @@ func _process(delta: float) -> void:
 		aggro = 300.0
 	elif kind == "healer" or kind == "ringer" or is_boss:
 		aggro = 0.0
+	# 弓兵は城だけを狙う（兵士・挑発・氷像には引きつけられない）
+	var castle_only := kind == "archer"
+	if castle_only:
+		aggro = 0.0
 	var soldier: Node2D = game.nearest_ally(global_position, aggro)
 	# 挑発：近くに迎撃兵がいればそちらを狙う
-	if game.guard_stats.taunt:
+	if game.guard_stats.taunt and not castle_only:
 		var g := _nearest_guard(230.0)
 		if g != null:
 			soldier = g
 	# 仁王立ち：挑発されているあいだは重装兵を狙う（ボスは挑発されない）
-	if provoked_left > 0.0 and not is_boss:
+	if provoked_left > 0.0 and not is_boss and not castle_only:
 		var h: Node2D = game.heavy
 		if h != null and not h.dead:
 			soldier = h
 	# 氷像の囮：近くに氷像があれば、何よりも先にそちらを狙う
-	if game.castle.ice_statue and not is_boss:
+	if game.castle.ice_statue and not is_boss and not castle_only:
 		var st: Node2D = _nearest_statue(320.0)
 		if st != null:
 			soldier = st

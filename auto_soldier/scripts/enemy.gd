@@ -689,6 +689,9 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 		return
 	if mark_left > 0.0:
 		amount *= 1.35
+	# 城の怒り：城のHPが50%より少ないとき、味方の与ダメージ +20%
+	if game.castle.rage_active():
+		amount *= 1.2
 	# 魔王狩り：遊撃兵からボスへのダメージ +10%
 	if is_boss and game.stats.boss_hunt and src.get("cat", "") == "soldier":
 		amount *= 1.1

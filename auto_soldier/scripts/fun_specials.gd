@@ -47,7 +47,7 @@ func _process(delta: float) -> void:
 		if _dove_cd <= 0.0 and not game.enemies_cache.is_empty():
 			_dove_cd = 6.0
 			for i in castle.tower_count:
-				var from: Vector2 = castle.global_position + castle._tower_local_pos(i)
+				var from: Vector2 = castle.wpos() + castle._tower_local_pos(i)
 				var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(randf_range(-PI * 0.8, -PI * 0.2)) * 260.0,
 					castle.tower_damage * 0.8, 10.0, 6.0, castle._equip_record("tower", "矢倉", i))
 				m.look = "bird"

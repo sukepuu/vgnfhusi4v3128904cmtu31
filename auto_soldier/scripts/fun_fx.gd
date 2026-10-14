@@ -4,6 +4,7 @@ extends Node2D
 ## jack    ：ビックリ箱（バネでピエロが飛び出す）
 ## roar    ：雄叫びの広がる輪
 ## spikes  ：剣山の壁から飛び出すトゲ
+## sneeze  ：城のくしゃみのホコリ雲（radius まで広がる）
 ## beam_warn / beam：砲台要塞のビームの予告線と、ビーム本体（start から end まで）
 
 var game: Node2D
@@ -104,6 +105,14 @@ func _draw() -> void:
 			draw_line(Vector2.ZERO, end - start, Color(1.0, 0.35, 0.25, 0.5 * k), 60.0 * k)
 			draw_line(Vector2.ZERO, end - start, Color(1.0, 0.85, 0.7, 0.9 * k), 22.0 * k)
 			draw_line(Vector2.ZERO, end - start, Color(1, 1, 1, k), 8.0 * k)
+		"sneeze":
+			# ホコリの雲がぶわっと広がって消える
+			var k := clampf(_t / 0.7, 0.0, 1.0)
+			for i in 18:
+				var d := Vector2.from_angle(TAU * i / 18.0 + i * 0.3)
+				var rr := radius * k * (0.6 + 0.4 * fmod(i * 0.37, 1.0))
+				draw_circle(d * rr, 18.0 + 14.0 * k, Color(0.85, 0.82, 0.75, 0.45 * (1.0 - k)))
+			draw_arc(Vector2.ZERO, radius * k, 0.0, TAU, 48, Color(1, 1, 1, 0.5 * (1.0 - k)), 4.0)
 		"spikes":
 			# 全方位にトゲがシャキーンと伸びて、引っこむ
 			var k := minf(_t / 0.12, 1.0) * clampf((0.7 - _t) / 0.3, 0.0, 1.0)

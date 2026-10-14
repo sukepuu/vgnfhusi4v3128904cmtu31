@@ -152,8 +152,7 @@ func _rebuild() -> void:
 		var d: float = dealt.get(key, 0.0)
 		_grid.add_child(_cell(_fmt(d), col, 18, true))
 		_grid.add_child(_cell("%d" % normal.get(key, 0), col, 18, true))
-		# 城（本体）には特別強化がない
-		_grid.add_child(_cell("-" if key == "castle" else "%d / %d" % [special.get(key, 0), special_total.get(key, 0)], col, 18, true))
+		_grid.add_child(_cell("%d / %d" % [special.get(key, 0), special_total.get(key, 0)], col, 18, true))
 
 
 func _fmt(v: float) -> String:

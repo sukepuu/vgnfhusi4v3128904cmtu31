@@ -4,6 +4,7 @@ extends Node2D
 
 const BulletScript := preload("res://scripts/bullet.gd")
 const ShellScript := preload("res://scripts/shell.gd")
+const RobotScript := preload("res://scripts/castle_robot.gd")
 
 ## 城本体の半分のサイズ（当たり判定もこの四角形）
 const HALF := Vector2(95, 45)
@@ -116,6 +117,31 @@ var iron_chunk := false
 var bolt_momentum := false
 ## 結界・氷像の囮（結界の中で倒された敵が氷像になる）
 var ice_statue := false
+
+# --- 城（本体）の特別強化
+## 生命の泉：城の自然回復が毎秒3になる（regen を変える）
+## 城の怒り：城のHPが50%より少ないとき、味方全員の与ダメージ +20%
+var rage := false
+## 不屈の城：HPが0になったとき、ボス以外の敵を全部消してHP20%で立ち直る（1回だけ）
+var last_stand := false
+var _last_stand_used := false
+## 城レーザー：20秒ごとにマップ全体を薙ぎ払う（威力はレベル×10）
+var laser := false
+var _laser_cd := 6.0
+var _laser_left := 0.0
+var _laser_angle := 0.0
+var _laser_hit := {}
+const LASER_TIME := 2.0
+## 城のくしゃみ：15秒ごとに、壁の内側くらいの敵を吹き飛ばす
+var sneeze := false
+var _sneeze_cd := 8.0
+## 城の蓄え：城が受けたダメージ10ごとに経験値+1
+var store := false
+var _store_dmg := 0.0
+## 城ロボ起動：30秒ごとにロボットが15秒間出撃する（そのあいだ兵装はロボットに付く）
+var robot_enabled := false
+var _robot_cd := 10.0
+var robot: Node2D = null
 var _ground_tick := 0.0
 var _homing_cd := 2.0
 var _lightning_cd := 2.0
@@ -161,6 +187,7 @@ func _process(delta: float) -> void:
 	_update_ballista(delta)
 	_update_frost_specials(delta)
 	_update_new_specials(delta)
+	_update_castle_specials(delta)
 	queue_redraw()
 
 
@@ -205,8 +232,18 @@ func take_damage(amount: float) -> void:
 	hp -= amount
 	_flash = 0.15
 	game.spawn_damage_text(global_position + Vector2(randf_range(-60, 60), -HALF.y), amount, Color(1.0, 0.5, 0.2))
+	# 城の蓄え：受けたダメージ10ごとに経験値+1
+	if store:
+		_store_dmg += amount
+		while _store_dmg >= 10.0:
+			_store_dmg -= 10.0
+			game.add_xp(1)
 	if hp <= 0.0:
 		hp = 0.0
+		# 不屈の城：1回だけ立ち直る
+		if last_stand and not _last_stand_used:
+			_do_last_stand()
+			return
 		game.on_castle_destroyed()
 
 
@@ -225,7 +262,7 @@ func _update_towers(delta: float) -> void:
 		_tower_cds[i] -= delta
 		if _tower_cds[i] > 0.0:
 			continue
-		var from := global_position + _tower_local_pos(i)
+		var from := wpos() + _tower_local_pos(i)
 		var target: Node2D = game.nearest_enemy(from, tower_range)
 		# 執念の矢：前に狙った敵がまだ生きていて射程内なら、また同じ敵を狙う
 		var power := 1.0
@@ -282,7 +319,7 @@ func _update_cannon(delta: float) -> void:
 		var best := _densest_enemy(cannon_range, cannon_radius)
 		if best == null:
 			continue
-		var from := global_position + _cannon_local_pos(i)
+		var from := wpos() + _cannon_local_pos(i)
 		_cannon_aims[i] = (best.global_position - from).normalized()
 		var rec := _equip_record("cannon", "大砲", i)
 		var shells: Array = [_fire_shell(from, best.global_position, cannon_damage, cannon_radius, false, rec)]
@@ -322,7 +359,7 @@ func _update_catapult(delta: float) -> void:
 		var best := _densest_enemy(2000.0, catapult_radius)
 		if best == null:
 			continue
-		var from := global_position + _catapult_local_pos(i) + Vector2(0, -20)
+		var from := wpos() + _catapult_local_pos(i) + Vector2(0, -20)
 		var s := _fire_shell(from, best.global_position, catapult_damage, catapult_radius, true, _equip_record("catapult", "投石器", i))
 		if split_level > 0:
 			s.split_count = 2 + 2 * split_level
@@ -334,7 +371,7 @@ func _update_catapult(delta: float) -> void:
 		_catapult_shots += 1
 		# 鉄塊投げ：4発に1回、HPが一番多い敵へ鉄塊も投げる
 		if iron_chunk and _catapult_shots % 4 == 0:
-			var big := _toughest_enemy_in(global_position, INF)
+			var big := _toughest_enemy_in(wpos(), INF)
 			if big != null:
 				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_damage * 0.5, 50.0, true, s.src)
 				iron.iron = true
@@ -360,9 +397,9 @@ func _update_ballista(delta: float) -> void:
 		_ballista_cds[i] -= delta
 		if _ballista_cds[i] > 0.0:
 			continue
-		var from := global_position + _ballista_local_pos(i)
+		var from := wpos() + _ballista_local_pos(i)
 		# HPが一番多い敵を最優先で狙う（射程は無限）
-		var big := _toughest_enemy_in(global_position, INF)
+		var big := _toughest_enemy_in(wpos(), INF)
 		if big == null:
 			continue
 		var aim := (big.global_position - from).normalized()
@@ -458,10 +495,10 @@ func _update_new_specials(delta: float) -> void:
 		if _ap_cd <= 0.0:
 			_ap_cd = 6.0
 			for i in mini(cannon_level, MAX_GUNS):
-				var big := _toughest_enemy_in(global_position, cannon_range * 1.5)
+				var big := _toughest_enemy_in(wpos(), cannon_range * 1.5)
 				if big == null:
 					break
-				var from := global_position + _cannon_local_pos(i)
+				var from := wpos() + _cannon_local_pos(i)
 				var dir := (big.global_position - from).normalized()
 				_cannon_aims[i] = dir
 				var b := BulletScript.new()
@@ -494,11 +531,11 @@ func _update_eighth_specials(delta: float) -> void:
 	if mega_bolt and ballista_level > 0:
 		_mega_cd -= delta
 		if _mega_cd <= 0.0:
-			var big := _toughest_enemy_in(global_position, INF)
+			var big := _toughest_enemy_in(wpos(), INF)
 			if big != null:
 				_mega_cd = 8.0
 				for i in mini(ballista_level, MAX_GUNS):
-					var from := global_position + _ballista_local_pos(i)
+					var from := wpos() + _ballista_local_pos(i)
 					var dir := (big.global_position - from).normalized()
 					_ballista_aims[i] = dir
 					var b := BulletScript.new()
@@ -528,10 +565,10 @@ func _update_eighth_specials(delta: float) -> void:
 func _update_fifth_specials(delta: float) -> void:
 	if homing_arrow and tower_count > 0:
 		_homing_cd -= delta
-		if _homing_cd <= 0.0 and game.nearest_enemy(global_position, tower_range * 1.5) != null:
+		if _homing_cd <= 0.0 and game.nearest_enemy(wpos(), tower_range * 1.5) != null:
 			_homing_cd = 3.0
 			for i in tower_count:
-				var from := global_position + _tower_local_pos(i)
+				var from := wpos() + _tower_local_pos(i)
 				for k in 2:
 					var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(-PI / 2.0 + (k - 0.5) * 1.6) * 420.0,
 						tower_damage * 1.5, 8.0, 4.0, _equip_record("tower", "矢倉", i))
@@ -541,7 +578,7 @@ func _update_fifth_specials(delta: float) -> void:
 		if _lightning_cd <= 0.0:
 			_lightning_cd = 5.0
 			for i in mini(ballista_level, MAX_GUNS):
-				var from := global_position + _ballista_local_pos(i)
+				var from := wpos() + _ballista_local_pos(i)
 				# なるべく別々の敵から連鎖を始める
 				var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool:
 					return is_instance_valid(e) and not e.dead and from.distance_to(e.global_position) < 700.0)
@@ -615,7 +652,7 @@ func _densest_enemy(max_range: float, area: float) -> Node2D:
 	for e in game.enemies_cache:
 		if not is_instance_valid(e) or e.dead:
 			continue
-		if global_position.distance_to(e.global_position) > max_range:
+		if wpos().distance_to(e.global_position) > max_range:
 			continue
 		# まだ着弾していない砲弾の範囲内は狙わない
 		var covered := false
@@ -691,53 +728,160 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([
 		Vector2(0, -HALF.y - 50.0), Vector2(26, -HALF.y - 44.0 + wave), Vector2(0, -HALF.y - 36.0)]), Color(0.3, 0.55, 1.0))
 
-	# 矢倉
-	for i in tower_count:
-		var p := _tower_local_pos(i)
-		draw_rect(Rect2(p - Vector2(13, 13), Vector2(26, 26)), Color(0.55, 0.4, 0.25))
-		draw_rect(Rect2(p - Vector2(13, 13), Vector2(26, 26)), Color(0.3, 0.2, 0.1), false, 2.0)
-		var aim: Vector2 = _tower_aims[i]
-		draw_line(p, p + aim * 18.0, Color(0.25, 0.15, 0.08), 4.0)
-
-	# 大砲
-	for i in mini(cannon_level, MAX_GUNS):
-		var cp := _cannon_local_pos(i)
-		var aim: Vector2 = _cannon_aims[i]
-		draw_circle(cp, 14.0, Color(0.25, 0.25, 0.28))
-		draw_line(cp, cp + aim * 26.0, Color(0.15, 0.15, 0.18), 10.0)
-
-	# バリスタ
-	for i in mini(ballista_level, MAX_GUNS):
-		var p := _ballista_local_pos(i)
-		var aim: Vector2 = _ballista_aims[i]
-		var side := aim.orthogonal()
-		var back: float = 4.0 if _ballista_recoil[i] > 0.0 else 0.0
-		var c := p - aim * back
-		draw_circle(p, 9.0, Color(0.4, 0.3, 0.2))
-		# 弓の部分
-		draw_line(c + side * 14.0 - aim * 4.0, c + aim * 6.0, Color(0.55, 0.4, 0.2), 4.0)
-		draw_line(c - side * 14.0 - aim * 4.0, c + aim * 6.0, Color(0.55, 0.4, 0.2), 4.0)
-		draw_line(c + side * 14.0 - aim * 4.0, c - aim * 8.0, Color(0.9, 0.9, 0.85), 1.5)
-		draw_line(c - side * 14.0 - aim * 4.0, c - aim * 8.0, Color(0.9, 0.9, 0.85), 1.5)
-		# 台座のレール
-		draw_line(c - aim * 12.0, c + aim * 16.0, Color(0.3, 0.2, 0.1), 5.0)
-
-	# 投石器
-	for i in mini(catapult_level, MAX_GUNS):
-		var p := _catapult_local_pos(i)
-		var wood := Color(0.5, 0.35, 0.2)
-		draw_rect(Rect2(p + Vector2(-16, 4), Vector2(32, 8)), wood)
-		draw_line(p + Vector2(-10, 6), p + Vector2(0, -8), wood, 3.0)
-		draw_line(p + Vector2(10, 6), p + Vector2(0, -8), wood, 3.0)
-		var swinging: bool = _catapult_swings[i] > 0.0
-		var arm_ang := -2.2 if swinging else -0.5
-		var arm_end := p + Vector2(0, -8) + Vector2.from_angle(arm_ang) * 26.0
-		draw_line(p + Vector2(0, -8), arm_end, Color(0.4, 0.28, 0.15), 4.0)
-		if not swinging:
-			draw_circle(arm_end, 6.0, Color(0.45, 0.42, 0.4))
+	# 兵装（城ロボが出撃中は、ロボットの方に描く）
+	if not robot_active():
+		draw_weapons(self, Vector2.ZERO)
+	# 城の怒り・城レーザー
+	_draw_castle_specials()
 
 	# HPバー（城の下）
 	var w := HALF.x * 2.0
 	var top := Vector2(-HALF.x, HALF.y + 8.0)
 	draw_rect(Rect2(top, Vector2(w, 8)), Color(0, 0, 0, 0.6))
 	draw_rect(Rect2(top, Vector2(w * hp / max_hp, 8)), Color(1.0, 0.6, 0.2))
+
+
+## 兵装（矢倉・大砲・バリスタ・投石器）を ci に描く。offset = 城の中心の位置（ci の座標で）
+func draw_weapons(ci: CanvasItem, offset: Vector2) -> void:
+	# 矢倉
+	for i in tower_count:
+		var p := _tower_local_pos(i) + offset
+		ci.draw_rect(Rect2(p - Vector2(13, 13), Vector2(26, 26)), Color(0.55, 0.4, 0.25))
+		ci.draw_rect(Rect2(p - Vector2(13, 13), Vector2(26, 26)), Color(0.3, 0.2, 0.1), false, 2.0)
+		var aim: Vector2 = _tower_aims[i]
+		ci.draw_line(p, p + aim * 18.0, Color(0.25, 0.15, 0.08), 4.0)
+
+	# 大砲
+	for i in mini(cannon_level, MAX_GUNS):
+		var cp := _cannon_local_pos(i) + offset
+		var aim: Vector2 = _cannon_aims[i]
+		ci.draw_circle(cp, 14.0, Color(0.25, 0.25, 0.28))
+		ci.draw_line(cp, cp + aim * 26.0, Color(0.15, 0.15, 0.18), 10.0)
+
+	# バリスタ
+	for i in mini(ballista_level, MAX_GUNS):
+		var p := _ballista_local_pos(i) + offset
+		var aim: Vector2 = _ballista_aims[i]
+		var side := aim.orthogonal()
+		var back: float = 4.0 if _ballista_recoil[i] > 0.0 else 0.0
+		var c := p - aim * back
+		ci.draw_circle(p, 9.0, Color(0.4, 0.3, 0.2))
+		# 弓の部分
+		ci.draw_line(c + side * 14.0 - aim * 4.0, c + aim * 6.0, Color(0.55, 0.4, 0.2), 4.0)
+		ci.draw_line(c - side * 14.0 - aim * 4.0, c + aim * 6.0, Color(0.55, 0.4, 0.2), 4.0)
+		ci.draw_line(c + side * 14.0 - aim * 4.0, c - aim * 8.0, Color(0.9, 0.9, 0.85), 1.5)
+		ci.draw_line(c - side * 14.0 - aim * 4.0, c - aim * 8.0, Color(0.9, 0.9, 0.85), 1.5)
+		# 台座のレール
+		ci.draw_line(c - aim * 12.0, c + aim * 16.0, Color(0.3, 0.2, 0.1), 5.0)
+
+	# 投石器
+	for i in mini(catapult_level, MAX_GUNS):
+		var p := _catapult_local_pos(i) + offset
+		var wood := Color(0.5, 0.35, 0.2)
+		ci.draw_rect(Rect2(p + Vector2(-16, 4), Vector2(32, 8)), wood)
+		ci.draw_line(p + Vector2(-10, 6), p + Vector2(0, -8), wood, 3.0)
+		ci.draw_line(p + Vector2(10, 6), p + Vector2(0, -8), wood, 3.0)
+		var swinging: bool = _catapult_swings[i] > 0.0
+		var arm_ang := -2.2 if swinging else -0.5
+		var arm_end := p + Vector2(0, -8) + Vector2.from_angle(arm_ang) * 26.0
+		ci.draw_line(p + Vector2(0, -8), arm_end, Color(0.4, 0.28, 0.15), 4.0)
+		if not swinging:
+			ci.draw_circle(arm_end, 6.0, Color(0.45, 0.42, 0.4))
+
+
+# ---------------------------------------------------------------- 城（本体）の特別強化
+
+## 兵装の位置の基準（城ロボが出撃中はロボットの位置）
+func wpos() -> Vector2:
+	return robot.global_position if robot_active() else global_position
+
+
+func robot_active() -> bool:
+	return robot != null and is_instance_valid(robot)
+
+
+func _update_castle_specials(delta: float) -> void:
+	# 城レーザー：20秒ごとに、城から全方位をぐるっと薙ぎ払う
+	if laser:
+		if _laser_left > 0.0:
+			var prev := _laser_angle
+			_laser_left -= delta
+			_laser_angle = PI + TAU * (1.0 - maxf(_laser_left, 0.0) / LASER_TIME)
+			_laser_sweep(prev, _laser_angle)
+		else:
+			_laser_cd -= delta
+			if _laser_cd <= 0.0 and not game.enemies_cache.is_empty():
+				_laser_cd = 20.0
+				_laser_left = LASER_TIME
+				_laser_angle = PI
+				_laser_hit.clear()
+	# 城のくしゃみ：15秒ごとに、壁の内側くらいの敵を外へ吹き飛ばす
+	if sneeze:
+		_sneeze_cd -= delta
+		if _sneeze_cd <= 0.0 and game.nearest_enemy(global_position, game.walls.RADIUS) != null:
+			_sneeze_cd = 15.0
+			var f: Node2D = game.spawn_fun_fx("sneeze", global_position + Vector2(0, -HALF.y))
+			f.radius = game.walls.RADIUS
+			for e in game.enemies_near(global_position, game.walls.RADIUS + 30.0):
+				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < game.walls.RADIUS:
+					e.apply_knock((e.global_position - global_position).normalized() * 900.0)
+	# 城ロボ起動：30秒ごとに15秒間出撃
+	if robot_enabled and not robot_active():
+		_robot_cd -= delta
+		if _robot_cd <= 0.0:
+			_robot_cd = 30.0
+			robot = RobotScript.new()
+			robot.game = game
+			robot.position = global_position + Vector2(0, -HALF.y - 60.0)
+			game.world.add_child(robot)
+
+
+## 城レーザー：from 〜 to の角度のあいだにいる敵に1回ずつダメージ（威力はレベル×10）
+func _laser_sweep(from: float, to: float) -> void:
+	var dmg := float(game.level) * 10.0
+	for e in game.enemies_cache:
+		if not is_instance_valid(e) or e.dead or _laser_hit.has(e):
+			continue
+		var a: float = (e.global_position - global_position).angle()
+		# from〜to（0〜TAU の範囲を超えてもよいように、差で判定）
+		var d := fposmod(a - from, TAU)
+		if d <= fposmod(to - from, TAU) + 0.02:
+			_laser_hit[e] = true
+			e.take_damage(dmg, Vector2.ZERO, record)
+
+
+## 不屈の城：ボス以外の敵を全部消して（経験値なし）、HP20%で立ち直る
+func _do_last_stand() -> void:
+	_last_stand_used = true
+	for e in game.enemies_cache:
+		if is_instance_valid(e) and not e.dead and not e.is_boss:
+			e.dead = true
+			e.remove_from_group("enemies")
+			game.spawn_burst(e.global_position, Color(1.0, 0.95, 0.7), e.radius)
+			e.queue_free()
+	for b in get_tree().get_nodes_in_group("enemy_bullets"):
+		b.queue_free()
+	hp = max_hp * 0.2
+	_flash = 0.5
+	game.spawn_burst(global_position, Color(1.0, 0.9, 0.5), 260.0)
+	game.hud.show_banner("不屈の城！", Color(1.0, 0.85, 0.3))
+
+
+## 城の怒りが発動しているか（城のHPが50%より少ない）
+func rage_active() -> bool:
+	return rage and hp < max_hp * 0.5
+
+
+func _draw_castle_specials() -> void:
+	if rage_active():
+		# 城の怒り：城が赤く脈打つ
+		var a := 0.15 + 0.12 * absf(sin(_t * 5.0))
+		draw_rect(Rect2(-HALF - Vector2(6, 6), HALF * 2.0 + Vector2(12, 12)), Color(1.0, 0.25, 0.15, a), false, 6.0)
+	if _laser_left > 0.0:
+		# 城レーザー：城から長い光線
+		var dir := Vector2.from_angle(_laser_angle)
+		var o := Vector2(0, -HALF.y)
+		draw_line(o, o + dir * 2200.0, Color(1.0, 0.3, 0.3, 0.35), 34.0)
+		draw_line(o, o + dir * 2200.0, Color(1.0, 0.8, 0.6, 0.8), 12.0)
+		draw_line(o, o + dir * 2200.0, Color(1, 1, 1, 0.95), 4.0)
+		draw_circle(o, 22.0, Color(1.0, 0.9, 0.7, 0.8))

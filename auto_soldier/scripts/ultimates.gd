@@ -232,7 +232,7 @@ func _do_barrage() -> void:
 	for i in 12:
 		var e: Node2D = pool[i % pool.size()]
 		var gi := i % guns
-		var from: Vector2 = castle.global_position + castle._cannon_local_pos(gi)
+		var from: Vector2 = castle.wpos() + castle._cannon_local_pos(gi)
 		var to := e.global_position + Vector2(randf_range(-40, 40), randf_range(-40, 40))
 		var s: Node2D = castle._fire_shell(from, to, castle.cannon_damage * 2.0, castle.cannon_radius, false, castle._equip_record("cannon", "大砲", gi))
 		s.flight_time = 0.6 + i * 0.07

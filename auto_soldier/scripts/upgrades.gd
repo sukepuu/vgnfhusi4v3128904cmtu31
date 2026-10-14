@@ -231,6 +231,14 @@ const SPECIAL := [
 	{"id": "sp_iron_chunk", "cat": "castle", "special": true, "name": "投石器・鉄塊投げ", "desc": "4発に1回、ふつうの岩と一緒に、HPが一番多い敵へ鉄塊を投げる（投石器の8倍の威力）", "max": 1, "req": "catapult"},
 	{"id": "sp_bolt_momentum", "cat": "castle", "special": true, "name": "バリスタ・破竹の大矢", "desc": "バリスタの矢が敵に当たるたびに、その矢の威力が +10% ずつ増えていく", "max": 1, "req": "ballista"},
 	{"id": "sp_ice_statue", "cat": "castle", "special": true, "name": "結界・氷像の囮", "desc": "結界の中で倒された敵が20%の確率で氷像になる。氷像はほかの敵に最優先で狙われる（1回攻撃されると砕ける）", "max": 1, "req": "frost"},
+	# --- 城（本体）の特別強化（城はいつもいるので、いつでも候補に出る）
+	{"id": "sp_castle_fountain", "cat": "castle", "special": true, "name": "城・生命の泉", "desc": "城の自然回復が毎秒3になる", "max": 1},
+	{"id": "sp_castle_rage", "cat": "castle", "special": true, "name": "城・城の怒り", "desc": "城のHPが50%より少ないとき、味方全員（部隊・兵装）の与ダメージ +20%", "max": 1},
+	{"id": "sp_castle_last_stand", "cat": "castle", "special": true, "name": "城・不屈の城", "desc": "城のHPが0になったとき、ボス以外の敵を全部消して、HPが20%で立ち直る（1回のゲームで1回まで）", "max": 1},
+	{"id": "sp_castle_laser", "cat": "castle", "special": true, "name": "城・城レーザー", "desc": "20秒ごとに、城からマップ全体をぐるっと薙ぎ払うレーザーを撃つ（威力はレベル×10）", "max": 1},
+	{"id": "sp_castle_sneeze", "cat": "castle", "special": true, "name": "城・城のくしゃみ", "desc": "15秒ごとに城がくしゃみをして、壁の内側くらいにいる敵を吹き飛ばす", "max": 1},
+	{"id": "sp_castle_store", "cat": "castle", "special": true, "name": "城・城の蓄え", "desc": "城がダメージを受けると、10ダメージごとに経験値 +1（背水の修繕で減る分は入らない）", "max": 1},
+	{"id": "sp_castle_robot", "cat": "castle", "special": true, "name": "城・城ロボ起動", "desc": "30秒ごとに城からロボットが出撃して、15秒間暴れまわる（城は動かない）", "max": 1},
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",
@@ -739,6 +747,20 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.bolt_momentum = true
 		"sp_ice_statue":
 			castle.ice_statue = true
+		"sp_castle_fountain":
+			castle.regen = 3.0
+		"sp_castle_rage":
+			castle.rage = true
+		"sp_castle_last_stand":
+			castle.last_stand = true
+		"sp_castle_laser":
+			castle.laser = true
+		"sp_castle_sneeze":
+			castle.sneeze = true
+		"sp_castle_store":
+			castle.store = true
+		"sp_castle_robot":
+			castle.robot_enabled = true
 		"tower":
 			castle.tower_count = new_level
 			if new_level > 1:

@@ -16,10 +16,16 @@ var _t := 0.0
 var _spin := 0.0
 var _shot_cd := 0.0
 var _punch_cd := 1.0
-## パンチの演出（どちらの腕で、どこへ、あと何秒）
+## パンチ（ゆっくりモーション）：振りかぶる → 突き出す（ここで当たる）→ 止める → 戻す
+const PUNCH_TIME := 1.3
+const PUNCH_WINDUP := 0.45
+const PUNCH_HIT := 0.7
+const PUNCH_HOLD := 0.9
 var _punch_arm := 1
 var _punch_to := Vector2.ZERO
-var _punch_left := 0.0
+var _punch_t := -1.0
+var _punch_target: Node2D = null
+var _punch_done := false
 
 
 func _ready() -> void:
@@ -66,18 +72,83 @@ func _process(delta: float) -> void:
 			b.position = global_position + dir * 60.0
 			b.src = _record()
 			game.world.add_child(b)
-	# 2秒ごとに近くの敵をパンチ
+	# 2秒ごとに近くの敵をパンチ（ゆっくりモーションで、突き出しきったところで当たる）
 	_punch_cd -= delta
-	_punch_left -= delta
-	if _punch_cd <= 0.0:
+	if _punch_t >= 0.0:
+		_punch_t += delta
+		if _punch_target != null and is_instance_valid(_punch_target) and not _punch_target.dead:
+			_punch_to = _punch_target.global_position - global_position
+		if not _punch_done and _punch_t >= PUNCH_HIT:
+			_punch_done = true
+			var hit_pos: Vector2 = global_position + _fist_reach()
+			game.explode(hit_pos, 80.0, 40.0 * game._hp_mult(), _record(), Color(1.0, 0.75, 0.4), 0.0, 600.0)
+		if _punch_t >= PUNCH_TIME:
+			_punch_t = -1.0
+	elif _punch_cd <= 0.0:
 		var near: Node2D = game.nearest_enemy(global_position, PUNCH_RANGE)
 		if near != null:
 			_punch_cd = 2.0
+			_punch_target = near
 			_punch_arm = 1 if near.global_position.x >= global_position.x else -1
 			_punch_to = near.global_position - global_position
-			_punch_left = 0.25
-			game.explode(near.global_position, 80.0, 40.0 * game._hp_mult(), _record(), Color(1.0, 0.75, 0.4), 0.0, 600.0)
+			_punch_t = 0.0
+			_punch_done = false
 	queue_redraw()
+
+
+## パンチの伸び具合（-1 = 振りかぶり、0 = ふつう、1 = 突き出しきり）
+func _punch_ext() -> float:
+	if _punch_t < 0.0:
+		return 0.0
+	if _punch_t < PUNCH_WINDUP:
+		return -_punch_t / PUNCH_WINDUP
+	if _punch_t < PUNCH_HIT:
+		return lerpf(-1.0, 1.0, (_punch_t - PUNCH_WINDUP) / (PUNCH_HIT - PUNCH_WINDUP))
+	if _punch_t < PUNCH_HOLD:
+		return 1.0
+	return lerpf(1.0, 0.0, (_punch_t - PUNCH_HOLD) / (PUNCH_TIME - PUNCH_HOLD))
+
+
+func _shoulder(side: int) -> Vector2:
+	return Vector2(side * (game.castle.HALF.x - 4.0), -game.castle.HALF.y * 0.35)
+
+
+## 拳が届く位置（ロボットの中心から）
+func _fist_reach() -> Vector2:
+	var sh := _shoulder(_punch_arm)
+	return sh + (_punch_to - sh).limit_length(PUNCH_RANGE)
+
+
+func _draw_arm(side: int, dark: Color) -> void:
+	var stone := Color(0.55, 0.53, 0.5)
+	var sh := _shoulder(side)
+	var swing := sin(_t * 6.0 + side) * 4.0
+	# ふだんの形：肩 → 横へ（ひじ）→ 下へ（拳）のL字
+	var elbow := sh + Vector2(side * 46.0, 0.0)
+	var fist := elbow + Vector2(0.0, 48.0 + swing)
+	if side == _punch_arm and _punch_t >= 0.0:
+		var ext := _punch_ext()
+		if ext < 0.0:
+			# 振りかぶり：拳を肩の後ろ上へ引く
+			var back := sh + Vector2(side * 18.0, -26.0)
+			fist = fist.lerp(back, -ext)
+			elbow = elbow.lerp(sh + Vector2(side * 44.0, -6.0), -ext)
+		else:
+			# 突き出し：ひじは敵の方へ半分、拳は敵の位置まで（L字を保つように少し曲げる）
+			var reach := _fist_reach()
+			var mid := sh.lerp(reach, 0.5) + (reach - sh).orthogonal().normalized() * side * -18.0
+			elbow = elbow.lerp(mid, ext)
+			fist = fist.lerp(reach, ext)
+	draw_line(sh, elbow, dark, 32.0)
+	draw_line(elbow, fist, dark, 32.0)
+	draw_line(sh, elbow, stone, 24.0)
+	draw_line(elbow, fist, stone, 24.0)
+	draw_circle(sh, 16.0, dark)
+	draw_circle(elbow, 16.0, dark)
+	draw_circle(elbow, 12.0, stone)
+	draw_circle(fist, 25.0, dark)
+	draw_circle(fist, 20.0, Color(0.62, 0.6, 0.56))
+	draw_circle(fist + Vector2(-6, -6), 6.0, Color(0.75, 0.73, 0.7))
 
 
 func _draw() -> void:
@@ -91,15 +162,9 @@ func _draw() -> void:
 	# 足（ガシャガシャ歩く）
 	draw_rect(Rect2(Vector2(-half.x * 0.55 - 14.0, half.y - 4.0 + step), Vector2(28, 40)), dark)
 	draw_rect(Rect2(Vector2(half.x * 0.55 - 14.0, half.y - 4.0 - step), Vector2(28, 40)), dark)
-	# 腕（パンチ中はその腕を敵の方へ伸ばす）
+	# 腕（太いL字型。肩から横へ出て、ひじで下へ曲がり、先に丸い拳）
 	for side in [-1, 1]:
-		var shoulder := Vector2(side * (half.x + 6.0), -half.y * 0.2)
-		var fist := shoulder + Vector2(side * 30.0, 30.0 + sin(_t * 6.0 + side) * 6.0)
-		if _punch_left > 0.0 and side == _punch_arm:
-			fist = shoulder + (_punch_to - shoulder).limit_length(PUNCH_RANGE)
-		draw_line(shoulder, fist, dark, 12.0)
-		draw_circle(fist, 15.0, Color(0.5, 0.48, 0.45))
-		draw_circle(fist, 15.0, dark, false, 3.0)
+		_draw_arm(side, dark)
 	# 体（城そのもの）
 	draw_rect(Rect2(-half, half * 2.0), wall)
 	draw_rect(Rect2(-half, half * 2.0), dark, false, 3.0)

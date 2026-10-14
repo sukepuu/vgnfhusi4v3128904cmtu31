@@ -250,9 +250,10 @@ func _process(delta: float) -> void:
 		else:
 			move = dir.orthogonal() * _strafe_sign * 0.5
 		_shoot_cd -= delta
-		if _shoot_cd <= 0.0 and d < 420.0 and confuse_left <= 0.0:
-			# 城への弾は少し弱い
-			_shoot(dir, damage if soldier != null else damage * 0.5)
+		# 射程は無限（どこからでも撃つ。城へ近づく動きはそのまま）
+		if _shoot_cd <= 0.0 and confuse_left <= 0.0:
+			# 城への弾は少し弱い。遠くからでも届くように、弾は届くまで消えない
+			_shoot(dir, damage if soldier != null else damage * 0.5, 260.0, 7.0, Color(0.85, 0.45, 1.0), d / 260.0 + 1.0)
 			_shoot_cd = randf_range(2.2, 3.0)
 	elif hunter and soldier == null and d < 20.0:
 		move = Vector2.ZERO

@@ -16,6 +16,9 @@ var _soldier_label: Label
 var _game_over: Control
 var _boss_bar: ProgressBar
 var _boss_label: Label
+## 2体目のボス用（Lv160からの2体同時）。1本目のすぐ下に出る
+var _boss_bar2: ProgressBar
+var _boss_label2: Label
 var _banner: Label
 var _banner_left := 0.0
 var _auto_btn: Button
@@ -108,6 +111,22 @@ func _ready() -> void:
 	_boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_label.visible = false
 	root.add_child(_boss_label)
+	_boss_bar2 = _make_bar(Color(0.85, 0.35, 0.2))
+	_boss_bar2.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_boss_bar2.offset_left = -260
+	_boss_bar2.offset_right = 260
+	_boss_bar2.offset_top = 90
+	_boss_bar2.offset_bottom = 106
+	_boss_bar2.visible = false
+	root.add_child(_boss_bar2)
+	_boss_label2 = _make_label(16)
+	_boss_label2.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_boss_label2.offset_left = -260
+	_boss_label2.offset_right = 260
+	_boss_label2.offset_top = 88
+	_boss_label2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_label2.visible = false
+	root.add_child(_boss_label2)
 
 	# 「BOSS出現！」などの大きな表示
 	_banner = _make_label(44)
@@ -262,51 +281,38 @@ func _process(delta: float) -> void:
 			_banner.visible = false
 
 
+## ボスのHPゲージ1本ぶん（同じ種類のボスたち。分裂の魔獣は分かれた体ぜんぶの合計）
+func _fill_boss_bar(bar: ProgressBar, label: Label, group: Array) -> void:
+	var b: Node2D = group[0]
+	var total := 0.0
+	var total_max := 0.0
+	for x in group:
+		total += x.hp
+		total_max += x.max_hp
+	bar.max_value = maxf(total_max, 1.0)
+	bar.value = total
+	if b.kind == "boss3":
+		label.text = "BOSS「%s」（%d体目）  残り%d体  %d / %d" % [b.boss_title, b.boss_rank, group.size(), ceili(total), ceili(total_max)]
+	else:
+		label.text = "BOSS「%s」（%d体目）  %d / %d" % [b.boss_title, b.boss_rank, ceili(total), ceili(total_max)]
+
+
 func refresh() -> void:
 	var b: Node2D = game.boss
 	var has_boss: bool = b != null and is_instance_valid(b) and not b.dead
 	var all_bosses: Array = game.alive_bosses() if has_boss else []
-	# 2体同時（種類のちがうボスが生きている）なら、合計HPと両方の名前を出す
-	var kinds := {}
+	# ボスの種類ごとにまとめる（分裂の魔獣は分かれた体ぜんぶで1つ）。2体同時なら上下2本のゲージに分けて出す
+	var kinds: Array = []
 	for x in all_bosses:
-		kinds[x.kind] = x
-	_boss_bar.visible = has_boss
-	_boss_label.visible = has_boss
-	if has_boss and kinds.size() >= 2:
-		var total := 0.0
-		var total_max := 0.0
-		var parts := PackedStringArray()
-		for k in kinds:
-			var hp_k := 0.0
-			for x in all_bosses:
-				if x.kind == k:
-					hp_k += x.hp
-					total_max += x.max_hp
-			total += hp_k
-			parts.append("「%s」%d" % [kinds[k].boss_title, ceili(hp_k)])
-		_boss_bar.max_value = maxf(total_max, 1.0)
-		_boss_bar.value = total
-		_boss_label.text = "BOSS（%d回目）  %s" % [b.boss_rank, "  ＆  ".join(parts)]
-	elif has_boss:
-		if kinds.size() == 1:
-			b = kinds.values()[0]
-		if b.kind == "boss3":
-			# 分裂の魔獣：分かれた体ぜんぶのHPの合計
-			var total := 0.0
-			var total_max := 0.0
-			var n := 0
-			for x in get_tree().get_nodes_in_group("enemies"):
-				if x.kind == "boss3" and not x.dead:
-					total += x.hp
-					total_max += x.max_hp
-					n += 1
-			_boss_bar.max_value = maxf(total_max, 1.0)
-			_boss_bar.value = total
-			_boss_label.text = "BOSS「%s」（%d体目）  残り%d体  %d / %d" % [b.boss_title, b.boss_rank, n, ceili(total), int(total_max)]
-		else:
-			_boss_bar.max_value = b.max_hp
-			_boss_bar.value = b.hp
-			_boss_label.text = "BOSS「%s」（%d体目）  %d / %d" % [b.boss_title, b.boss_rank, ceili(b.hp), int(b.max_hp)]
+		if not kinds.has(x.kind):
+			kinds.append(x.kind)
+	var bars := [[_boss_bar, _boss_label], [_boss_bar2, _boss_label2]]
+	for i in bars.size():
+		var show: bool = i < kinds.size()
+		bars[i][0].visible = show
+		bars[i][1].visible = show
+		if show:
+			_fill_boss_bar(bars[i][0], bars[i][1], all_bosses.filter(func(x: Node2D) -> bool: return x.kind == kinds[i]))
 	var castle: Node2D = game.castle
 	_xp_bar.max_value = game.xp_to_next
 	_xp_bar.value = game.xp

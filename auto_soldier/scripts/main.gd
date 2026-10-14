@@ -625,6 +625,21 @@ func _random_spawn_pos() -> Vector2:
 	return Vector2(MAP_RECT.end.x - m, y)
 
 
+## ボスのHP倍率。7体目（Lv70）までは、前の「2乗で加速する」HPの曲線の8割にする
+## （ふつうの敵のHPが9分半まで1倍なので、そのままだと序盤〜中盤のボスが柔らかすぎるため）。
+## 8体目からは、ふつうの敵と同じ倍率
+const BOSS_CURVE_UNTIL := 7
+const BOSS_CURVE_RATIO := 0.8
+
+
+func _boss_hp_mult() -> float:
+	if bosses_spawned > BOSS_CURVE_UNTIL:
+		return _hp_mult()
+	var t := elapsed * 1.3
+	var old := 1.0 + t / 75.0 + pow(t / 170.0, 2.0)
+	return maxf(_hp_mult(), BOSS_CURVE_RATIO * old)
+
+
 ## 敵の出現ペース（1秒に何体）：SPAWN_BASE から毎秒 SPAWN_GROWTH ずつ増え、SPAWN_MAX で頭打ち
 const SPAWN_BASE := 0.8
 const SPAWN_GROWTH := 0.018
@@ -669,7 +684,7 @@ func _spawn_boss() -> void:
 	e.game = self
 	e.boss_rank = bosses_spawned
 	var kind: String = ["boss3", "boss", "boss2"][bosses_spawned % 3]
-	e.setup(kind, _hp_mult())
+	e.setup(kind, _boss_hp_mult())
 	e.position = Vector2(MAP_RECT.get_center().x, MAP_RECT.position.y + (110.0 if kind == "boss2" else 60.0))
 	world.add_child(e)
 	boss = e

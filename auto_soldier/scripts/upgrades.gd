@@ -226,7 +226,7 @@ const SPECIAL := [
 	{"id": "sp_spike_wall", "cat": "builder", "special": true, "name": "剣山の壁", "desc": "敵が壁に触れると、壁からトゲが飛び出して周りの敵に大ダメージ（壁1枚につき6秒に1回）", "max": 1, "req": "builder"},
 	{"id": "sp_automaton_squad", "cat": "engineer", "special": true, "name": "からくり兵団", "desc": "巨大からくり兵を一度に2体置くようになる", "max": 1, "req": "sp_automaton"},
 	{"id": "sp_overwork", "cat": "repair", "special": true, "name": "背水の修繕", "desc": "修理兵1人につき、城のHPが毎秒2ずつ減るようになる（HP1より下にはならない）。かわりに修理兵1人の回復量 +3/秒", "max": 1, "req": "repairer"},
-	{"id": "sp_pet_fusion", "cat": "pet", "special": true, "name": "ペット大合体", "desc": "20秒ごとに、全ペットが合体して10秒間巨大ペットになる。特大弾を連射しながら体当たりする。\n合体したペットが多いほど、強く大きくなる", "max": 1, "req": "pet"},
+	{"id": "sp_pet_fusion", "cat": "pet", "special": true, "name": "ペット大合体", "desc": "20秒ごとに、全ペットが合体して10秒間巨大ペットになる。立ち止まって特大弾を連射→まっすぐ高速突進をくり返す。\n合体したペットが多いほど強く大きくなり、ペットの強化の効果も乗る", "max": 1, "req": "pet"},
 	{"id": "sp_tower_lock", "cat": "castle", "special": true, "name": "矢倉・執念の矢", "desc": "狙った敵を倒せなかったら、次も同じ敵を狙う。同じ敵を狙い続けるほど矢が強くなる（1回ごとに+20%、最大3倍）", "max": 1, "req": "tower"},
 	{"id": "sp_cannon_bomb", "cat": "castle", "special": true, "name": "大砲・置き土産", "desc": "砲弾が着弾した場所に爆弾を置く。近くに敵が来ると爆発する（大砲の1.5倍の威力）", "max": 1, "req": "cannon"},
 	{"id": "sp_iron_chunk", "cat": "castle", "special": true, "name": "投石器・鉄塊投げ", "desc": "4発に1回、ふつうの岩と一緒に、HPが一番多い敵へ鉄塊を投げる（投石器の8倍の威力）", "max": 1, "req": "catapult"},

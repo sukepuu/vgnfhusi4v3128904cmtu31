@@ -108,6 +108,21 @@ func _throw_snowball() -> void:
 
 
 func _do_dance() -> void:
+	# 合体中は、巨大ペットが全方位へ24発（合体した数ぶんの威力）
+	var f: Node2D = game.pet_fusion
+	if f != null and f.merged():
+		for i in 24:
+			var dir := Vector2.from_angle(TAU * i / 24.0 + f._t)
+			var fb := BulletScript.new()
+			fb.game = game
+			fb.velocity = dir * 420.0
+			fb.damage = game.pet_damage * f._n / 2.0
+			fb.radius = 8.0
+			fb.color = Color.from_hsv(float(i) / 24.0, 0.75, 1.0)
+			fb.life = 1.2
+			fb.position = f.global_position + dir * f._radius
+			fb.src = f.record
+			game.world.add_child(fb)
 	# 全部のペットが、全方位へ虹色の玉を12発ずつ撃つ
 	for p in game.pets:
 		# 合体中で隠れているペットは撃たない

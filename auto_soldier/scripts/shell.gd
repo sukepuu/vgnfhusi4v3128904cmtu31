@@ -88,7 +88,7 @@ func _explode() -> void:
 		s.bounces = bounces - 1
 	if cow:
 		# 着地した牛が、6秒間近くの敵へ何度も突進する
-		game.spawn_missile("cow", target, Vector2.ZERO, damage * 0.5, 22.0, 6.0, game.sp_src(src, "sp_fun_cow"))
+		game.spawn_missile("cow", target, Vector2.ZERO, damage * 0.5, 66.0, 6.0, game.sp_src(src, "sp_fun_cow"))
 	if fire_time > 0.0:
 		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), game.sp_src(src, "sp_incendiary"))
 	for i in mines:
@@ -122,9 +122,9 @@ func _explode() -> void:
 func _draw() -> void:
 	if cow:
 		# 空飛ぶ牛（くるくる回る）
-		draw_circle(Vector2.ZERO, 12.0, Color(0, 0, 0, 0.3))
+		draw_circle(Vector2.ZERO, 36.0, Color(0, 0, 0, 0.3))
 		draw_set_transform(Vector2(0, -_height), _t * 8.0, Vector2.ONE)
-		MissileScript.draw_cow(self, false, _t * 10.0)
+		MissileScript.draw_cow(self, false, _t * 10.0, 3.0)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		return
 	if meteor:

@@ -20,7 +20,7 @@ var healed_total := 0.0
 var damage_taken_mult := 1.0
 ## 背水の修繕：修理兵1人につき、城のHPが毎秒 OVERWORK_DRAIN ずつ減る（HP1より下にはならない）
 var overwork := false
-const OVERWORK_DRAIN := 2.0
+const OVERWORK_DRAIN := 20.0
 
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0

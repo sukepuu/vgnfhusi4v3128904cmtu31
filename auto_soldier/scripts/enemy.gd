@@ -66,7 +66,7 @@ var _strafe_sign := 1.0
 var speed_mult := 1.0
 ## 落とし穴で動けない残り時間
 var stun_left := 0.0
-## 弱点看破（狙撃部隊）：この時間のあいだ受けるダメージ +35%
+## 弱点看破（狙撃部隊）：この時間のあいだ受けるダメージ +20%
 var mark_left := 0.0
 ## 仁王立ちで挑発されている残り時間（このあいだは重装兵を狙う）
 var provoked_left := 0.0
@@ -701,7 +701,7 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	if dead:
 		return
 	if mark_left > 0.0:
-		amount *= 1.35
+		amount *= 1.2
 	# 城の怒り：城のHPが50%より少ないとき、味方の与ダメージ +20%
 	if game.castle.rage_active():
 		amount *= 1.2

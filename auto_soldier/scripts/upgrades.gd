@@ -94,7 +94,7 @@ const SPECIAL := [
 	{"id": "sp_volley", "cat": "soldier", "special": true, "name": "一斉射撃", "desc": "6秒ごとに全方位へ18発の弾をばらまく", "max": 1},
 	{"id": "sp_sword_wave", "cat": "soldier", "special": true, "name": "剣気", "desc": "斬撃と一緒に、敵を貫く大きな三日月形の衝撃波がゆっくり飛ぶ", "max": 1},
 	{"id": "sp_shadow", "cat": "soldier", "special": true, "name": "影分身", "desc": "遊撃兵の横に半透明の分身が現れ、一緒に弾を撃つ（威力50%）", "max": 1},
-	{"id": "sp_boomerang", "cat": "soldier", "special": true, "name": "ブーメラン", "desc": "3.5秒ごとにブーメランを投げる。行きと帰りで敵を貫く（剣の1.3倍の威力）", "max": 1},
+	{"id": "sp_boomerang", "cat": "soldier", "special": true, "name": "ブーメラン", "desc": "3.5秒ごとに大きなブーメランを投げる。行きと帰りで敵を貫く（剣の1.3倍の威力）", "max": 1},
 	# ---- 迎撃部隊
 	{"id": "sp_bash", "cat": "guard", "special": true, "name": "盾撃", "desc": "盾で攻撃を防ぐたびに、周りの敵へ衝撃波（槍の1.3倍の威力）", "max": 1, "req": "guard"},
 	{"id": "sp_trident", "cat": "guard", "special": true, "name": "三叉槍", "desc": "槍の突きが3方向に出る", "max": 1, "req": "guard"},
@@ -154,7 +154,7 @@ const SPECIAL := [
 	{"id": "sp_headshot", "cat": "sniper", "special": true, "name": "急所狙い", "desc": "25%の確率で急所に当たり、ダメージ4倍", "max": 1, "req": "sniper"},
 	{"id": "sp_pin", "cat": "sniper", "special": true, "name": "縫い止め矢", "desc": "当たった敵を1秒間その場に縫い止める（動けない・攻撃できない）", "max": 1, "req": "sniper"},
 	{"id": "sp_ricochet", "cat": "sniper", "special": true, "name": "跳弾矢", "desc": "狙った敵に当たった矢が、近くの別の敵へ最大3回跳ねる（跳ねるたびに威力70%）", "max": 1, "req": "sniper"},
-	{"id": "sp_mark", "cat": "sniper", "special": true, "name": "弱点看破", "desc": "矢が当たった敵に赤い印。6秒間、味方全員から受けるダメージ +35%", "max": 1, "req": "sniper"},
+	{"id": "sp_mark", "cat": "sniper", "special": true, "name": "弱点看破", "desc": "矢が当たった敵に赤い印。6秒間、味方全員から受けるダメージ +20%", "max": 1, "req": "sniper"},
 	# ---- ペット・近衛・修理
 	{"id": "sp_pet_burst", "cat": "pet", "special": true, "name": "爆裂ペット弾", "desc": "ペットの弾が当たると小爆発する（威力60%）", "max": 1, "req": "pet"},
 	{"id": "sp_pet_giant", "cat": "pet", "special": true, "name": "巨大ペット", "desc": "ペットが大きくなり、弾も大きく2体貫通、威力 +40%", "max": 1, "req": "pet"},
@@ -180,7 +180,7 @@ const SPECIAL := [
 	{"id": "sp_fun_scarecrow", "cat": "engineer", "special": true, "name": "かかし", "desc": "罠と一緒にかかしを立てる。敵の気を引いて、代わりに殴られてくれる（耐久60）", "max": 1, "req": "engineer"},
 	{"id": "sp_fun_doves", "cat": "castle", "special": true, "name": "矢倉・伝書鳩部隊", "desc": "6秒ごとに、矢倉から敵を追いかける白い鳩が飛び立つ。当たった敵が生き残っていたらくっついて、1秒ごとにあと2回つつく", "max": 1, "req": "tower"},
 	{"id": "sp_fun_billiard", "cat": "castle", "special": true, "name": "大砲・ビリヤード砲弾", "desc": "砲弾が着弾したあと、同じ向きに2回跳ねる（跳ねるたびに威力半分）", "max": 1, "req": "cannon"},
-	{"id": "sp_fun_cow", "cat": "castle", "special": true, "name": "投石器・牛投げ", "desc": "3回に1回、岩のかわりに牛を投げる。着地した牛は6秒間、近くの敵へ何度も突進する", "max": 1, "req": "catapult"},
+	{"id": "sp_fun_cow", "cat": "castle", "special": true, "name": "投石器・牛投げ", "desc": "3回に1回、岩のかわりに大きな牛（ふつうの3倍）を投げる。着地した牛は6秒間、近くの敵へ何度も突進する", "max": 1, "req": "catapult"},
 	{"id": "sp_fun_rainbow", "cat": "castle", "special": true, "name": "バリスタ・虹の矢", "desc": "矢が虹色の尾を引き、当たった敵は1.5秒間混乱してふらふら歩く", "max": 1, "req": "ballista"},
 	{"id": "sp_fun_snowball", "cat": "castle", "special": true, "name": "結界・雪合戦", "desc": "城から近くの敵へ雪玉を投げ続ける（ちょっとだけ止まる）", "max": 1, "req": "frost"},
 	{"id": "sp_fun_dance", "cat": "pet", "special": true, "name": "ペットの踊り", "desc": "ペットが虹色に光りながらくるくる回り、5秒ごとに全方位へ虹色の玉を12発撃つ", "max": 1, "req": "pet"},
@@ -206,7 +206,7 @@ const SPECIAL := [
 	{"id": "sp_ult_cavalry", "cat": "knight", "special": true, "name": "必殺・百騎突撃", "desc": "15秒ごとに、一番下の敵のあたりを騎士の幻8騎が横一列で駆け抜け、通った敵を全部はねる（突進の2.5倍の威力）", "max": 1, "req": "knight"},
 	{"id": "sp_ult_overhaul", "cat": "repair", "special": true, "name": "必殺・大修繕", "desc": "15秒ごとに、城のHPを最大HPの10%回復し、味方のHPを全回復する（壁は直さない）", "max": 1, "req": "repairer"},
 	{"id": "sp_ult_storm", "cat": "soldier", "special": true, "name": "必殺・剣の大嵐", "desc": "15秒ごとに、遊撃兵全員が周りを巻き込む巨大な回転斬り（剣の5倍の威力・大きく吹き飛ばす）", "max": 1},
-	{"id": "sp_ult_dome", "cat": "guard", "special": true, "name": "必殺・鉄壁の陣", "desc": "15秒ごとに、城をドームで6秒間包む。ドームに入った敵の弾・砲弾は消える。迎撃兵のHPも全回復", "max": 1, "req": "guard"},
+	{"id": "sp_ult_dome", "cat": "guard", "special": true, "name": "必殺・鉄壁の陣", "desc": "15秒ごとに、城をドームで5秒間包む。ドームに入った敵の弾・砲弾は消える。迎撃兵のHPも全回復", "max": 1, "req": "guard"},
 	{"id": "sp_ult_sky_arrow", "cat": "sniper", "special": true, "name": "必殺・天穿つ一矢", "desc": "15秒ごとに、狙撃兵が敵が一番多く並ぶ方向へ巨大な矢を放つ（12倍の威力で全部貫く）", "max": 1, "req": "sniper"},
 	{"id": "sp_ult_leap", "cat": "heavy", "special": true, "name": "必殺・大地砕き", "desc": "15秒ごとに、重装兵が近くの敵の群れへ飛び込み、地面を叩き割る（斬撃4倍の範囲攻撃＋1秒気絶）", "max": 1, "req": "heavy"},
 	{"id": "sp_ult_wall_burst", "cat": "builder", "special": true, "name": "必殺・城壁の大号令", "desc": "15秒ごとに、すべての壁の耐久が10回復し、全部の壁が外側へ大爆発する", "max": 1, "req": "builder"},
@@ -224,7 +224,7 @@ const SPECIAL := [
 	{"id": "sp_provoke", "cat": "heavy", "special": true, "name": "仁王立ち", "desc": "10秒ごとに、まわりの敵を挑発して5秒のあいだ重装兵を狙わせる。近くの敵1体につき、重装兵の与ダメージ +5%", "max": 1, "req": "heavy"},
 	{"id": "sp_spike_wall", "cat": "builder", "special": true, "name": "剣山の壁", "desc": "敵が壁に触れると、壁からトゲが飛び出して周りの敵に大ダメージ（壁1枚につき6秒に1回）", "max": 1, "req": "builder"},
 	{"id": "sp_automaton_squad", "cat": "engineer", "special": true, "name": "からくり兵団", "desc": "巨大からくり兵を一度に2体置くようになる", "max": 1, "req": "sp_automaton"},
-	{"id": "sp_overwork", "cat": "repair", "special": true, "name": "背水の修繕", "desc": "修理兵1人につき、城のHPが毎秒2ずつ減るようになる（HP1より下にはならない）。かわりに修理兵1人の回復量 +3/秒", "max": 1, "req": "repairer"},
+	{"id": "sp_overwork", "cat": "repair", "special": true, "name": "背水の修繕", "desc": "修理兵1人につき、城のHPが毎秒20ずつ減るようになる（HP1より下にはならない）。かわりに修理兵1人の回復量 +19/秒", "max": 1, "req": "repairer"},
 	{"id": "sp_pet_fusion", "cat": "pet", "special": true, "name": "ペット大合体", "desc": "20秒ごとに、全ペットが合体して10秒間巨大ペットになる。立ち止まって特大弾を連射→まっすぐ高速突進をくり返す。\n合体したペットが多いほど強く大きくなり、ペットの強化の効果も乗る", "max": 1, "req": "pet"},
 	{"id": "sp_tower_lock", "cat": "castle", "special": true, "name": "矢倉・執念の矢", "desc": "狙った敵を倒せなかったら、次も同じ敵を狙う。同じ敵を狙い続けるほど矢が強くなる（1回ごとに+20%、最大3倍）", "max": 1, "req": "tower"},
 	{"id": "sp_cannon_bomb", "cat": "castle", "special": true, "name": "大砲・置き土産", "desc": "砲弾が着弾した場所に爆弾を置く。近くに敵が来ると爆発する（大砲の1.5倍の威力）", "max": 1, "req": "cannon"},
@@ -740,7 +740,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.fun.automaton_squad = true
 		"sp_overwork":
 			castle.overwork = true
-			game.repair_stats.heal_per_sec += 3.0
+			game.repair_stats.heal_per_sec += 19.0
 		"sp_pet_fusion":
 			game.start_pet_fusion()
 		"sp_tower_lock":

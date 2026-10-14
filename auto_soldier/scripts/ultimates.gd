@@ -10,7 +10,7 @@ const LightningScript := preload("res://scripts/lightning.gd")
 const INTERVAL := 15.0
 ## 鉄壁の陣のドームの大きさと、続く時間
 const DOME_RADIUS := 300.0
-const DOME_TIME := 6.0
+const DOME_TIME := 5.0
 
 var game: Node2D
 

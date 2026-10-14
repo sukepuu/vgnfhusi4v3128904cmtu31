@@ -109,7 +109,7 @@ func _process(delta: float) -> void:
 	# ブーメラン：狙っている敵の方へ投げる（行きと帰りで貫く）
 	if st.boomerang and _boomerang_cd <= 0.0 and shoot_at != null:
 		_boomerang_cd = 3.5
-		var m: Node2D = game.spawn_missile("boomerang", global_position, aim_dir * 750.0, st.sword_damage * 1.3, 16.0, 4.0, game.sp_src(record, "sp_boomerang"))
+		var m: Node2D = game.spawn_missile("boomerang", global_position, aim_dir * 750.0, st.sword_damage * 1.3, 32.0, 4.0, game.sp_src(record, "sp_boomerang"))
 		m.thrower = self
 	if _sword_cd <= 0.0 and _try_slash():
 		_sword_cd = st.sword_interval

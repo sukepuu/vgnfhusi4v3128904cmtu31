@@ -176,12 +176,13 @@ func _draw() -> void:
 				draw_arc(d * 11.0, 4.5, 0.0, TAU * 0.75, 8, Color(0.7, 0.72, 0.78), 3.0)
 				draw_arc(-d * 11.0, 4.5, 0.0, TAU * 0.75, 8, Color(0.7, 0.72, 0.78), 3.0)
 				return
-			# くの字型
+			# くの字型（大きさは当たり判定に合わせる）
 			var a := Vector2.from_angle(_spin)
 			var b := a.rotated(1.9)
-			draw_line(Vector2.ZERO, a * radius, Color(0.55, 0.35, 0.15), 6.0)
-			draw_line(Vector2.ZERO, b * radius, Color(0.55, 0.35, 0.15), 6.0)
-			draw_circle(Vector2.ZERO, 3.5, Color(0.9, 0.8, 0.5))
+			var k := radius / 16.0
+			draw_line(Vector2.ZERO, a * radius, Color(0.55, 0.35, 0.15), 6.0 * k)
+			draw_line(Vector2.ZERO, b * radius, Color(0.55, 0.35, 0.15), 6.0 * k)
+			draw_circle(Vector2.ZERO, 3.5 * k, Color(0.9, 0.8, 0.5))
 		"rider":
 			# 半透明の金色の騎馬（馬の体・脚・騎士・槍）
 			var f := 1.0 if velocity.x >= 0.0 else -1.0
@@ -200,7 +201,7 @@ func _draw() -> void:
 			# 消える前は点滅
 			modulate.a = 0.4 if life < 1.0 and int(life * 8.0) % 2 == 0 else 1.0
 			draw_circle(Vector2(0, radius * 0.4), radius, Color(0, 0, 0, 0.3))
-			draw_cow(self, velocity.x < 0.0, _spin if velocity.length() > 40.0 else 0.0)
+			draw_cow(self, velocity.x < 0.0, _spin if velocity.length() > 40.0 else 0.0, radius / 22.0)
 		"ball":
 			draw_circle(Vector2(0, radius * 0.4), radius, Color(0, 0, 0, 0.3))
 			if look == "cow":

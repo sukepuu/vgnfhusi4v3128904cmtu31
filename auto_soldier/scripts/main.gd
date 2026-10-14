@@ -128,8 +128,8 @@ var level := 1
 var xp := 0
 ## 経験値の獲得倍率と、まだ入っていない端数
 const XP_GAIN := 1.4
-## レベルが10上がるごとに経験値の倍率が XP_LEVEL_DROP（0.05）ずつ下がる（最低 XP_LEVEL_MIN = 1.0。Lv80で最低になる）
-const XP_LEVEL_DROP := 0.05
+## レベルが10上がるごとに経験値の倍率が XP_LEVEL_DROP（0.08）ずつ下がる（最低 XP_LEVEL_MIN = 1.0。Lv50で最低になる）
+const XP_LEVEL_DROP := 0.08
 const XP_LEVEL_MIN := 1.0
 var _xp_frac := 0.0
 var xp_to_next := xp_needed(1)
@@ -738,12 +738,13 @@ func _alive_split_piece() -> Node2D:
 
 
 ## レベル lv から次のレベルまでに必要な経験値
-## （元の式を 1.44 = 1.2×1.2 で割って、レベルの上がりやすさを元の約1.44倍にしている）
+## （元の式を 1.44 = 1.2×1.2 で割って、レベルの上がりやすさを元の約1.44倍にしている。
+## Lv² の部分は ÷7。高いレベルほど少し上がりにくい）
 func xp_needed(lv: int) -> int:
-	return maxi(1, roundi((4.0 + lv * 3.0 + lv * lv / 8.0) / 1.44))
+	return maxi(1, roundi((4.0 + lv * 3.0 + lv * lv / 7.0) / 1.44))
 
 
-## 今の経験値の獲得倍率（Lv1〜9で1.4倍。Lv10ごとに0.05ずつ下がる：Lv10で×1.35、Lv50で×1.15、Lv80以降は×1.0）
+## 今の経験値の獲得倍率（Lv1〜9で1.4倍。Lv10ごとに0.08ずつ下がる：Lv10で×1.32、Lv30で×1.16、Lv50以降は×1.0）
 func xp_mult() -> float:
 	return maxf(XP_LEVEL_MIN, XP_GAIN - XP_LEVEL_DROP * floorf(level / 10.0))
 

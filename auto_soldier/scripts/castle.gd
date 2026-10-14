@@ -32,6 +32,8 @@ var _tower_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
 
 # --- 大砲（範囲攻撃）。強化を取るたびに1門ずつ増える（最大3門）
 const MAX_GUNS := 3
+## バリスタだけは4基まで
+const MAX_BALLISTAS := 4
 var cannon_level := 0
 var cannon_interval := 4.0
 var cannon_damage := 52.0
@@ -51,9 +53,9 @@ var _catapult_swings: Array = [0.0, 0.0, 0.0]
 var ballista_level := 0
 var ballista_interval := 4.0
 var ballista_damage := 96.0
-var _ballista_cds: Array = [1.0, 2.3, 3.6]
-var _ballista_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP]
-var _ballista_recoil: Array = [0.0, 0.0, 0.0]
+var _ballista_cds: Array = [1.0, 2.3, 3.6, 4.9]
+var _ballista_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
+var _ballista_recoil: Array = [0.0, 0.0, 0.0, 0.0]
 
 ## 直前に撃ち込んだ場所（同じ場所に重ねて撃たないように）
 var _recent_shots: Array = []
@@ -433,7 +435,7 @@ func _update_catapult(delta: float) -> void:
 
 
 func _update_ballista(delta: float) -> void:
-	for i in mini(ballista_level, MAX_GUNS):
+	for i in mini(ballista_level, MAX_BALLISTAS):
 		_ballista_recoil[i] -= delta
 		_ballista_cds[i] -= delta
 		if _ballista_cds[i] > 0.0:
@@ -580,7 +582,7 @@ func _update_eighth_specials(delta: float) -> void:
 			var big := _toughest_enemy_in(wpos(), INF)
 			if big != null:
 				_mega_cd = 8.0
-				for i in mini(ballista_level, MAX_GUNS):
+				for i in mini(ballista_level, MAX_BALLISTAS):
 					var from := wpos() + _ballista_local_pos(i)
 					var dir := (big.global_position - from).normalized()
 					_ballista_aims[i] = dir
@@ -623,7 +625,7 @@ func _update_fifth_specials(delta: float) -> void:
 		_lightning_cd -= delta
 		if _lightning_cd <= 0.0:
 			_lightning_cd = 5.0
-			for i in mini(ballista_level, MAX_GUNS):
+			for i in mini(ballista_level, MAX_BALLISTAS):
 				var from := wpos() + _ballista_local_pos(i)
 				# なるべく別々の敵から連鎖を始める
 				var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool:
@@ -726,7 +728,8 @@ func _ballista_local_pos(i: int) -> Vector2:
 	match i:
 		0: return Vector2(-HALF.x * 0.78, HALF.y * 0.45)
 		1: return Vector2(HALF.x * 0.78, HALF.y * 0.45)
-		_: return Vector2(HALF.x * 0.4, HALF.y * 0.55)
+		2: return Vector2(HALF.x * 0.4, HALF.y * 0.55)
+		_: return Vector2(-HALF.x * 0.4, HALF.y * 0.55)
 
 
 func _catapult_local_pos(i: int) -> Vector2:
@@ -805,7 +808,7 @@ func draw_weapons(ci: CanvasItem, offset: Vector2) -> void:
 		ci.draw_line(cp, cp + aim * 26.0, Color(0.15, 0.15, 0.18), 10.0)
 
 	# バリスタ
-	for i in mini(ballista_level, MAX_GUNS):
+	for i in mini(ballista_level, MAX_BALLISTAS):
 		var p := _ballista_local_pos(i) + offset
 		var aim: Vector2 = _ballista_aims[i]
 		var side := aim.orthogonal()

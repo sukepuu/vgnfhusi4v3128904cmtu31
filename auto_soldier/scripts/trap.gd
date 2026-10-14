@@ -85,7 +85,7 @@ func _activate() -> void:
 		game.spawn_burst(global_position, Color(0.45, 0.32, 0.2), blast_radius / 2.2)
 		# 毒沼：跡が毒の沼になる
 		if st.poison_level > 0:
-			game.spawn_hazard(global_position, blast_radius, st.BASE_PIT * st.power_mult * 0.3 * st.poison_level,
+			game.spawn_hazard(global_position, blast_radius, st.pit_damage * 0.3 * st.poison_level,
 				6.0 + 3.0 * (st.poison_level - 1), Color(0.5, 0.9, 0.3), src)
 		remove_from_group("traps")
 		_hole_left = 1.5

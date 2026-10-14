@@ -178,7 +178,7 @@ func _do_carpet() -> void:
 		_cds["carpet"] = 1.0
 		return
 	var dir := Vector2.from_angle(randf() * TAU)
-	var dmg: float = game.engineer_stats.BASE_BOMB * game.engineer_stats.power_mult * 0.6
+	var dmg: float = game.engineer_stats.bomb_damage * 0.6
 	var rec: Dictionary = game.engineers[0].record
 	for i in 13:
 		var p: Vector2 = center.global_position + dir * (i - 6) * 45.0

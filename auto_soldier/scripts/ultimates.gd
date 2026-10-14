@@ -248,12 +248,12 @@ func _do_meteor() -> void:
 		_cds["meteor"] = 1.0
 		return
 	var from: Vector2 = center.global_position + Vector2(-500, -600)
-	var s: Node2D = castle._fire_shell(from, center.global_position, castle.catapult_damage * 3.0, 260.0, true, game.sp_src(castle._equip_record("catapult", "投石器", 0), "sp_ult_meteor"))
+	var s: Node2D = castle._fire_shell(from, center.global_position, castle.catapult_damage * 1.5, 260.0, true, game.sp_src(castle._equip_record("catapult", "投石器", 0), "sp_ult_meteor"))
 	s.meteor = true
 	s.flight_time = 1.8
 	s.fire_time = 5.0
 	s.fire_sp = ""
-	s.fire_dps = castle.catapult_damage * 0.4
+	s.fire_dps = castle.catapult_damage * 0.2
 
 
 func _do_thunder_spear() -> void:

@@ -413,7 +413,7 @@ func _update_catapult(delta: float) -> void:
 		if split_level > 0:
 			s.split_count = 2 + 2 * split_level
 		if direct_hit:
-			s.direct_bonus = catapult_damage * 4.0
+			s.direct_bonus = catapult_damage * 7.0
 		if stay_rock:
 			s.stay_rock = true
 		# 牛投げ：3回に1回、岩のかわりに牛を投げる
@@ -432,13 +432,13 @@ func _update_catapult(delta: float) -> void:
 		if cow_throw and _catapult_shot_counts[i] % 3 == 0:
 			s.cow = true
 		if rolling_rock:
-			s.roll_damage = catapult_damage * 1.2
+			s.roll_damage = catapult_damage * 3.6
 		# 岩雨：ランダムな敵2体の頭上にも岩が落ちる
 		if rock_rain:
 			var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool: return is_instance_valid(e) and not e.dead)
 			pool.shuffle()
 			for e in pool.slice(0, 2):
-				game.spawn_blast(e.global_position, 1.0, 75.0, catapult_damage * 0.6, game.sp_src(s.src, "sp_rock_rain"), Color(0.75, 0.65, 0.5), "rock")
+				game.spawn_blast(e.global_position, 1.0, 75.0, catapult_damage * 2.4, game.sp_src(s.src, "sp_rock_rain"), Color(0.75, 0.65, 0.5), "rock")
 		_catapult_cds[i] = catapult_interval
 		_catapult_swings[i] = 0.4
 

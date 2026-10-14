@@ -24,7 +24,7 @@ const OVERWORK_DRAIN := 2.0
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0
 var tower_interval := 0.9
-var tower_damage := 24.0
+var tower_damage := 48.0
 var tower_range := 520.0
 var _tower_cds: Array = [0.0, 0.3, 0.6, 0.15]
 var _tower_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]

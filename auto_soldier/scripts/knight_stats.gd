@@ -4,7 +4,7 @@ extends RefCounted
 var max_hp := 110.0
 var move_speed := 190.0
 ## 突進の基本の威力。実際は「敵の強さの倍率」をかけるので、隠密兵を1発で倒せる威力を保つ
-var damage := 22.0
+var damage := 44.0
 ## 突進の間隔（秒）
 var interval := 1.6
 ## 突進で進む距離

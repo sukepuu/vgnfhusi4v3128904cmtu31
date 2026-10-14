@@ -22,7 +22,6 @@ const LIST := [
 	{"id": "pet", "cat": "soldier", "name": "ペットの仲間", "desc": "全遊撃兵にペットが1匹ずつ付き、自動で射撃してくれる（あとから増えた遊撃兵にも付く）",
 		"desc_up": "全遊撃兵にペットがもう1匹ずつ付く、全ペットの攻撃力 +20%", "max": 4},
 	{"id": "soldier_hp", "cat": "soldier", "name": "鍛錬", "desc": "遊撃兵の最大HP +25、全員HP全回復", "max": 4},
-	{"id": "speed", "cat": "soldier", "name": "俊足", "desc": "遊撃兵の移動速度 +12%", "max": 3},
 	# ---- 築城部隊
 	{"id": "builder", "cat": "builder", "name": "築城部隊", "desc": "城の上側180度を囲むように、20秒ごとに壁を1枚建てる（壁1枚で敵の攻撃を10発防ぐ）",
 		"desc_up": "築城部隊の作業員が1人増える（最大3人、それぞれ別の場所に壁を建てる）", "max": 3, "weight": 2.0},
@@ -377,8 +376,6 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			for s in game.soldiers:
 				if not s.dead:
 					s.hp = st.max_hp
-		"speed":
-			st.move_speed *= 1.12
 		"builder":
 			game.add_builder()
 		"build_speed":

@@ -385,12 +385,18 @@ const ROBOT_WEIGHT_PER_LEVEL := 0.5
 
 
 ## 特別強化の出やすさ（ふつうは1）。城ロボ起動は、城の兵装をたくさん取っているほど出やすい
+const ROBOT_MODE_WEIGHT := 3.0
+
+
 static func special_weight(u: Dictionary, levels: Dictionary) -> float:
 	if u["id"] == "sp_castle_robot":
 		var n := 0
 		for k in ["tower", "cannon", "catapult", "ballista"]:
 			n += int(levels.get(k, 0))
 		return 1.0 + ROBOT_WEIGHT_PER_LEVEL * n
+	# 城ロボのフライト・ファイナル・真・ファイナルモードは、ほかの特別強化の3倍出やすい
+	if u["id"] in ["sp_castle_robot_flight", "sp_castle_robot_final", "sp_castle_robot_true"]:
+		return ROBOT_MODE_WEIGHT
 	return 1.0
 
 

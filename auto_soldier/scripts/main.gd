@@ -128,9 +128,9 @@ var level := 1
 var xp := 0
 ## 経験値の獲得倍率と、まだ入っていない端数
 const XP_GAIN := 1.3
-## XP_TIME_START_MIN 分を過ぎたら、1分ごとに経験値の獲得量が +XP_TIME_PER_MIN（5%）ずつ増える
-const XP_TIME_START_MIN := 10.0
-const XP_TIME_PER_MIN := 0.05
+## XP_TIME_START_MIN 分から、経験値の獲得量が時間でなめらかに増える（1分ごとに +XP_TIME_PER_MIN = 10分ごとに+5%）
+const XP_TIME_START_MIN := 0.0
+const XP_TIME_PER_MIN := 0.005
 var _xp_frac := 0.0
 var xp_to_next := xp_needed(1)
 var kills := 0

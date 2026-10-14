@@ -642,9 +642,10 @@ func _boss_hp_mult() -> float:
 
 ## 敵の出現ペース（1秒に何体）：SPAWN_BASE から毎秒 SPAWN_GROWTH ずつ増え、SPAWN_MAX で頭打ち
 const SPAWN_BASE := 0.8
-const SPAWN_GROWTH := 0.018
+## 5分（300秒）でちょうど上限になる増え方
+const SPAWN_GROWTH := 0.034
 const SPAWN_MAX := 11.0
-## 出現ペースが上限になる時刻（秒）。約9分27秒
+## 出現ペースが上限になる時刻（秒）。5分
 const SPAWN_CAP_TIME := (SPAWN_MAX - SPAWN_BASE) / SPAWN_GROWTH
 ## 上限になったあと、敵のHP倍率が1分ごとに増える量（増え方はずっと一定）
 const HP_PER_MIN := 8.0

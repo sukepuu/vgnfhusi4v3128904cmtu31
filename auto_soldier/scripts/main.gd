@@ -159,6 +159,11 @@ var boss: Node2D = null
 var bosses_spawned := 0
 ## このレベルごとにボスが出る
 const BOSS_EVERY := 10
+## Lv LEVEL_HP_FROM 以降は、レベル10ごとに敵全体（ボスも）のHPが +LEVEL_HP_STEP ずつ増える（Lv130で+5%、Lv140で+10%…）
+const LEVEL_HP_FROM := 130
+const LEVEL_HP_STEP := 0.05
+## Lv DOUBLE_BOSS_FROM 以降は、ボスが2体同時に出る（そのかわり1体のHPは半分）
+const DOUBLE_BOSS_FROM := 160
 
 
 func _ready() -> void:
@@ -720,7 +725,7 @@ func _spawn_enemy(kind: String, pos: Vector2) -> void:
 func spawn_enemy_at(kind: String, pos: Vector2, hp_mult: float = -1.0) -> Node2D:
 	var e := EnemyScript.new()
 	e.game = self
-	e.setup(kind, hp_mult if hp_mult > 0.0 else _hp_mult())
+	e.setup(kind, hp_mult if hp_mult > 0.0 else _hp_mult() * level_hp_bonus())
 	e.position = clamp_to_map(pos, 20.0)
 	world.add_child(e)
 	return e
@@ -733,31 +738,55 @@ func _spawn_mortar_squad() -> void:
 	hud.show_banner("⚠ 迫撃砲部隊 襲来！ ⚠", Color(1.0, 0.6, 0.3))
 
 
-## ボス出現（Lv10ごと）。破城の魔王 → 砲台要塞 → 分裂の魔獣 の順に来る
+## Lv130以降の、敵全体（ボスも）のHPの上乗せ倍率（Lv130〜139で×1.05、Lv140〜149で×1.10…）
+func level_hp_bonus() -> float:
+	if level < LEVEL_HP_FROM:
+		return 1.0
+	return 1.0 + LEVEL_HP_STEP * (floori(level / 10.0) - floori(LEVEL_HP_FROM / 10.0) + 1)
+
+
+## ボス出現（Lv10ごと）。破城の魔王 → 砲台要塞 → 分裂の魔獣 の順に来る。
+## Lv160からは、この順番の次の2体が同時に出る（魔王&要塞 → 分裂&魔王 → 要塞&分裂 …）。1体のHPは半分
 func _spawn_boss() -> void:
-	bosses_spawned += 1
-	var e := EnemyScript.new()
-	e.game = self
-	e.boss_rank = bosses_spawned
-	var kind: String = ["boss3", "boss", "boss2"][bosses_spawned % 3]
-	e.setup(kind, _boss_hp_mult())
-	e.position = Vector2(MAP_RECT.get_center().x, MAP_RECT.position.y + (110.0 if kind == "boss2" else 60.0))
-	world.add_child(e)
-	boss = e
-	hud.show_banner("⚠ BOSS「%s」出現！ ⚠" % e.boss_title, Color(1.0, 0.4, 0.5))
+	var double := level >= DOUBLE_BOSS_FROM
+	var n := 2 if double else 1
+	var titles := PackedStringArray()
+	var first: Node2D = null
+	for i in n:
+		bosses_spawned += 1
+		var e := EnemyScript.new()
+		e.game = self
+		# 何回目のボス戦か（2体同時でも、強さの段階はボス戦の回数で決める）
+		e.boss_rank = level / BOSS_EVERY
+		var kind: String = ["boss3", "boss", "boss2"][bosses_spawned % 3]
+		e.setup(kind, _boss_hp_mult() * level_hp_bonus() * (0.5 if double else 1.0))
+		var x: float = MAP_RECT.get_center().x + (0.0 if n == 1 else (-260.0 if i == 0 else 260.0))
+		e.position = Vector2(x, MAP_RECT.position.y + (110.0 if kind == "boss2" else 60.0))
+		world.add_child(e)
+		titles.append("「%s」" % e.boss_title)
+		if first == null:
+			first = e
+	boss = first
+	hud.show_banner("⚠ BOSS%s出現！ ⚠" % "＆".join(titles), Color(1.0, 0.4, 0.5))
+
+
+## 生きているボス（分裂の魔獣は分かれた体も1体ずつ）
+func alive_bosses() -> Array:
+	return get_tree().get_nodes_in_group("enemies").filter(func(x: Node2D) -> bool: return x.is_boss and not x.dead)
 
 
 # ---------------------------------------------------------------- 経験値・レベルアップ
 
 func on_enemy_killed(e: Node2D) -> void:
 	kills += 1
-	if e == boss:
-		boss = null
-		# 分裂の魔獣は、分かれた体が全部いなくなるまで撃破にならない
-		if e.kind == "boss3":
-			boss = _alive_split_piece()
+	if e.is_boss:
+		# ボスが全部いなくなったら撃破（分裂の魔獣は、分かれた体が全部いなくなるまで撃破にならない）
+		var rest: Array = alive_bosses().filter(func(x: Node2D) -> bool: return x != e)
+		boss = rest[0] if not rest.is_empty() else null
 		if boss == null:
 			hud.show_banner("BOSS 撃破！", Color(1.0, 0.85, 0.3))
+		elif e.kind != "boss3" or _alive_split_piece() == null:
+			hud.show_banner("BOSS「%s」撃破！" % e.boss_title, Color(1.0, 0.85, 0.3))
 		spawn_burst(e.global_position, Color(1.0, 0.85, 0.3), 60.0)
 	spawn_burst(e.global_position, e.color, e.radius)
 	# 氷像の囮：結界の中で倒された敵（ボス以外）が20%の確率で氷像になる（同時に12体まで）

@@ -265,9 +265,31 @@ func _process(delta: float) -> void:
 func refresh() -> void:
 	var b: Node2D = game.boss
 	var has_boss: bool = b != null and is_instance_valid(b) and not b.dead
+	var all_bosses: Array = game.alive_bosses() if has_boss else []
+	# 2体同時（種類のちがうボスが生きている）なら、合計HPと両方の名前を出す
+	var kinds := {}
+	for x in all_bosses:
+		kinds[x.kind] = x
 	_boss_bar.visible = has_boss
 	_boss_label.visible = has_boss
-	if has_boss:
+	if has_boss and kinds.size() >= 2:
+		var total := 0.0
+		var total_max := 0.0
+		var parts := PackedStringArray()
+		for k in kinds:
+			var hp_k := 0.0
+			for x in all_bosses:
+				if x.kind == k:
+					hp_k += x.hp
+					total_max += x.max_hp
+			total += hp_k
+			parts.append("「%s」%d" % [kinds[k].boss_title, ceili(hp_k)])
+		_boss_bar.max_value = maxf(total_max, 1.0)
+		_boss_bar.value = total
+		_boss_label.text = "BOSS（%d回目）  %s" % [b.boss_rank, "  ＆  ".join(parts)]
+	elif has_boss:
+		if kinds.size() == 1:
+			b = kinds.values()[0]
 		if b.kind == "boss3":
 			# 分裂の魔獣：分かれた体ぜんぶのHPの合計
 			var total := 0.0

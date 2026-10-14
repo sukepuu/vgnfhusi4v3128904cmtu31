@@ -83,6 +83,9 @@ var heavy: Node2D = null
 var heavy_provoke := false
 ## 仁王立ちで敵を引きつける距離
 const PROVOKE_RANGE := 260.0
+## 仁王立ち：PROVOKE_INTERVAL 秒ごとに、まわりの敵を PROVOKE_TIME 秒のあいだ挑発する
+const PROVOKE_INTERVAL := 10.0
+const PROVOKE_TIME := 5.0
 ## 工兵部隊
 var engineers: Array = []
 var engineer_stats := EngineerStats.new()

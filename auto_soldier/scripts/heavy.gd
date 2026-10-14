@@ -53,6 +53,8 @@ var _rage_timer := 0.0
 ## 仁王立ち：近くにいる敵の数（与ダメージ +5% ずつ）
 var _near_count := 0
 var _count_cd := 0.0
+## 仁王立ち：次にまわりの敵を挑発するまでの時間
+var _provoke_cd := 1.0
 
 
 func _ready() -> void:
@@ -78,6 +80,14 @@ func _process(delta: float) -> void:
 	_ball_cd -= delta
 	_rage_timer -= delta
 	if game.heavy_provoke:
+		# 10秒ごとに、まわりの敵を挑発する（5秒のあいだ重装兵を狙う）
+		_provoke_cd -= delta
+		if _provoke_cd <= 0.0 and not dead and game.nearest_enemy(global_position, game.PROVOKE_RANGE) != null:
+			_provoke_cd = game.PROVOKE_INTERVAL
+			for e in game.enemies_near(global_position, game.PROVOKE_RANGE):
+				if is_instance_valid(e) and not e.dead and not e.is_boss and global_position.distance_to(e.global_position) < game.PROVOKE_RANGE:
+					e.provoked_left = game.PROVOKE_TIME
+			game.spawn_burst(global_position, Color(1.0, 0.35, 0.25), game.PROVOKE_RANGE / 2.2)
 		_count_cd -= delta
 		if _count_cd <= 0.0:
 			_count_cd = 0.25

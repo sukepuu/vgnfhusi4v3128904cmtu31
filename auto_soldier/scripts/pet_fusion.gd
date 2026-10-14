@@ -185,6 +185,14 @@ func _draw() -> void:
 	var r := _radius
 	var flap := sin(_t * 14.0) * r * 0.25
 	draw_circle(Vector2(0, r * 0.4), r, Color(0, 0, 0, 0.25))
+	# ペットの踊り：合体中も、虹色の光をまといながらその場でくるくる回る
+	if game.fun.pet_dance:
+		var hue := fmod(_t * 0.8, 1.0)
+		draw_circle(Vector2.ZERO, r * 1.6, Color.from_hsv(hue, 0.7, 1.0, 0.25))
+		for i in 10:
+			var a := _t * 3.0 + TAU * i / 10.0
+			draw_circle(Vector2.from_angle(a) * r * 1.5, 3.0 + r * 0.06, Color.from_hsv(fmod(hue + i / 10.0, 1.0), 0.8, 1.0))
+		draw_set_transform(Vector2.ZERO, _t * 6.0, Vector2.ONE)
 	# 大きな羽
 	draw_colored_polygon(PackedVector2Array([Vector2(-r * 0.6, 0), Vector2(-r * 1.7, -r * 0.6 - flap), Vector2(-r * 1.2, r * 0.3)]), Color(0.75, 1.0, 0.85))
 	draw_colored_polygon(PackedVector2Array([Vector2(r * 0.6, 0), Vector2(r * 1.7, -r * 0.6 - flap), Vector2(r * 1.2, r * 0.3)]), Color(0.75, 1.0, 0.85))
@@ -198,5 +206,6 @@ func _draw() -> void:
 	draw_circle(Vector2(-r * 0.3, -r * 0.1), r * 0.12, Color(0.1, 0.1, 0.1))
 	draw_circle(Vector2(r * 0.3, -r * 0.1), r * 0.12, Color(0.1, 0.1, 0.1))
 	draw_colored_polygon(PackedVector2Array([Vector2(-r * 0.15, r * 0.15), Vector2(r * 0.15, r * 0.15), Vector2(0, r * 0.45)]), Color(1.0, 0.7, 0.2))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# 残り時間
 	draw_arc(Vector2.ZERO, r + 14.0, -PI / 2.0, -PI / 2.0 + TAU * _left / DURATION, 40, Color(1, 1, 1, 0.6), 3.0)

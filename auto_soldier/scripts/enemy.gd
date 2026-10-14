@@ -68,6 +68,8 @@ var speed_mult := 1.0
 var stun_left := 0.0
 ## 弱点看破（狙撃部隊）：この時間のあいだ受けるダメージ +35%
 var mark_left := 0.0
+## 仁王立ちで挑発されている残り時間（このあいだは重装兵を狙う）
+var provoked_left := 0.0
 ## 混乱（虹の矢・ペットの踊り）：この時間のあいだ、ふらふらと変な方向へ歩く
 var confuse_left := 0.0
 ## 居座り岩・トゲの柵の上：この時間のあいだ足が slow_ratio ぶん遅くなる
@@ -164,6 +166,7 @@ func _process(delta: float) -> void:
 	_flash -= delta
 	_contact_cd -= delta
 	mark_left -= delta
+	provoked_left -= delta
 	_kb_cd -= delta
 	confuse_left -= delta
 	slow_left -= delta
@@ -202,10 +205,10 @@ func _process(delta: float) -> void:
 		var g := _nearest_guard(230.0)
 		if g != null:
 			soldier = g
-	# 仁王立ち：近くに重装兵がいればそちらを狙う（ボスは引きつけられない）
-	if game.heavy_provoke and not is_boss:
+	# 仁王立ち：挑発されているあいだは重装兵を狙う（ボスは挑発されない）
+	if provoked_left > 0.0 and not is_boss:
 		var h: Node2D = game.heavy
-		if h != null and not h.dead and global_position.distance_to(h.global_position) < game.PROVOKE_RANGE:
+		if h != null and not h.dead:
 			soldier = h
 	# 氷像の囮：近くに氷像があれば、何よりも先にそちらを狙う
 	if game.castle.ice_statue and not is_boss:

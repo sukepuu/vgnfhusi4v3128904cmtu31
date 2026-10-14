@@ -102,7 +102,7 @@ const SPECIAL := [
 	{"id": "sp_whirl_spear", "cat": "guard", "special": true, "name": "大旋風槍", "desc": "6秒ごとに槍を振り回し、周りの敵へ槍の3倍の大ダメージ", "max": 1, "req": "guard"},
 	{"id": "sp_spikes", "cat": "guard", "special": true, "name": "拒馬の柵", "desc": "8秒ごとに盾の前へトゲの柵を置く。上を通る敵の移動速度を20%下げてダメージ（8秒残る）", "max": 1, "req": "guard"},
 	# ---- 重装部隊
-	{"id": "sp_multi_slash", "cat": "heavy", "special": true, "name": "連続斬り", "desc": "斬撃が3回連続で出る", "max": 1, "req": "heavy"},
+	{"id": "sp_multi_slash", "cat": "heavy", "special": true, "name": "連続斬り", "desc": "斬撃が2回連続で出る", "max": 1, "req": "heavy"},
 	{"id": "sp_quake", "cat": "heavy", "special": true, "name": "地割れ", "desc": "5秒ごとに地面を叩き、周りの敵に大ダメージ＋1秒気絶", "max": 1, "req": "heavy"},
 	{"id": "sp_lifesteal", "cat": "heavy", "special": true, "name": "吸命の剣", "desc": "斬撃で与えたダメージの10%ぶんHPが回復する", "max": 1, "req": "heavy"},
 	{"id": "sp_execute", "cat": "heavy", "special": true, "name": "一刀両断", "desc": "4秒ごとに、近くで一番HPの多い敵へ斬撃6倍の一撃", "max": 1, "req": "heavy"},
@@ -221,7 +221,7 @@ const SPECIAL := [
 	{"id": "sp_giant_spear", "cat": "guard", "special": true, "name": "神槍投擲", "desc": "8秒ごとに、迎撃兵が一番近い敵の方へ巨大な槍を投げる。槍はゆっくり進み、通った敵を全部貫く（槍の5倍の威力）", "max": 1, "req": "guard"},
 	{"id": "sp_rapid_snipe", "cat": "sniper", "special": true, "name": "速射の極意", "desc": "狙撃兵の攻撃力が1/3になるかわりに、攻撃速度が4倍になる", "max": 1, "req": "sniper"},
 	{"id": "sp_kill_chain", "cat": "knight", "special": true, "name": "疾風怒濤", "desc": "突進で敵を倒すたびに、すぐ次の敵へ突進し直す（最大5連鎖）", "max": 1, "req": "knight"},
-	{"id": "sp_provoke", "cat": "heavy", "special": true, "name": "仁王立ち", "desc": "近くの敵が重装兵を狙うようになる。近くの敵1体につき、重装兵の与ダメージ +5%", "max": 1, "req": "heavy"},
+	{"id": "sp_provoke", "cat": "heavy", "special": true, "name": "仁王立ち", "desc": "10秒ごとに、まわりの敵を挑発して5秒のあいだ重装兵を狙わせる。近くの敵1体につき、重装兵の与ダメージ +5%", "max": 1, "req": "heavy"},
 	{"id": "sp_spike_wall", "cat": "builder", "special": true, "name": "剣山の壁", "desc": "敵が壁に触れると、壁からトゲが飛び出して周りの敵に大ダメージ（壁1枚につき6秒に1回）", "max": 1, "req": "builder"},
 	{"id": "sp_automaton_squad", "cat": "engineer", "special": true, "name": "からくり兵団", "desc": "巨大からくり兵を一度に2体置くようになる", "max": 1, "req": "sp_automaton"},
 	{"id": "sp_overwork", "cat": "repair", "special": true, "name": "背水の修繕", "desc": "修理兵1人につき、城のHPが毎秒2ずつ減るようになる（HP1より下にはならない）。かわりに修理兵1人の回復量 +3/秒", "max": 1, "req": "repairer"},
@@ -463,7 +463,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"sp_taunt":
 			game.guard_stats.taunt = true
 		"sp_multi_slash":
-			game.heavy.extra_slashes = 2
+			game.heavy.extra_slashes = 1
 		"sp_quake":
 			game.heavy.quake_level = 2
 		"sp_lifesteal":

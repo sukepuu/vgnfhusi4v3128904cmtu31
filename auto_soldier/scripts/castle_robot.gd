@@ -410,7 +410,7 @@ func _update_final(delta: float) -> void:
 	_beam_cd -= delta
 	if _beam_cd <= 0.0:
 		_beam_cd = BEAM_TICK
-		var dmg: float = 2.0 * game._hp_mult()
+		var dmg: float = 4.0 * game._hp_mult()
 		var from: Vector2 = global_position + _beam_origin()
 		# ビーム1本ごとに、胸から的までの線の上にいる敵すべてにダメージ
 		for t in _beam_targets.duplicate():
@@ -429,7 +429,7 @@ func _update_final(delta: float) -> void:
 	_missile_cd -= delta
 	if _missile_cd <= 0.0:
 		_missile_cd = FINAL_MISSILE_INTERVAL
-		_fire_missile(_final_src(), 6.0 * game._hp_mult())
+		_fire_missile(_final_src(), 12.0 * game._hp_mult())
 
 
 ## ビームが出る場所（胸の真ん中）

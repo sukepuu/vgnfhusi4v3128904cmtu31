@@ -31,7 +31,7 @@ const LIST := [
 	# ---- 迎撃部隊
 	{"id": "guard", "cat": "guard", "name": "迎撃部隊", "desc": "盾と槍を持ち、城の近くで敵を迎え撃つ兵士が加わる（前方からの攻撃は盾でダメージ20%）",
 		"desc_up": "迎撃部隊の兵士が1人増える（最大3人）", "max": 3, "weight": 2.0},
-	{"id": "shield_arc", "cat": "guard", "name": "大盾", "desc": "盾で防げる範囲 +20度", "max": 4, "req": "guard"},
+	{"id": "shield_arc", "cat": "guard", "name": "大盾", "desc": "盾で防げる範囲 +20度、盾で受けたときのダメージカット +5%（最大で100%カット）", "max": 4, "req": "guard"},
 	{"id": "spear_reach", "cat": "guard", "name": "長槍", "desc": "槍のリーチ +25", "max": 4, "req": "guard"},
 	{"id": "spear_dmg", "cat": "guard", "name": "槍術", "desc": "槍の攻撃力 +35%", "max": 5, "req": "guard"},
 	# 【ペット】（ペットの仲間を取ると出る）
@@ -396,6 +396,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.add_guard()
 		"shield_arc":
 			game.guard_stats.shield_arc += deg_to_rad(20.0)
+			game.guard_stats.shield_taken = maxf(0.0, 0.2 - 0.05 * new_level)
 		"spear_reach":
 			game.guard_stats.spear_reach += 25.0
 		"spear_dmg":

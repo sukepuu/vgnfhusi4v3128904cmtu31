@@ -3,8 +3,10 @@ extends RefCounted
 
 var max_hp := 120.0
 var move_speed := 230.0
-## 盾で完全に防げる前方の角度（合計）
+## 盾で受けられる前方の角度（合計）
 var shield_arc := deg_to_rad(60.0)
+## 盾で受けたときに通るダメージの割合（大盾で5%ずつ減って、最大レベル4で0% = 完全に防ぐ）
+var shield_taken := 0.2
 ## 槍：リーチは長いが横幅は狭い
 var spear_reach := 110.0
 var spear_width := 10.0

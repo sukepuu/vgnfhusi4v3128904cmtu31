@@ -1,6 +1,6 @@
 extends Node2D
 ## 迎撃部隊の兵士（盾＋槍）。城の近くに陣取って、近づく敵を迎え撃つ。
-## 盾を向けている前方の狭い範囲からの攻撃はダメージが20%になる。
+## 盾を向けている前方の狭い範囲からの攻撃はダメージが20%になる（大盾1レベルごとに-5%、最大で0%）。
 ## 槍はリーチが長いが、横の範囲はかなり狭い（直線上の敵をまとめて貫く）。
 ## ステータスは game.guard_stats を全員で共有している。
 
@@ -251,7 +251,7 @@ func _try_thrust() -> bool:
 	return true
 
 
-## from_pos = 攻撃が来た場所。盾の範囲内からならダメージを20%に減らす
+## from_pos = 攻撃が来た場所。盾の範囲内からならダメージを減らす（大盾が最大なら完全に防ぐ）
 func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 	if dead or _invuln > 0.0:
 		return
@@ -260,8 +260,8 @@ func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 		var dir := (from_pos - global_position).normalized()
 		if absf(facing.angle_to(dir)) <= game.guard_stats.shield_arc / 2.0:
 			_block_flash = 0.15
-			# 盾で受けるとダメージは20%（捨て身の構えなら50%）
-			var taken_ratio := 0.5 if game.guard_stats.berserk else 0.2
+			# 盾で受けるとダメージは20%（大盾で減っていき、最大で0%。捨て身の構えなら50%）
+			var taken_ratio: float = 0.5 if game.guard_stats.berserk else game.guard_stats.shield_taken
 			record["blocked"] += amount * (1.0 - taken_ratio)
 			# はね返し盾：防いだ弾を来た方へ打ち返す
 			if game.guard_stats.reflect:
@@ -273,6 +273,9 @@ func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 				game.explode(global_position, 60.0 + 20.0 * bash, game.guard_stats.spear_damage * (0.7 + 0.3 * bash), record, Color(0.7, 1.0, 0.6), 0.0, 320.0)
 			amount *= taken_ratio
 			blocked = true
+			# 完全に防いだら、ダメージの数字は出さない
+			if amount <= 0.0:
+				return
 	record["taken"] += minf(amount, hp)
 	hp -= amount
 	_hurt_flash = 0.15

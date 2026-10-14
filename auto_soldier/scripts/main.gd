@@ -372,7 +372,7 @@ func set_auto_pick(on: bool) -> void:
 	hud.update_auto_button()
 	# 選択画面が出ている最中に有効にしたら、その場で自動選択
 	if on and level_up_ui.visible and not _shown_choices.is_empty():
-		level_up_ui._pick(Upgrades.auto_choose(_shown_choices, auto_priority)["id"])
+		level_up_ui._pick(_auto_pick_from(_shown_choices, _shown_special)["id"])
 
 
 func toggle_stats() -> void:
@@ -764,8 +764,9 @@ func _open_level_up() -> void:
 		castle.hp = castle.max_hp
 		return
 	if auto_pick:
-		# オート選択：画面を止めずに選ぶ（オート選択設定で優先にしたものを先に取る。同じならランダム）
-		var u: Dictionary = Upgrades.auto_choose(choices, auto_priority)
+		# オート選択：画面を止めずに選ぶ（オート選択設定で優先にしたものを先に取る。同じならランダム。
+		# 優先のものが1つもなければ1回リロール）
+		var u: Dictionary = _auto_pick_from(choices, special)
 		hud.show_notice("オート選択：【%s】%s%s" % [Upgrades.CAT_LABEL[u["cat"]], "★" if u.get("special", false) else "", u["name"]])
 		_on_upgrade_chosen(u["id"])
 		return
@@ -779,12 +780,19 @@ func _open_level_up() -> void:
 
 ## リロール：今出ている候補とはなるべく別のものを3つ引き直す（1画面1回まで）
 func _on_reroll() -> void:
+	var choices := _rerolled_choices(_shown_choices, _shown_special)
+	_shown_choices = choices
+	level_up_ui.show_choices(choices, upgrade_levels, _shown_level, _shown_special, true)
+
+
+## リロールした候補：old とはなるべく別のものを3つ
+func _rerolled_choices(old: Array, special: bool) -> Array:
 	var pool: Array
-	if _shown_special:
+	if special:
 		pool = Upgrades.roll_special(upgrade_levels, 999)
 	else:
 		pool = Upgrades.roll(upgrade_levels, 999, self)
-	var old_ids: Array = _shown_choices.map(func(u: Dictionary) -> String: return u["id"])
+	var old_ids: Array = old.map(func(u: Dictionary) -> String: return u["id"])
 	var fresh: Array = pool.filter(func(u: Dictionary) -> bool: return not u["id"] in old_ids)
 	var choices: Array = fresh.slice(0, 3)
 	# 新しい候補が3つに足りなければ、前の候補から埋める
@@ -793,8 +801,17 @@ func _on_reroll() -> void:
 			break
 		if not choices.has(u):
 			choices.append(u)
-	_shown_choices = choices
-	level_up_ui.show_choices(choices, upgrade_levels, _shown_level, _shown_special, true)
+	return choices
+
+
+## オート選択で1つ選ぶ。優先設定があるのに、3つの中に最優先も優先もなければ1回だけリロールして引き直す
+func _auto_pick_from(choices: Array, special: bool) -> Dictionary:
+	var u: Dictionary = Upgrades.auto_choose(choices, auto_priority)
+	if not auto_priority.is_empty() and Upgrades.priority_of(u, auto_priority) == 0:
+		var again := _rerolled_choices(choices, special)
+		if not again.is_empty():
+			u = Upgrades.auto_choose(again, auto_priority)
+	return u
 
 
 func _on_upgrade_chosen(id: String) -> void:

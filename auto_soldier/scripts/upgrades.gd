@@ -263,14 +263,20 @@ static func groups_of(u: Dictionary) -> Array:
 	return CASTLE_UPGRADE_GROUPS.get(u["id"], ["castle"])
 
 
+## 強化の優先度（2=最優先、1=優先、0=なし）
+static func priority_of(u: Dictionary, priority: Dictionary) -> int:
+	var p := 0
+	for g in groups_of(u):
+		p = maxi(p, int(priority.get(g, 0)))
+	return p
+
+
 ## オート選択：候補の中から、優先度（2=最優先、1=優先、0=なし）が一番高いものを選ぶ。同じならランダム
 static func auto_choose(choices: Array, priority: Dictionary) -> Dictionary:
 	var best: Array = []
 	var best_p := -1
 	for u in choices:
-		var p := 0
-		for g in groups_of(u):
-			p = maxi(p, int(priority.get(g, 0)))
+		var p := priority_of(u, priority)
 		if p > best_p:
 			best_p = p
 			best = [u]

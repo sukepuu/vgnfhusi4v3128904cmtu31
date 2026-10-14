@@ -399,10 +399,11 @@ func _update_catapult(delta: float) -> void:
 		if iron_chunk and _catapult_shots % 4 == 0:
 			var big := _toughest_enemy_in(wpos(), INF)
 			if big != null:
-				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_damage * 0.5, 50.0, true, game.sp_src(s.src, "sp_iron_chunk"))
+				# 威力：落ちた所の範囲に投石器×4、追いかけた敵への直撃に投石器×64
+				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_damage * 4.0, 50.0, true, game.sp_src(s.src, "sp_iron_chunk"))
 				iron.iron = true
 				iron.chase = big
-				iron.direct_bonus = catapult_damage * 8.0
+				iron.direct_bonus = catapult_damage * 64.0
 		if cow_throw and _catapult_shots % 3 == 0:
 			s.cow = true
 		if rolling_rock:

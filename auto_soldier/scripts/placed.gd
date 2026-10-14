@@ -38,7 +38,7 @@ var max_hp := 0.0
 var dead := false
 var _hurt := 0.0
 ## 耐久を持つ物の耐久
-const DURABILITY := {"watchtower": 50.0, "scarecrow": 60.0, "ice_statue": 3.0}
+const DURABILITY := {"watchtower": 50.0, "scarecrow": 60.0, "ice_statue": 1.0}
 ## 修理玉の大きさ（ボスの半径46の7割くらい）
 const ORB_RADIUS := 32.0
 ## 置いたときの持続時間（残り時間バーの表示用）

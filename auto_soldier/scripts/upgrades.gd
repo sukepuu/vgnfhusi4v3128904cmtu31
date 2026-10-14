@@ -26,7 +26,7 @@ const LIST := [
 	{"id": "builder", "cat": "builder", "name": "築城部隊", "desc": "城の上側180度を囲むように、20秒ごとに壁を1枚建てる（壁1枚で敵の攻撃を10発防ぐ）",
 		"desc_up": "築城部隊の作業員が1人増える（最大3人、それぞれ別の場所に壁を建てる）", "max": 3, "weight": 2.0},
 	{"id": "build_speed", "cat": "builder", "name": "突貫工事", "desc": "壁の建築時間 -20%", "max": 4, "req": "builder"},
-	{"id": "wall_hp", "cat": "builder", "name": "石壁強化", "desc": "壁が防げる回数 +5発（建っている壁にも反映）", "max": 5, "req": "builder"},
+	{"id": "wall_hp", "cat": "builder", "name": "石壁強化", "desc": "壁が防げる回数 +2発（建っている壁にも反映）", "max": 5, "req": "builder"},
 	{"id": "wall_width", "cat": "builder", "name": "大きな壁", "desc": "これから建てる壁の幅 +4度（少ない枚数で囲める）", "max": 3, "req": "builder"},
 	# ---- 迎撃部隊
 	{"id": "guard", "cat": "guard", "name": "迎撃部隊", "desc": "盾と槍を持ち、城の近くで敵を迎え撃つ兵士が加わる（前方からの攻撃は盾で無効）",
@@ -230,7 +230,7 @@ const SPECIAL := [
 	{"id": "sp_cannon_bomb", "cat": "castle", "special": true, "name": "大砲・置き土産", "desc": "砲弾が着弾した場所に爆弾を置く。近くに敵が来ると爆発する（大砲の1.5倍の威力）", "max": 1, "req": "cannon"},
 	{"id": "sp_iron_chunk", "cat": "castle", "special": true, "name": "投石器・鉄塊投げ", "desc": "4発に1回、ふつうの岩と一緒に、HPが一番多い敵へ鉄塊を投げる（投石器の8倍の威力）", "max": 1, "req": "catapult"},
 	{"id": "sp_bolt_momentum", "cat": "castle", "special": true, "name": "バリスタ・破竹の大矢", "desc": "バリスタの矢が敵に当たるたびに、その矢の威力が +10% ずつ増えていく", "max": 1, "req": "ballista"},
-	{"id": "sp_ice_statue", "cat": "castle", "special": true, "name": "結界・氷像の囮", "desc": "結界の中で倒された敵が20%の確率で氷像になる。氷像はほかの敵に最優先で狙われる（3回攻撃されると砕ける）", "max": 1, "req": "frost"},
+	{"id": "sp_ice_statue", "cat": "castle", "special": true, "name": "結界・氷像の囮", "desc": "結界の中で倒された敵が20%の確率で氷像になる。氷像はほかの敵に最優先で狙われる（1回攻撃されると砕ける）", "max": 1, "req": "frost"},
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",
@@ -381,7 +381,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"build_speed":
 			game.walls.build_time *= 0.8
 		"wall_hp":
-			game.walls.add_wall_hp(5.0)
+			game.walls.add_wall_hp(2.0)
 		"wall_width":
 			game.walls.wall_width += deg_to_rad(4.0)
 		"guard":

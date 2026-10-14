@@ -76,7 +76,7 @@ func _update_turret(w: Dictionary, delta: float) -> void:
 	b.color = Color(0.85, 0.8, 0.7)
 	b.life = 340.0 / 640.0 + 0.2
 	b.position = from
-	b.src = w["src"]
+	b.src = game.sp_src(w["src"], "sp_wall_turret")
 	game.world.add_child(b)
 
 
@@ -107,10 +107,10 @@ func hit_test(p: Vector2, r: float) -> int:
 func absorb(i: int, pos: Vector2 = Vector2.INF, amount: float = 1.0) -> void:
 	var w: Dictionary = walls[i]
 	if explode_on_block and pos != Vector2.INF:
-		game.explode(pos, 75.0, 40.0 * (1.0 + game.elapsed / 180.0), w["src"], Color(0.9, 0.75, 0.5))
+		game.explode(pos, 75.0, 40.0 * (1.0 + game.elapsed / 180.0), game.sp_src(w["src"], "sp_wall_blast"), Color(0.9, 0.75, 0.5))
 	if jack and pos != Vector2.INF and randf() < 0.35:
 		game.spawn_fun_fx("jack", pos)
-		game.explode(pos, 70.0, 20.0 * (1.0 + game.elapsed / 180.0), w["src"], Color(1.0, 0.4, 0.6), 0.0, 600.0)
+		game.explode(pos, 70.0, 20.0 * (1.0 + game.elapsed / 180.0), game.sp_src(w["src"], "sp_fun_jack"), Color(1.0, 0.4, 0.6), 0.0, 600.0)
 	w["hp"] -= amount
 	w["flash"] = 0.15
 	if golden:
@@ -133,7 +133,7 @@ func spike_hit(i: int, pos: Vector2) -> void:
 	w["spike_next"] = game.elapsed + SPIKE_COOLDOWN
 	# 敵の硬さに合わせて威力も上がる（ふつうの雑魚のHPの2倍くらい）
 	var dmg: float = 40.0 * game._hp_mult()
-	game.explode(pos, SPIKE_RADIUS, dmg, w["src"], Color(0.8, 0.8, 0.85), 0.0, 260.0)
+	game.explode(pos, SPIKE_RADIUS, dmg, game.sp_src(w["src"], "sp_spike_wall"), Color(0.8, 0.8, 0.85), 0.0, 260.0)
 	game.spawn_fun_fx("spikes", pos)
 
 
@@ -153,7 +153,7 @@ func counter_shot(pos: Vector2) -> void:
 	b.color = Color(1.0, 0.9, 0.5)
 	b.life = 1.0
 	b.position = pos + dir * 10.0
-	b.src = src
+	b.src = game.sp_src(src, "sp_counter_wall")
 	game.world.add_child(b)
 
 

@@ -106,7 +106,7 @@ func _process(delta: float) -> void:
 	# 大旋風槍
 	if st.whirl and _whirl_cd <= 0.0 and game.nearest_enemy(global_position, st.spear_reach) != null:
 		_whirl_cd = 6.0
-		game.explode(global_position, st.spear_reach * 1.2, st.spear_damage * 3.0, record, Color(0.7, 1.0, 0.7), 0.0, 320.0)
+		game.explode(global_position, st.spear_reach * 1.2, st.spear_damage * 3.0, game.sp_src(record, "sp_whirl_spear"), Color(0.7, 1.0, 0.7), 0.0, 320.0)
 		game.spawn_burst(global_position, Color(1, 1, 1), st.spear_reach / 1.8)
 	# 拒馬の柵：敵が近いとき、盾の前に柵を置く
 	# 神槍投擲：一番近い敵の方へ、ゆっくり進む巨大な槍を投げる
@@ -124,11 +124,11 @@ func _process(delta: float) -> void:
 			b.spear = true
 			b.life = 5.0
 			b.position = global_position + dir * 20.0
-			b.src = record
+			b.src = game.sp_src(record, "sp_giant_spear")
 			game.world.add_child(b)
 	if st.spikes and _spike_cd <= 0.0 and game.nearest_enemy(global_position, 260.0) != null:
 		_spike_cd = 8.0
-		game.spawn_placed("spikes", global_position + facing * 70.0, st.spear_damage * 0.8, 33.0, 8.0, record)
+		game.spawn_placed("spikes", global_position + facing * 70.0, st.spear_damage * 0.8, 33.0, 8.0, game.sp_src(record, "sp_spikes"))
 	if _spear_cd <= 0.0 and _try_thrust():
 		_spear_cd = st.spear_interval
 	queue_redraw()
@@ -168,7 +168,7 @@ func _reflect(from_pos: Vector2, amount: float) -> void:
 	b.color = Color.from_hsv(randf(), 0.7, 1.0)
 	b.life = 1.0
 	b.position = global_position + dir * 20.0
-	b.src = record
+	b.src = game.sp_src(record, "sp_fun_reflect")
 	game.world.add_child(b)
 
 
@@ -245,8 +245,10 @@ func _try_thrust() -> bool:
 	for e in hits:
 		# 捨て身の構え：突いた敵が爆発
 		if st.berserk:
-			game.explode(e.global_position, 70.0, st.spear_damage * 3.0, record, Color(1.0, 0.45, 0.3), 0.0, 260.0)
-		e.take_damage(st.spear_damage, hits[e] * 260.0, record)
+			game.explode(e.global_position, 70.0, st.spear_damage * 3.0, game.sp_src(record, "sp_berserk_guard"), Color(1.0, 0.45, 0.3), 0.0, 260.0)
+		# 三叉槍で増えた向きの槍は、三叉槍のダメージとして記録
+		var hit_src: Dictionary = record if (hits[e] as Vector2).is_equal_approx(facing) else game.sp_src(record, "sp_trident")
+		e.take_damage(st.spear_damage, hits[e] * 260.0, hit_src)
 	_thrust = 0.18
 	return true
 
@@ -270,7 +272,7 @@ func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 			var bash: int = game.guard_stats.bash_level
 			if bash > 0 and _bash_cd <= 0.0:
 				_bash_cd = 0.4
-				game.explode(global_position, 60.0 + 20.0 * bash, game.guard_stats.spear_damage * (0.7 + 0.3 * bash), record, Color(0.7, 1.0, 0.6), 0.0, 320.0)
+				game.explode(global_position, 60.0 + 20.0 * bash, game.guard_stats.spear_damage * (0.7 + 0.3 * bash), game.sp_src(record, "sp_bash"), Color(0.7, 1.0, 0.6), 0.0, 320.0)
 			amount *= taken_ratio
 			blocked = true
 			# 完全に防いだら、ダメージの数字は出さない

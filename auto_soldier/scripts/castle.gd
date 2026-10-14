@@ -287,10 +287,15 @@ func _update_towers(delta: float) -> void:
 			b.game = game
 			b.velocity = dir * 760.0
 			b.damage = tower_damage * power
+			# 戦績の分け記録：連射で増えた矢 → 執念の矢 → 会心の一矢 の順に上書き
+			var arrow_sp := "sp_tower_multi" if k > 0 else ""
+			if power > 1.0:
+				arrow_sp = "sp_tower_lock"
 			# 会心の一矢：25%でダメージ3倍
 			if tower_crit and randf() < 0.25:
 				b.damage = tower_damage * power * 3.0
 				b.radius = 6.0
+				arrow_sp = "sp_tower_crit"
 			b.pierce = tower_pierce
 			b.radius = 4.0
 			b.color = Color(0.95, 0.8, 0.55)
@@ -301,10 +306,13 @@ func _update_towers(delta: float) -> void:
 				if tower_shots == 1:
 					# 狙った敵だけに当たる（手前の敵に吸われない）
 					b.only_target = target
+			b.src = _equip_record("tower", "矢倉", i)
 			if tower_blast:
 				b.explode_radius = 70.0
 				b.explode_ratio = 3.0
-			b.src = _equip_record("tower", "矢倉", i)
+				b.explode_src = game.sp_src(b.src, "sp_tower_blast")
+			if arrow_sp != "":
+				b.src = game.sp_src(b.src, arrow_sp)
 			b.life = tower_range / 760.0 + 0.2
 			b.position = from
 			game.world.add_child(b)
@@ -337,11 +345,11 @@ func _update_cannon(delta: float) -> void:
 		if double_cannon:
 			var second := _densest_enemy(cannon_range, cannon_radius)
 			var to2: Vector2 = second.global_position if second != null else best.global_position + Vector2.from_angle(randf() * TAU) * 80.0
-			shells.append(_fire_shell(from + Vector2(8, 0), to2, cannon_damage, cannon_radius, false, rec))
+			shells.append(_fire_shell(from + Vector2(8, 0), to2, cannon_damage, cannon_radius, false, game.sp_src(rec, "sp_double_cannon")))
 		# 散弾砲：着弾地点の周りにも落ちる
 		for k in scatter_level * 2:
 			var off := Vector2.from_angle(randf() * TAU) * randf_range(60.0, 110.0)
-			shells.append(_fire_shell(from, best.global_position + off, cannon_damage * 0.7, cannon_radius * 0.8, false, rec))
+			shells.append(_fire_shell(from, best.global_position + off, cannon_damage * 0.7, cannon_radius * 0.8, false, game.sp_src(rec, "sp_scatter")))
 		# 焼夷弾：着弾地点が燃える
 		if fire_level > 0:
 			for s in shells:
@@ -373,7 +381,7 @@ func _update_catapult(delta: float) -> void:
 		if iron_chunk and _catapult_shots % 4 == 0:
 			var big := _toughest_enemy_in(wpos(), INF)
 			if big != null:
-				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_damage * 0.5, 50.0, true, s.src)
+				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_damage * 0.5, 50.0, true, game.sp_src(s.src, "sp_iron_chunk"))
 				iron.iron = true
 				iron.chase = big
 				iron.direct_bonus = catapult_damage * 8.0
@@ -386,7 +394,7 @@ func _update_catapult(delta: float) -> void:
 			var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool: return is_instance_valid(e) and not e.dead)
 			pool.shuffle()
 			for e in pool.slice(0, 2):
-				game.spawn_blast(e.global_position, 1.0, 75.0, catapult_damage * 0.6, s.src, Color(0.75, 0.65, 0.5), "rock")
+				game.spawn_blast(e.global_position, 1.0, 75.0, catapult_damage * 0.6, game.sp_src(s.src, "sp_rock_rain"), Color(0.75, 0.65, 0.5), "rock")
 		_catapult_cds[i] = catapult_interval
 		_catapult_swings[i] = 0.4
 
@@ -426,14 +434,19 @@ func _update_ballista(delta: float) -> void:
 				b.rainbow = true
 				b.confuse_on_hit = 1.5
 			b.src = _equip_record("ballista", "バリスタ", i)
+			# 連装で増えた矢は、連装のダメージとして記録
+			if k > 0:
+				b.src = game.sp_src(b.src, "sp_ballista_multi")
 			b.life = 2.5
 			b.position = from + offset
 			if blast_bolt:
 				b.first_blast_radius = 140.0
 				b.first_blast_damage = ballista_damage * 1.5
+				b.first_blast_src = game.sp_src(b.src, "sp_blast_bolt")
 			if bolt_blast_level > 0:
 				b.explode_radius = 40.0 + 15.0 * bolt_blast_level
 				b.explode_ratio = 0.15 + 0.15 * bolt_blast_level
+				b.explode_src = game.sp_src(b.src, "sp_ballista_blast")
 			game.world.add_child(b)
 		_ballista_cds[i] = ballista_interval
 		_ballista_recoil[i] = 0.25
@@ -488,7 +501,7 @@ func _update_new_specials(delta: float) -> void:
 				if t == null:
 					break
 				var p: Vector2 = t.global_position + Vector2(randf_range(-30, 30), randf_range(-30, 30))
-				game.spawn_blast(p, 0.8, 120.0, tower_damage * 4.0, _equip_record("tower", "矢倉", i), Color(1.0, 0.55, 0.2), "arrow")
+				game.spawn_blast(p, 0.8, 120.0, tower_damage * 4.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_arrow_rain"), Color(1.0, 0.55, 0.2), "arrow")
 				_recent_shots.append({"pos": p, "area": 120.0, "until": _t + 1.2})
 	if ap_shell and cannon_level > 0:
 		_ap_cd -= delta
@@ -512,7 +525,7 @@ func _update_new_specials(delta: float) -> void:
 				b.first_blast_radius = 50.0
 				b.first_blast_damage = cannon_damage
 				b.position = from
-				b.src = _equip_record("cannon", "大砲", i)
+				b.src = game.sp_src(_equip_record("cannon", "大砲", i), "sp_ap_shell")
 				game.world.add_child(b)
 	_update_fifth_specials(delta)
 	_update_eighth_specials(delta)
@@ -523,7 +536,7 @@ func _update_new_specials(delta: float) -> void:
 			var big := _toughest_enemy_in(global_position, frost_radius)
 			if big != null:
 				var dmg: float = 300.0 * (1.0 + game.elapsed / 120.0)
-				game.spawn_blast(big.global_position, 0.4, 30.0, dmg, _equip_record("frost", "氷結の結界", 0), Color(0.6, 0.9, 1.0), "ice")
+				game.spawn_blast(big.global_position, 0.4, 30.0, dmg, game.sp_src(_equip_record("frost", "氷結の結界", 0), "sp_ice_lance"), Color(0.6, 0.9, 1.0), "ice")
 
 
 ## 8つ目の特別強化（巨大弩砲・凍てつく大地）
@@ -548,14 +561,14 @@ func _update_eighth_specials(delta: float) -> void:
 					b.bolt = true
 					b.life = 7.0
 					b.position = from
-					b.src = _equip_record("ballista", "バリスタ", i)
+					b.src = game.sp_src(_equip_record("ballista", "バリスタ", i), "sp_mega_bolt")
 					game.world.add_child(b)
 	if frost_ground and frost_radius > 0.0:
 		_ground_tick -= delta
 		if _ground_tick <= 0.0:
 			_ground_tick = 0.5
 			var dps: float = 25.0 * (1.0 + game.elapsed / 120.0)
-			var rec := _equip_record("frost", "氷結の結界", 0)
+			var rec: Dictionary = game.sp_src(_equip_record("frost", "氷結の結界", 0), "sp_frost_ground")
 			for e in game.enemies_cache:
 				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < frost_radius:
 					e.take_damage(dps * 0.5, Vector2.ZERO, rec)
@@ -571,7 +584,7 @@ func _update_fifth_specials(delta: float) -> void:
 				var from := wpos() + _tower_local_pos(i)
 				for k in 2:
 					var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(-PI / 2.0 + (k - 0.5) * 1.6) * 420.0,
-						tower_damage * 1.5, 8.0, 4.0, _equip_record("tower", "矢倉", i))
+						tower_damage * 1.5, 8.0, 4.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_homing"))
 					m.target = game.nearest_enemy(from, tower_range * 1.5)
 	if lightning and ballista_level > 0:
 		_lightning_cd -= delta
@@ -585,7 +598,7 @@ func _update_fifth_specials(delta: float) -> void:
 				if pool.is_empty():
 					break
 				var first: Node2D = pool.pick_random()
-				game.chain_lightning(from, first, 7, ballista_damage * 0.8, 200.0, _equip_record("ballista", "バリスタ", i))
+				game.chain_lightning(from, first, 7, ballista_damage * 0.8, 200.0, game.sp_src(_equip_record("ballista", "バリスタ", i), "sp_lightning"))
 	if snowman and frost_radius > 0.0:
 		_snowman_cd -= delta
 		if _snowman_cd <= 0.0:
@@ -593,7 +606,7 @@ func _update_fifth_specials(delta: float) -> void:
 			if game.get_tree().get_nodes_in_group("placed_snowman").size() < 6:
 				var p := global_position + Vector2.from_angle(randf_range(PI + 0.2, TAU - 0.2)) * frost_radius * randf_range(0.75, 1.0)
 				var dmg: float = 150.0 * (1.0 + game.elapsed / 120.0)
-				game.spawn_placed("snowman", p, dmg, 40.0, 40.0, _equip_record("frost", "氷結の結界", 0))
+				game.spawn_placed("snowman", p, dmg, 40.0, 40.0, game.sp_src(_equip_record("frost", "氷結の結界", 0), "sp_snowman"))
 
 
 ## 範囲内で一番HPの多い敵
@@ -626,7 +639,7 @@ func _update_frost_specials(delta: float) -> void:
 		if _blizzard_tick <= 0.0:
 			_blizzard_tick = 0.5
 			var dps: float = 20.0 * (1.0 + game.elapsed / 120.0)
-			var rec := _equip_record("frost", "氷結の結界", 0)
+			var rec: Dictionary = game.sp_src(_equip_record("frost", "氷結の結界", 0), "sp_blizzard")
 			for e in game.enemies_cache:
 				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < frost_radius:
 					e.take_damage(dps * 0.5, Vector2.ZERO, rec)
@@ -641,7 +654,7 @@ func _update_frost_specials(delta: float) -> void:
 			inside.shuffle()
 			var dmg: float = 60.0 * icicle_level * (1.0 + game.elapsed / 180.0)
 			for e in inside.slice(0, icicle_level):
-				game.spawn_blast(e.global_position, 0.5, 45.0, dmg, _equip_record("frost", "氷結の結界", 0), Color(0.7, 0.95, 1.0), "ice", 0.5)
+				game.spawn_blast(e.global_position, 0.5, 45.0, dmg, game.sp_src(_equip_record("frost", "氷結の結界", 0), "sp_icicle"), Color(0.7, 0.95, 1.0), "ice", 0.5)
 
 
 ## 敵が一番密集している場所にいる敵（射程内）
@@ -847,7 +860,7 @@ func _laser_sweep(from: float, to: float) -> void:
 		var d := fposmod(a - from, TAU)
 		if d <= fposmod(to - from, TAU) + 0.02:
 			_laser_hit[e] = true
-			e.take_damage(dmg, Vector2.ZERO, record)
+			e.take_damage(dmg, Vector2.ZERO, game.sp_src(record, "sp_castle_laser"))
 
 
 ## 不屈の城：ボス以外の敵を全部消して（経験値なし）、HP20%で立ち直る

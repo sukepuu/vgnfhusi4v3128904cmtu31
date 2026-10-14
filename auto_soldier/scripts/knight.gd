@@ -110,8 +110,13 @@ func _lowest_enemy() -> Node2D:
 	return best
 
 
-## dist = 突進する距離（省略すると通常の突進距離）
-func _start_dash(dir: Vector2, st, dist: float = -1.0) -> void:
+## 今の突進のダメージを記録する特別強化（連続突撃・疾風怒濤で出た突進。ふつうの突進なら空）
+var _dash_sp := ""
+
+
+## dist = 突進する距離（省略すると通常の突進距離）。sp = この突進を出した特別強化
+func _start_dash(dir: Vector2, st, dist: float = -1.0, sp: String = "") -> void:
+	_dash_sp = sp
 	_dash_dir = dir
 	_dash_left = maxf(st.dash_distance, dist) / DASH_SPEED
 	_dash_hit.clear()
@@ -143,7 +148,12 @@ func _update_dash(delta: float, st) -> void:
 				hit_dmg = maxf(dmg, e.hp + 1.0)
 			if st.stun_hit:
 				e.stun(1.0)
-			e.take_damage(hit_dmg, _dash_dir * 350.0, record)
+			var hit_src: Dictionary = record
+			if hit_dmg > dmg:
+				hit_src = game.sp_src(record, "sp_knight_execute")
+			elif _dash_sp != "":
+				hit_src = game.sp_src(record, _dash_sp)
+			e.take_damage(hit_dmg, _dash_dir * 350.0, hit_src)
 			if e.dead:
 				_dash_killed = true
 			if st.carry and not e.is_boss and not e.dead and e.speed > 0.0:
@@ -155,7 +165,7 @@ func _update_dash(delta: float, st) -> void:
 		_star_cd -= delta
 		if _star_cd <= 0.0:
 			_star_cd = 0.05
-			game.spawn_blast(global_position + Vector2(randf_range(-10, 10), randf_range(-10, 10)), 0.35, 34.0, dmg * 0.15, record, Color(1.0, 0.95, 0.4), "star")
+			game.spawn_blast(global_position + Vector2(randf_range(-10, 10), randf_range(-10, 10)), 0.35, 34.0, dmg * 0.15, game.sp_src(record, "sp_fun_star"), Color(1.0, 0.95, 0.4), "star")
 	if _dash_left <= 0.0:
 		_dash_left = 0.0
 		# 運んでいた敵を、勢いよく放り出す（城の方へは飛ばさない）
@@ -165,7 +175,7 @@ func _update_dash(delta: float, st) -> void:
 		_carried.clear()
 		# 突撃の衝撃：止まった所で爆発
 		if st.quake:
-			game.explode(global_position, 90.0, dmg * 0.6, record, Color(1.0, 0.85, 0.4), 0.0, 300.0)
+			game.explode(global_position, 90.0, dmg * 0.6, game.sp_src(record, "sp_dash_quake"), Color(1.0, 0.85, 0.4), 0.0, 300.0)
 		# 疾風怒濤：敵を倒していたら、すぐ次の敵へ突進し直す（最大5連鎖）
 		if st.kill_chain and _dash_killed and _kill_chain_left > 0:
 			var nk := _nearest_unhit(450.0)
@@ -173,7 +183,7 @@ func _update_dash(delta: float, st) -> void:
 				_kill_chain_left -= 1
 				var to_k: Vector2 = nk.global_position - global_position
 				facing = to_k.normalized()
-				_start_dash(facing, st, to_k.length() + 40.0)
+				_start_dash(facing, st, to_k.length() + 40.0, "sp_kill_chain")
 				return
 		# 連続突撃：すぐ次の敵へ
 		if _chain_left > 0:
@@ -181,7 +191,7 @@ func _update_dash(delta: float, st) -> void:
 			if next != null:
 				_chain_left -= 1
 				facing = (next.global_position - global_position).normalized()
-				_start_dash(facing, st)
+				_start_dash(facing, st, -1.0, "sp_chain_dash")
 
 
 func _nearest_unhit(max_d: float) -> Node2D:

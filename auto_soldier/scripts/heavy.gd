@@ -120,7 +120,7 @@ func _process(delta: float) -> void:
 		_followup_cd = 0.18
 	elif _pending_slashes > 0 and _followup_cd <= 0.0:
 		# 連続斬り：追加の斬撃
-		_pending_slashes = _pending_slashes - 1 if _try_slash() else 0
+		_pending_slashes = _pending_slashes - 1 if _try_slash(game.sp_src(record, "sp_multi_slash")) else 0
 		_followup_cd = 0.18
 	if execute and _exec_cd <= 0.0:
 		var big := _toughest_enemy(220.0)
@@ -128,7 +128,7 @@ func _process(delta: float) -> void:
 			_exec_cd = 4.0
 			var d := (big.global_position - global_position).normalized()
 			facing = d
-			big.take_damage(dmg() * 6.0, d * 200.0, record)
+			big.take_damage(dmg() * 6.0, d * 200.0, game.sp_src(record, "sp_execute"))
 			var fx := SlashScript.new()
 			fx.radius = 60.0
 			fx.arc = 0.6
@@ -141,7 +141,7 @@ func _process(delta: float) -> void:
 		if far != null:
 			_ball_cd = 5.0
 			var bd := (far.global_position - global_position).normalized()
-			game.spawn_missile("ball", global_position + bd * 30.0, bd * 560.0, dmg() * 1.5, 24.0, 3.0, record)
+			game.spawn_missile("ball", global_position + bd * 30.0, bd * 560.0, dmg() * 1.5, 24.0, 3.0, game.sp_src(record, "sp_iron_ball"))
 	if quake_level > 0 and _quake_cd <= 0.0 and game.nearest_enemy(global_position, 140.0) != null:
 		_quake()
 		_quake_cd = 5.0
@@ -166,8 +166,10 @@ func _choose_target(center: Vector2) -> Node2D:
 	return best
 
 
-## 遊撃部隊と同じ扇形の斬撃
-func _try_slash() -> bool:
+## 遊撃部隊と同じ扇形の斬撃（src を渡すと、そのカードにダメージを記録する。連続斬りの追加の斬撃用）
+func _try_slash(src: Dictionary = {}) -> bool:
+	if src.is_empty():
+		src = record
 	var near: Node2D = game.nearest_enemy(global_position, slash_radius)
 	if near == null:
 		return false
@@ -182,7 +184,7 @@ func _try_slash() -> bool:
 			continue
 		if slash_arc < TAU and absf(dir.angle_to(rel)) > slash_arc / 2.0 + 0.2:
 			continue
-		e.take_damage(dmg(), rel.normalized() * 420.0, record)
+		e.take_damage(dmg(), rel.normalized() * 420.0, src)
 	if lifesteal > 0.0:
 		hp = minf(max_hp, hp + (record["dealt"] - dealt_before) * lifesteal)
 	# 斬撃で敵の弾もかき消す
@@ -215,7 +217,7 @@ func _toughest_enemy(max_dist: float) -> Node2D:
 ## 地割れ：周りの敵に大ダメージ＋気絶
 func _quake() -> void:
 	var r := 150.0 + 50.0 * (quake_level - 1)
-	game.explode(global_position, r, dmg() * 0.6, record, Color(0.65, 0.5, 0.3), 1.0, 380.0)
+	game.explode(global_position, r, dmg() * 0.6, game.sp_src(record, "sp_quake"), Color(0.65, 0.5, 0.3), 1.0, 380.0)
 	game.spawn_burst(global_position, Color(0.9, 0.8, 0.6), r / 1.6)
 
 

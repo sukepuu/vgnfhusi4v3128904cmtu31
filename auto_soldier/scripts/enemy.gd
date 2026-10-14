@@ -706,9 +706,17 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	if is_boss and game.stats.boss_hunt and src.get("cat", "") == "soldier":
 		amount *= 1.1
 	if not src.is_empty():
-		src["dealt"] += minf(amount, hp)
-		if hp - amount <= 0.0:
-			src["kills"] += 1
+		var dealt := minf(amount, hp)
+		var killed := hp - amount <= 0.0
+		var rec: Dictionary = src
+		# 特別強化のダメージ（game.sp_src で作ったカード）は、元の兵士の戦績にも入れて、特別強化ごとにも記録する
+		if src.has("sp_id"):
+			rec = game.records[src["rec_idx"]]
+			var by: Dictionary = rec.get_or_add("sp_dealt", {})
+			by[src["sp_id"]] = float(by.get(src["sp_id"], 0.0)) + dealt
+		rec["dealt"] += dealt
+		if killed:
+			rec["kills"] += 1
 	hp -= amount
 	_flash = 0.1
 	apply_knock(knockback)

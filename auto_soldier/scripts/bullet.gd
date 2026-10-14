@@ -16,6 +16,11 @@ var src: Dictionary = {}
 ## 当たったときに小爆発する（炸裂弾・爆裂ボルト）。0なら爆発しない
 var explode_radius := 0.0
 var explode_ratio := 0.0
+## 爆発・最初の大爆発だけ別の戦績カードに記録したいとき（特別強化の分け記録）。空なら src
+var explode_src: Dictionary = {}
+var first_blast_src: Dictionary = {}
+## 跳ねたあとのダメージを記録する戦績カード（跳弾矢の分け記録）。空なら src のまま
+var bounce_src: Dictionary = {}
 ## true なら剣気の衝撃波（三日月形に描く）
 var wave := false
 ## 炸裂大矢：最初に当たった敵の場所で大爆発（0なら無し）
@@ -127,10 +132,10 @@ func _process(delta: float) -> void:
 			# 射撃のノックバック（下側へは押さない。クールタイムは敵側で管理）
 			e.shot_knockback(velocity.normalized() * 120.0)
 			if first_blast_radius > 0.0:
-				game.explode(global_position, first_blast_radius, first_blast_damage, src, Color(1.0, 0.5, 0.2), 0.0, 300.0)
+				game.explode(global_position, first_blast_radius, first_blast_damage, src if first_blast_src.is_empty() else first_blast_src, Color(1.0, 0.5, 0.2), 0.0, 300.0)
 				first_blast_radius = 0.0
 			if explode_radius > 0.0:
-				game.explode(global_position, explode_radius, damage * explode_ratio, src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
+				game.explode(global_position, explode_radius, damage * explode_ratio, src if explode_src.is_empty() else explode_src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
 			_hit[e] = true
 			if grow_on_hit > 0.0:
 				damage *= 1.0 + grow_on_hit
@@ -142,6 +147,8 @@ func _process(delta: float) -> void:
 					bounces -= 1
 					damage *= 0.7
 					bounce_target = next
+					if not bounce_src.is_empty():
+						src = bounce_src
 					velocity = (next.global_position - global_position).normalized() * velocity.length()
 					life = maxf(life, 0.5)
 					continue

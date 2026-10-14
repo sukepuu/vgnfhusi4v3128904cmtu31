@@ -93,7 +93,9 @@ func _shoot(target: Node2D, st) -> void:
 		b.bolt = true
 		b.scale = Vector2(0.6, 0.6)
 		b.life = st.fire_range / st.arrow_speed + 0.3
-		b.src = record
+		b.src = game.sp_src(record, "sp_headshot") if b.crit else record
+		if st.bounces > 0:
+			b.bounce_src = game.sp_src(record, "sp_ricochet")
 		b.stun_on_hit = 1.0 if st.pin else 0.0
 		b.mark_on_hit = st.mark
 		b.bounces = st.bounces
@@ -101,6 +103,7 @@ func _shoot(target: Node2D, st) -> void:
 		if st.blast_arrow:
 			b.explode_radius = 70.0
 			b.explode_ratio = 3.0
+			b.explode_src = game.sp_src(record, "sp_blast_arrow")
 		b.position = global_position + offset + dir * 12.0
 		game.world.add_child(b)
 	_draw_t = 0.15
@@ -112,7 +115,7 @@ func _shoot(target: Node2D, st) -> void:
 		f.rise_time = clampf(dist / 900.0, 0.2, 0.9)
 		f.damage = st.damage * 0.6
 		f.radius = 80.0
-		f.src = record
+		f.src = game.sp_src(record, "sp_fun_firework_arrow")
 
 
 func _draw() -> void:

@@ -1,6 +1,9 @@
 extends CanvasLayer
 ## 部隊戦績画面。各部隊の個体ごとに、与ダメージ・撃破数・被ダメージを一覧表示する。
+## 個体の行をクリックすると、その下に特別強化ごとの与ダメージの内訳が開く（もう一度クリックで閉じる）。
 ## 開いているあいだはゲームを一時停止する。
+
+const Upgrades := preload("res://scripts/upgrades.gd")
 
 const CAT_ORDER := ["soldier", "pet", "guard", "sniper", "knight", "heavy", "engineer", "builder", "repair", "castle"]
 const CAT_LABEL := {
@@ -11,11 +14,16 @@ const CAT_COLOR := {
 	"sniper": Color(0.75, 0.95, 0.45), "knight": Color(1.0, 0.82, 0.4), "repair": Color(0.55, 0.75, 1.0),
 	"heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), "builder": Color(1.0, 0.88, 0.45),
 	"castle": Color(1.0, 0.7, 0.45)}
-const COL_WIDTHS := [230, 130, 80, 130, 260]
+const COL_WIDTHS := [300, 130, 80, 130, 190]
 
 var game: Node2D
 var _list: VBoxContainer
+var _scroll: ScrollContainer
 var _was_paused := false
+## 内訳を開いている個体（戦績カードの idx → true）
+var _expanded := {}
+## 特別強化の id → 名前
+var _sp_names := {}
 
 
 func _ready() -> void:
@@ -45,13 +53,24 @@ func _ready() -> void:
 
 	box.add_child(_make_row(["名前", "与ダメージ", "撃破", "被ダメージ", "その他"], Color(0.8, 0.8, 0.8), 16))
 
+	var hint := Label.new()
+	hint.text = "兵士・兵装の行をクリックすると、特別強化ごとのダメージが見られます"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 14)
+	hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	box.add_child(hint)
+
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(940, 470)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	box.add_child(scroll)
+	_scroll = scroll
 	_list = VBoxContainer.new()
 	_list.add_theme_constant_override("separation", 2)
 	scroll.add_child(_list)
+
+	for u in Upgrades.SPECIAL:
+		_sp_names[u["id"]] = u["name"]
 
 	var close := Button.new()
 	close.text = "閉じる（Tab）"
@@ -118,10 +137,59 @@ func _rebuild() -> void:
 		var header := _make_row(["■ " + CAT_LABEL[cat], _fmt(total_dealt), str(total_kills), _fmt(total_taken), "（部隊合計）"], col, 17)
 		_list.add_child(header)
 		for r in recs:
-			_list.add_child(_make_row(["　" + r["name"], _fmt(r["dealt"]), str(r["kills"]), _fmt(r["taken"]), _note(r)], Color(0.92, 0.92, 0.92), 15))
+			var open: bool = _expanded.has(r["idx"])
+			var row := _make_row([("▼ " if open else "▶ ") + r["name"], _fmt(r["dealt"]), str(r["kills"]), _fmt(r["taken"]), _note(r)], Color(0.92, 0.92, 0.92), 15)
+			# 行をクリックで内訳を開く・閉じる
+			row.mouse_filter = Control.MOUSE_FILTER_STOP
+			row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			row.gui_input.connect(_on_row_input.bind(r["idx"]))
+			_list.add_child(row)
+			if open:
+				_add_breakdown(r)
 		var spacer := Control.new()
 		spacer.custom_minimum_size = Vector2(0, 8)
 		_list.add_child(spacer)
+
+
+func _on_row_input(event: InputEvent, idx: int) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if _expanded.has(idx):
+			_expanded.erase(idx)
+		else:
+			_expanded[idx] = true
+		# スクロール位置はそのままで作り直す
+		var keep := _scroll.scroll_vertical
+		_rebuild()
+		await get_tree().process_frame
+		_scroll.scroll_vertical = keep
+
+
+## 個体の下に、特別強化ごとの与ダメージの内訳を並べる（多い順。残りは「通常攻撃・その他」）
+func _add_breakdown(r: Dictionary) -> void:
+	var col := Color(1.0, 0.85, 0.5)
+	var total: float = r["dealt"]
+	var by: Dictionary = r.get("sp_dealt", {})
+	var ids: Array = by.keys()
+	ids.sort_custom(func(a: String, b: String) -> bool: return by[a] > by[b])
+	var sp_sum := 0.0
+	for id in ids:
+		var v: float = by[id]
+		sp_sum += v
+		_list.add_child(_make_row(["　　★" + str(_sp_names.get(id, id)), _fmt(v), "", "", _pct(v, total)], col, 14))
+	var normal := maxf(0.0, total - sp_sum)
+	_list.add_child(_make_row(["　　通常攻撃・その他", _fmt(normal), "", "", _pct(normal, total)], Color(0.75, 0.75, 0.75), 14))
+	if ids.is_empty():
+		_list.add_child(_make_row(["　　（特別強化のダメージはまだありません）", "", "", "", ""], Color(0.6, 0.6, 0.6), 13))
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 4)
+	_list.add_child(spacer)
+
+
+## 全体に対する割合の文字（例："（35.2%）"）
+func _pct(v: float, total: float) -> String:
+	if total <= 0.0:
+		return ""
+	return "（%.1f%%）" % (v / total * 100.0)
 
 
 ## 部隊ごとの追加情報

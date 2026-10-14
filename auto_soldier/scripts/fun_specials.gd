@@ -49,7 +49,7 @@ func _process(delta: float) -> void:
 			for i in castle.tower_count:
 				var from: Vector2 = castle.wpos() + castle._tower_local_pos(i)
 				var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(randf_range(-PI * 0.8, -PI * 0.2)) * 260.0,
-					castle.tower_damage * 0.8, 10.0, 6.0, castle._equip_record("tower", "矢倉", i))
+					castle.tower_damage * 0.8, 10.0, 6.0, game.sp_src(castle._equip_record("tower", "矢倉", i), "sp_fun_doves"))
 				m.look = "bird"
 	if snowball and castle.frost_radius > 0.0:
 		_snow_cd -= delta
@@ -75,7 +75,7 @@ func _process(delta: float) -> void:
 		_orb_cd -= delta
 		if _orb_cd <= 0.0:
 			_orb_cd = 20.0
-			game.spawn_placed("repair_orb", castle.global_position + Vector2(0, -castle.HALF.y - 70.0), 0.0, 16.0, 10.0, game.repairers[0].record)
+			game.spawn_placed("repair_orb", castle.global_position + Vector2(0, -castle.HALF.y - 70.0), 0.0, 16.0, 10.0, game.sp_src(game.repairers[0].record, "sp_repair_orb"))
 
 
 func _fx(kind: String, pos: Vector2) -> Node2D:
@@ -92,7 +92,7 @@ func _do_roar() -> void:
 	f.radius = 220.0
 	game.effects.add_child(f)
 	# 斬撃（通常攻撃）の3倍のダメージを与えて、思いっきり吹き飛ばす
-	game.explode(h.global_position, 220.0, h.dmg() * 3.0, h.record, Color(1.0, 0.6, 0.3), 0.0, 700.0)
+	game.explode(h.global_position, 220.0, h.dmg() * 3.0, game.sp_src(h.record, "sp_fun_roar"), Color(1.0, 0.6, 0.3), 0.0, 700.0)
 
 
 func _throw_snowball() -> void:
@@ -112,7 +112,7 @@ func _throw_snowball() -> void:
 	b.stun_on_hit = 0.15
 	b.life = 1.6
 	b.position = from
-	b.src = castle._equip_record("frost", "氷結の結界", 0)
+	b.src = game.sp_src(castle._equip_record("frost", "氷結の結界", 0), "sp_fun_snowball")
 	game.world.add_child(b)
 
 
@@ -130,7 +130,7 @@ func _do_dance() -> void:
 			fb.color = Color.from_hsv(float(i) / 24.0, 0.75, 1.0)
 			fb.life = 1.2
 			fb.position = f.global_position + dir * f._radius
-			fb.src = f.record
+			fb.src = game.sp_src(f.record, "sp_fun_dance")
 			game.world.add_child(fb)
 	# 全部のペットが、全方位へ虹色の玉を12発ずつ撃つ
 	for p in game.pets:
@@ -147,7 +147,7 @@ func _do_dance() -> void:
 			b.color = Color.from_hsv(float(i) / 12.0, 0.75, 1.0)
 			b.life = 0.9
 			b.position = p.global_position + dir * 10.0
-			b.src = p.record
+			b.src = game.sp_src(p.record, "sp_fun_dance")
 			game.world.add_child(b)
 
 
@@ -184,7 +184,7 @@ func _frost_volley() -> void:
 		b.stun_on_hit = 0.5
 		b.life = 3.0
 		b.position = from
-		b.src = p.record
+		b.src = game.sp_src(p.record, "sp_pet_frost")
 		game.world.add_child(b)
 
 

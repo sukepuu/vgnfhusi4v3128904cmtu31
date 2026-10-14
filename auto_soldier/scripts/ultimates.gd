@@ -123,7 +123,7 @@ func _do_storm() -> void:
 	for s in game.soldiers:
 		if s.dead:
 			continue
-		game.explode(s.global_position, 210.0, st.sword_damage * 5.0, s.record, Color(0.7, 0.9, 1.0), 0.0, 450.0)
+		game.explode(s.global_position, 210.0, st.sword_damage * 5.0, game.sp_src(s.record, "sp_ult_storm"), Color(0.7, 0.9, 1.0), 0.0, 450.0)
 		for r in [210.0, 150.0]:
 			var fx := SlashScript.new()
 			fx.radius = r
@@ -158,7 +158,7 @@ func _do_leap() -> void:
 		return
 	game.spawn_burst(h.global_position, Color(0.8, 0.7, 0.5), 30.0)
 	h.position = best.global_position
-	game.explode(h.global_position, 190.0, h.dmg() * 4.0, h.record, Color(0.75, 0.55, 0.3), 1.0, 500.0)
+	game.explode(h.global_position, 190.0, h.dmg() * 4.0, game.sp_src(h.record, "sp_ult_leap"), Color(0.75, 0.55, 0.3), 1.0, 500.0)
 	game.spawn_burst(h.global_position, Color(1.0, 0.8, 0.4), 140.0)
 	_flash(Color(1.0, 0.8, 0.5))
 
@@ -169,7 +169,7 @@ func _do_wall_burst() -> void:
 	for w in walls.walls:
 		w["hp"] = minf(w["max"], w["hp"] + 10.0)
 		var p: Vector2 = walls.point_at((w["a0"] + w["a1"]) / 2.0)
-		game.explode(p + (p - game.castle.global_position).normalized() * 30.0, 110.0, dmg, w["src"], Color(1.0, 0.85, 0.4), 0.0, 400.0)
+		game.explode(p + (p - game.castle.global_position).normalized() * 30.0, 110.0, dmg, game.sp_src(w["src"], "sp_ult_wall_burst"), Color(1.0, 0.85, 0.4), 0.0, 400.0)
 
 
 func _do_carpet() -> void:
@@ -179,7 +179,7 @@ func _do_carpet() -> void:
 		return
 	var dir := Vector2.from_angle(randf() * TAU)
 	var dmg: float = game.engineer_stats.bomb_damage * 0.6
-	var rec: Dictionary = game.engineers[0].record
+	var rec: Dictionary = game.sp_src(game.engineers[0].record, "sp_ult_carpet")
 	for i in 13:
 		var p: Vector2 = center.global_position + dir * (i - 6) * 45.0
 		game.spawn_blast(p, 0.5 + 0.06 * i, 85.0, dmg, rec, Color(1.0, 0.55, 0.2), "bomb")
@@ -200,7 +200,7 @@ func _do_sky_arrow() -> void:
 		b.bolt = true
 		b.scale = Vector2(2.6, 2.6)
 		b.life = 1.8
-		b.src = sn.record
+		b.src = game.sp_src(sn.record, "sp_ult_sky_arrow")
 		b.position = sn.global_position
 		game.world.add_child(b)
 	_flash(Color(1.0, 0.95, 0.6))
@@ -218,7 +218,7 @@ func _do_thousand() -> void:
 		else:
 			# 敵が少なければ、城の前の広い範囲にばらまく
 			p = castle.global_position + Vector2(randf_range(-600, 600), randf_range(-700, -150))
-		game.spawn_blast(p, 0.5 + randf() * 1.3, 60.0, castle.tower_damage * 3.0, castle._equip_record("tower", "矢倉", i % castle.tower_count), Color(1.0, 0.6, 0.25), "arrow")
+		game.spawn_blast(p, 0.5 + randf() * 1.3, 60.0, castle.tower_damage * 3.0, game.sp_src(castle._equip_record("tower", "矢倉", i % castle.tower_count), "sp_ult_thousand"), Color(1.0, 0.6, 0.25), "arrow")
 
 
 func _do_barrage() -> void:
@@ -234,7 +234,7 @@ func _do_barrage() -> void:
 		var gi := i % guns
 		var from: Vector2 = castle.wpos() + castle._cannon_local_pos(gi)
 		var to := e.global_position + Vector2(randf_range(-40, 40), randf_range(-40, 40))
-		var s: Node2D = castle._fire_shell(from, to, castle.cannon_damage * 2.0, castle.cannon_radius, false, castle._equip_record("cannon", "大砲", gi))
+		var s: Node2D = castle._fire_shell(from, to, castle.cannon_damage * 2.0, castle.cannon_radius, false, game.sp_src(castle._equip_record("cannon", "大砲", gi), "sp_ult_barrage"))
 		s.flight_time = 0.6 + i * 0.07
 
 
@@ -245,7 +245,7 @@ func _do_meteor() -> void:
 		_cds["meteor"] = 1.0
 		return
 	var from: Vector2 = center.global_position + Vector2(-500, -600)
-	var s: Node2D = castle._fire_shell(from, center.global_position, castle.catapult_damage * 6.0, 260.0, true, castle._equip_record("catapult", "投石器", 0))
+	var s: Node2D = castle._fire_shell(from, center.global_position, castle.catapult_damage * 6.0, 260.0, true, game.sp_src(castle._equip_record("catapult", "投石器", 0), "sp_ult_meteor"))
 	s.meteor = true
 	s.flight_time = 1.8
 	s.fire_time = 5.0
@@ -259,7 +259,7 @@ func _do_thunder_spear() -> void:
 	if dir == Vector2.ZERO:
 		_cds["thunder_spear"] = 1.0
 		return
-	var rec: Dictionary = castle._equip_record("ballista", "バリスタ", 0)
+	var rec: Dictionary = game.sp_src(castle._equip_record("ballista", "バリスタ", 0), "sp_ult_thunder")
 	for e in _alive_enemies():
 		var rel: Vector2 = e.global_position - from
 		if rel.dot(dir) > 0.0 and absf(rel.dot(dir.orthogonal())) < 50.0 + e.radius:
@@ -282,7 +282,7 @@ func _do_flock() -> void:
 			from = game.pet_fusion.global_position
 		for i in 6:
 			var m: Node2D = game.spawn_missile("homing", from,
-				Vector2.from_angle(TAU * i / 6.0) * 300.0, game.pet_damage * 3.0, 10.0, 6.0, p.record)
+				Vector2.from_angle(TAU * i / 6.0) * 300.0, game.pet_damage * 3.0, 10.0, 6.0, game.sp_src(p.record, "sp_ult_flock"))
 			m.look = "bird"
 			# ペットと同じ色の鳥（ペットの踊り中は虹色）
 			m.bird_color = Color.from_hsv(randf(), 0.55, 1.0) if game.fun.pet_dance else Color(0.45, 0.95, 0.65)
@@ -305,7 +305,7 @@ func _do_cavalry() -> void:
 	for i in 8:
 		var y := clampf(low_y + (i - 3.5) * 34.0, rect.position.y + 20.0, rect.end.y - 20.0)
 		var x := (rect.position.x + 10.0 if from_left else rect.end.x - 10.0) - (i % 2) * 40.0 * sgn
-		game.spawn_missile("rider", Vector2(x, y), Vector2(950.0 * sgn, 0.0), dmg, 20.0, 1.8, game.knights[0].record)
+		game.spawn_missile("rider", Vector2(x, y), Vector2(950.0 * sgn, 0.0), dmg, 20.0, 1.8, game.sp_src(game.knights[0].record, "sp_ult_cavalry"))
 	_flash(Color(1.0, 0.9, 0.5))
 
 
@@ -331,7 +331,7 @@ func _do_ice_age() -> void:
 	var castle: Node2D = game.castle
 	var r: float = castle.frost_radius * 2.2
 	var dmg := 120.0 * _time_mult()
-	var rec: Dictionary = castle._equip_record("frost", "氷結の結界", 0)
+	var rec: Dictionary = game.sp_src(castle._equip_record("frost", "氷結の結界", 0), "sp_ult_ice_age")
 	for e in _alive_enemies():
 		if castle.global_position.distance_to(e.global_position) < r:
 			e.stun(1.0)

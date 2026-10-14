@@ -70,7 +70,7 @@ func _process(delta: float) -> void:
 		f.rise_time = 0.6
 		f.damage = st.sword_damage * 0.4
 		f.radius = 70.0
-		f.src = record
+		f.src = game.sp_src(record, "sp_fun_fireworks")
 	_last_kills = record["kills"]
 	_sword_cd -= delta
 	_dash_cd -= delta
@@ -109,7 +109,7 @@ func _process(delta: float) -> void:
 	# ブーメラン：狙っている敵の方へ投げる（行きと帰りで貫く）
 	if st.boomerang and _boomerang_cd <= 0.0 and shoot_at != null:
 		_boomerang_cd = 3.5
-		var m: Node2D = game.spawn_missile("boomerang", global_position, aim_dir * 750.0, st.sword_damage * 1.3, 16.0, 4.0, record)
+		var m: Node2D = game.spawn_missile("boomerang", global_position, aim_dir * 750.0, st.sword_damage * 1.3, 16.0, 4.0, game.sp_src(record, "sp_boomerang"))
 		m.thrower = self
 	if _sword_cd <= 0.0 and _try_slash():
 		_sword_cd = st.sword_interval
@@ -129,7 +129,7 @@ func _touch_blast(st, delta: float) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < radius + e.radius + 4.0:
 			_touch_cd[e] = 1.0
-			game.explode(e.global_position, 75.0, st.bullet_damage * 3.0, record, Color(1.0, 0.5, 0.2), 0.0, 260.0)
+			game.explode(e.global_position, 75.0, st.bullet_damage * 3.0, game.sp_src(record, "sp_touch_blast"), Color(1.0, 0.5, 0.2), 0.0, 260.0)
 
 
 # ---------------------------------------------------------------- 狙う敵を決める
@@ -289,6 +289,7 @@ func _shoot() -> void:
 		if st.burst_level > 0:
 			b.explode_radius = 30.0 + 15.0 * st.burst_level
 			b.explode_ratio = 0.25 + 0.15 * st.burst_level
+			b.explode_src = game.sp_src(record, "sp_burst")
 		game.world.add_child(b)
 	# 影分身：横の分身からも同じ弾を撃つ（威力50%）
 	if st.shadow:
@@ -303,7 +304,7 @@ func _shoot() -> void:
 			sb.color = Color(0.7, 0.75, 1.0)
 			sb.life = st.fire_range / st.bullet_speed + 0.2
 			sb.position = from + aim_dir * 10.0
-			sb.src = record
+			sb.src = game.sp_src(record, "sp_shadow")
 			game.world.add_child(sb)
 
 
@@ -326,7 +327,7 @@ func _volley() -> void:
 		b.color = Color(1.0, 0.75, 0.3)
 		b.life = st.fire_range / st.bullet_speed + 0.2
 		b.position = global_position + dir * (radius + 6.0)
-		b.src = record
+		b.src = game.sp_src(record, "sp_volley")
 		game.world.add_child(b)
 
 
@@ -365,7 +366,7 @@ func _try_slash() -> bool:
 		w.color = Color(0.75, 0.9, 1.0)
 		w.life = 1.5
 		w.position = global_position + facing * 20.0
-		w.src = record
+		w.src = game.sp_src(record, "sp_sword_wave")
 		game.world.add_child(w)
 	var fx := SlashScript.new()
 	fx.radius = st.sword_radius

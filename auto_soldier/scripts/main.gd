@@ -365,9 +365,27 @@ func nearest_ally(pos: Vector2, max_dist: float) -> Node2D:
 ## 戦績カードを1枚作る。弾や罠にこのカードを持たせて、与えたダメージを記録する
 func new_record(cat: String, name_text: String) -> Dictionary:
 	var r := {"cat": cat, "name": name_text, "dealt": 0.0, "taken": 0.0, "kills": 0,
-		"blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0}
+		"blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0, "idx": records.size()}
 	records.append(r)
 	return r
+
+
+## 特別強化ぶんのダメージを分けて記録するための戦績カード。
+## rec（兵士・兵装の戦績カード）の代わりに攻撃の src に渡すと、与ダメージ・撃破は rec にも入り、
+## さらに rec["sp_dealt"][sp_id] に特別強化ごとのダメージが記録される（部隊戦績で兵士をクリックすると見られる）
+func sp_src(rec: Dictionary, sp_id: String) -> Dictionary:
+	if rec.is_empty():
+		return rec
+	# すでに特別強化のカードなら、元の兵士のカードから作り直す（中の特別強化のほうで記録する）
+	if rec.has("sp_id"):
+		rec = records[rec["rec_idx"]]
+	if not rec.has("_sp_src"):
+		rec["_sp_src"] = {}
+	var cache: Dictionary = rec["_sp_src"]
+	if not cache.has(sp_id):
+		cache[sp_id] = {"cat": rec["cat"], "name": rec["name"], "sp_id": sp_id, "rec_idx": rec["idx"],
+			"dealt": 0.0, "taken": 0.0, "kills": 0, "blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0}
+	return cache[sp_id]
 
 
 func set_auto_pick(on: bool) -> void:

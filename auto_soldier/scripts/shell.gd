@@ -69,12 +69,12 @@ func _explode() -> void:
 			e.take_damage(damage, to.normalized() * 300.0, src)
 	if direct_bonus > 0.0 and chase != null and is_instance_valid(chase) and not chase.dead:
 		# 鉄塊：追いかけた敵に直撃
-		chase.take_damage(direct_bonus, Vector2.ZERO, src)
+		chase.take_damage(direct_bonus, Vector2.ZERO, src if iron else game.sp_src(src, "sp_direct_hit"))
 		game.spawn_burst(target, Color(0.75, 0.8, 0.9), 40.0)
 	elif direct_bonus > 0.0:
 		var near: Node2D = game.nearest_enemy(target, blast_radius)
 		if near != null:
-			near.take_damage(direct_bonus, Vector2.ZERO, src)
+			near.take_damage(direct_bonus, Vector2.ZERO, src if iron else game.sp_src(src, "sp_direct_hit"))
 	var col := Color(0.75, 0.65, 0.5) if boulder else Color(1.0, 0.6, 0.2)
 	game.spawn_burst(target, col, blast_radius / 2.2)
 	if meteor:
@@ -83,20 +83,20 @@ func _explode() -> void:
 	if bounces > 0:
 		# ビリヤード：同じ向きにポーンと跳ねて、もう一度小さく爆発
 		var dir := (target - start).normalized()
-		var s: Node2D = game.castle._fire_shell(target, game.clamp_to_map(target + dir * 150.0, 20.0), damage * 0.5, blast_radius * 0.75, false, src)
+		var s: Node2D = game.castle._fire_shell(target, game.clamp_to_map(target + dir * 150.0, 20.0), damage * 0.5, blast_radius * 0.75, false, game.sp_src(src, "sp_fun_billiard"))
 		s.flight_time = 0.45
 		s.bounces = bounces - 1
 	if cow:
 		# 着地した牛が、6秒間近くの敵へ何度も突進する
-		game.spawn_missile("cow", target, Vector2.ZERO, damage * 0.5, 22.0, 6.0, src)
+		game.spawn_missile("cow", target, Vector2.ZERO, damage * 0.5, 22.0, 6.0, game.sp_src(src, "sp_fun_cow"))
 	if fire_time > 0.0:
-		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), src)
+		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), game.sp_src(src, "sp_incendiary"))
 	for i in mines:
 		# 置きすぎないように上限つき
 		if game.get_tree().get_nodes_in_group("placed_mine").size() >= 36:
 			break
 		var mp := target + Vector2.from_angle(TAU * i / mines + randf() * 0.8) * randf_range(50.0, 110.0)
-		game.spawn_placed("mine", mp, mine_damage, 26.0, 20.0, src)
+		game.spawn_placed("mine", mp, mine_damage, 26.0, 20.0, game.sp_src(src, "sp_mines"))
 	if leave_bomb > 0.0 and game.get_tree().get_nodes_in_group("cannon_bombs").size() < 24:
 		var b := TrapScript.new()
 		b.game = game
@@ -104,18 +104,18 @@ func _explode() -> void:
 		b.from_cannon = true
 		b.fixed_damage = leave_bomb
 		b.fixed_radius = blast_radius
-		b.src = src
+		b.src = game.sp_src(src, "sp_cannon_bomb")
 		b.position = target
 		game.ground.add_child(b)
 	if stay_rock:
-		game.spawn_placed("boulder", target, damage * 0.3, blast_radius * 0.6, 5.0, src)
+		game.spawn_placed("boulder", target, damage * 0.3, blast_radius * 0.6, 5.0, game.sp_src(src, "sp_stay_rock"))
 	if roll_damage > 0.0:
 		var away: Vector2 = (target - game.castle.global_position).normalized()
-		var m: Node2D = game.spawn_missile("ball", target, away.rotated(randf_range(-0.3, 0.3)) * 420.0, roll_damage, 30.0, 3.0, src)
+		var m: Node2D = game.spawn_missile("ball", target, away.rotated(randf_range(-0.3, 0.3)) * 420.0, roll_damage, 30.0, 3.0, game.sp_src(src, "sp_rolling"))
 		m.look = "rock"
 	for i in split_count:
 		var p := target + Vector2.from_angle(TAU * i / split_count + randf() * 0.5) * randf_range(blast_radius * 0.8, blast_radius * 1.2)
-		game.spawn_blast(p, 0.3 + 0.08 * i, 70.0, damage * 0.4, src, Color(0.75, 0.65, 0.5), "rock")
+		game.spawn_blast(p, 0.3 + 0.08 * i, 70.0, damage * 0.4, game.sp_src(src, "sp_split_rock"), Color(0.75, 0.65, 0.5), "rock")
 	queue_free()
 
 

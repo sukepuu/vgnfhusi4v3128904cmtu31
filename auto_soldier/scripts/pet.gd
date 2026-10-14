@@ -78,6 +78,7 @@ func _shoot_one(target: Node2D, k: int) -> void:
 	if game.pet_burst:
 		b.explode_radius = 45.0
 		b.explode_ratio = 0.6
+		b.explode_src = game.sp_src(record, "sp_pet_burst")
 	game.world.add_child(b)
 
 
@@ -95,7 +96,7 @@ func _body_slam(delta: float) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < r + e.radius + 3.0:
 			_slam_cd[e] = 0.5
-			e.take_damage(game.pet_damage * 3.0, (e.global_position - global_position).normalized() * 200.0, record)
+			e.take_damage(game.pet_damage * 3.0, (e.global_position - global_position).normalized() * 200.0, game.sp_src(record, "sp_pet_body"))
 
 
 func _nearest_enemy() -> Node2D:

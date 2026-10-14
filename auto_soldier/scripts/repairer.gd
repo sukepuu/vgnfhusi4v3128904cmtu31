@@ -79,7 +79,7 @@ func _throw(t: Node2D) -> void:
 	# ブーメランは毎秒1100ずつ減速するので、敵の少し向こうまで届く速さで投げる
 	var dist := global_position.distance_to(t.global_position) + 30.0
 	var spd := sqrt(2.0 * 1100.0 * dist)
-	var b: Node2D = game.spawn_missile("boomerang", global_position, dir * spd, 18.0 * (1.0 + game.elapsed / 150.0), 10.0, 3.0, record)
+	var b: Node2D = game.spawn_missile("boomerang", global_position, dir * spd, 18.0 * (1.0 + game.elapsed / 150.0), 10.0, 3.0, game.sp_src(record, "sp_tool_throw"))
 	b.look = "wrench"
 	b.thrower = self
 

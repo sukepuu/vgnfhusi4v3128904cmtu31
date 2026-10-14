@@ -86,7 +86,7 @@ func _activate() -> void:
 		# 毒沼：跡が毒の沼になる
 		if st.poison_level > 0:
 			game.spawn_hazard(global_position, blast_radius, st.pit_damage * 0.3 * st.poison_level,
-				6.0 + 3.0 * (st.poison_level - 1), Color(0.5, 0.9, 0.3), src)
+				6.0 + 3.0 * (st.poison_level - 1), Color(0.5, 0.9, 0.3), game.sp_src(src, "sp_poison"))
 		remove_from_group("traps")
 		_hole_left = 1.5
 		queue_redraw()
@@ -100,13 +100,13 @@ func _activate() -> void:
 		if st.ap_mine:
 			var near: Node2D = game.nearest_enemy(global_position, blast_radius)
 			if near != null:
-				near.take_damage(damage * 4.0, Vector2.ZERO, src)
+				near.take_damage(damage * 4.0, Vector2.ZERO, game.sp_src(src, "sp_ap_mine"))
 		# 子爆弾：周りに小爆弾が散らばって爆発
 		if st.cluster_level > 0:
 			var n: int = 3 * st.cluster_level
 			for i in n:
 				var p: Vector2 = global_position + Vector2.from_angle(TAU * i / n + randf() * 0.4) * randf_range(blast_radius * 0.8, blast_radius * 1.4)
-				game.spawn_blast(p, 0.35 + 0.06 * i, blast_radius * 0.5, damage * 0.5, src, Color(1.0, 0.55, 0.2), "bomb")
+				game.spawn_blast(p, 0.35 + 0.06 * i, blast_radius * 0.5, damage * 0.5, game.sp_src(src, "sp_cluster"), Color(1.0, 0.55, 0.2), "bomb")
 		queue_free()
 
 

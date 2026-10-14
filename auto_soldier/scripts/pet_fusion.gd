@@ -175,6 +175,7 @@ func _shoot_update(delta: float) -> void:
 		if game.pet_burst:
 			b.explode_radius = 45.0 + 3.0 * _n
 			b.explode_ratio = 0.6
+			b.explode_src = game.sp_src(record, "sp_pet_burst")
 		game.world.add_child(b)
 
 

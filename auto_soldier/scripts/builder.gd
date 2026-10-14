@@ -53,7 +53,7 @@ func _process(delta: float) -> void:
 				# 見張り櫓は6秒で完成
 				progress += delta / 6.0
 				if progress >= 1.0:
-					game.spawn_placed("watchtower", tower_spot + Vector2(0, -26), 20.0, 0.0, 0.0, record)
+					game.spawn_placed("watchtower", tower_spot + Vector2(0, -26), 20.0, 0.0, 0.0, game.sp_src(record, "sp_watchtower"))
 					tower_job = false
 					state = "idle"
 				queue_redraw()

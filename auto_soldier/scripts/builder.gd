@@ -14,6 +14,10 @@ var progress := 0.0
 var tower_job := false
 var tower_spot := Vector2.ZERO
 var record: Dictionary
+## 見張り櫓：待機中に乗っている（乗りに行っている）櫓
+var post: Node2D = null
+## 櫓の上で立つ場所（櫓の位置から）
+const POST_OFFSET := Vector2(0, -24)
 
 const SPEED := 120.0
 var _t := 0.0
@@ -29,8 +33,6 @@ func _process(delta: float) -> void:
 	var walls: Node2D = game.walls
 	match state:
 		"idle":
-			var home: Vector2 = game.castle.gate_position() + Vector2(60.0 + index * 30.0, 10.0)
-			_move_to(home, delta)
 			# 見張り櫓が足りなければ先に建てる
 			if walls.watchtower and _towers_planned() < walls.MAX_WATCHTOWERS:
 				tower_job = true
@@ -41,9 +43,20 @@ func _process(delta: float) -> void:
 				return
 			var spot = walls.find_build_spot(_reserved_by_others())
 			if spot != null:
+				post = null
 				tower_job = false
 				plan = spot
 				state = "walking"
+				return
+			# 待機中：空いている見張り櫓に乗って、櫓から射撃する（櫓がなければ城の前で待つ）
+			if walls.watchtower:
+				if post == null or not is_instance_valid(post):
+					post = _free_post()
+				if post != null:
+					_move_to(post.global_position + POST_OFFSET, delta)
+					return
+			var home: Vector2 = game.castle.gate_position() + Vector2(60.0 + index * 30.0, 10.0)
+			_move_to(home, delta)
 		"walking":
 			if _move_to(tower_spot if tower_job else _site(), delta):
 				state = "building"
@@ -53,7 +66,7 @@ func _process(delta: float) -> void:
 				# 見張り櫓は6秒で完成
 				progress += delta / 6.0
 				if progress >= 1.0:
-					game.spawn_placed("watchtower", tower_spot + Vector2(0, -26), 20.0, 0.0, 0.0, game.sp_src(record, "sp_watchtower"))
+					game.spawn_placed("watchtower", tower_spot + Vector2(0, -26), 30.0, 0.0, 0.0, game.sp_src(record, "sp_watchtower"))
 					tower_job = false
 					state = "idle"
 				queue_redraw()
@@ -72,7 +85,7 @@ func _site() -> Vector2:
 	return game.walls.point_at((plan.x + plan.y) / 2.0, game.walls.RADIUS - 24.0)
 
 
-## 見張り櫓を建てる場所：壁の内側に等間隔で4か所。建っている櫓や、ほかの築城兵が向かっている場所は避ける
+## 見張り櫓を建てる場所：壁の内側に等間隔で3か所。建っている櫓や、ほかの築城兵が向かっている場所は避ける
 func _free_tower_spot() -> Vector2:
 	var walls: Node2D = game.walls
 	var taken: Array = []
@@ -94,6 +107,29 @@ func _free_tower_spot() -> Vector2:
 	if free.is_empty():
 		return walls.point_at(randf_range(PI + 0.35, TAU - 0.35), walls.RADIUS - 60.0)
 	return free.pick_random()
+
+
+## まだだれも乗っていない見張り櫓（いちばん近いもの）
+func _free_post() -> Node2D:
+	var best: Node2D = null
+	var best_d := INF
+	for t in game.get_tree().get_nodes_in_group("placed_watchtower"):
+		var used := false
+		for b in game.builders:
+			if b != self and b.post == t:
+				used = true
+		if used:
+			continue
+		var d: float = position.distance_to(t.global_position)
+		if d < best_d:
+			best_d = d
+			best = t
+	return best
+
+
+## この築城兵が櫓の上に乗っているか
+func is_on_post(t: Node2D) -> bool:
+	return state == "idle" and post == t and position.distance_to(t.global_position + POST_OFFSET) < 6.0
 
 
 ## 建っている櫓と、ほかの築城兵が建てに行っている櫓の数

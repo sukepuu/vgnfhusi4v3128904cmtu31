@@ -34,7 +34,7 @@ var jack := false
 var counter := false
 ## 見張り櫓（築城兵が壁の外に矢を撃つ櫓を建てる）
 var watchtower := false
-const MAX_WATCHTOWERS := 4
+const MAX_WATCHTOWERS := 3
 ## 剣山の壁（敵が壁に触れると、トゲが飛び出して周りに大ダメージ。壁1枚につき6秒に1回）
 var spike := false
 const SPIKE_COOLDOWN := 6.0

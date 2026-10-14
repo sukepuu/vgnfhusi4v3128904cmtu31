@@ -115,7 +115,7 @@ const SPECIAL := [
 	{"id": "sp_wall_repair", "cat": "builder", "special": true, "name": "自己修復", "desc": "壁が3秒ごとに1発分ずつ回復する", "max": 1, "req": "builder"},
 	{"id": "sp_wall_blast", "cat": "builder", "special": true, "name": "爆裂壁", "desc": "壁が攻撃を防ぐたびに、その場で爆発して周りの敵にダメージ", "max": 1, "req": "builder"},
 	{"id": "sp_golden_wall", "cat": "builder", "special": true, "name": "黄金の壁", "desc": "壁が攻撃を防ぐたびに経験値が1入る", "max": 1, "req": "builder"},
-	{"id": "sp_watchtower", "cat": "builder", "special": true, "name": "見張り櫓", "desc": "築城兵が壁の内側に見張り櫓を建てる（最大4基）。櫓は近くの敵へ矢を撃ち続ける", "max": 1, "req": "builder"},
+	{"id": "sp_watchtower", "cat": "builder", "special": true, "name": "見張り櫓", "desc": "築城兵が壁の内側に見張り櫓を建てる（最大3基）。壁を建てる仕事がなくて待機しているあいだ、築城兵が櫓に乗って近くの敵へ矢を撃つ", "max": 1, "req": "builder"},
 	# ---- 工兵部隊
 	{"id": "sp_cluster", "cat": "engineer", "special": true, "name": "子爆弾", "desc": "爆弾が爆発すると、周りに小爆弾が6個散らばって爆発する", "max": 1, "req": "engineer"},
 	{"id": "sp_poison", "cat": "engineer", "special": true, "name": "毒沼", "desc": "作動した落とし穴の跡が9秒間、毒の沼になる", "max": 1, "req": "engineer"},

@@ -83,8 +83,11 @@ func _process(delta: float) -> void:
 					e.take_damage(damage * 0.5, Vector2.ZERO, src)
 					e.slow(0.6, 0.2)
 		"watchtower":
-			# 時間とともに威力が上がる
-			if _cd <= 0.0 and _fire(400.0, damage * (1.0 + game.elapsed / 180.0), 680.0, Color(0.95, 0.85, 0.6)) != null:
+			# 築城兵が上に乗っているときだけ射撃する（時間とともに威力が上がる。戦績は乗っている築城兵に入る）
+			var rider := _rider()
+			if rider != null:
+				src = game.sp_src(rider.record, "sp_watchtower")
+			if _cd <= 0.0 and rider != null and _fire(400.0, damage * (1.0 + game.elapsed / 180.0), 680.0, Color(0.95, 0.85, 0.6)) != null:
 				_cd = 0.7
 		"sentry":
 			if _cd <= 0.0 and _fire(330.0, damage, 720.0, Color(1.0, 0.95, 0.5)) != null:
@@ -390,3 +393,11 @@ func _draw() -> void:
 			draw_rect(Rect2(Vector2(-7, -28), Vector2(14, 6)), Color(0.2, 0.35, 0.7))
 			draw_line(Vector2(-12, -2), Vector2(-20, -10), Color(0.45, 0.3, 0.15), 2.0)
 			draw_line(Vector2(12, -2), Vector2(20, -10), Color(0.45, 0.3, 0.15), 2.0)
+
+
+## 見張り櫓に乗っている築城兵（いなければ null）
+func _rider() -> Node2D:
+	for b in game.builders:
+		if b.is_on_post(self):
+			return b
+	return null

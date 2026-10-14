@@ -19,6 +19,9 @@ var _boss_label: Label
 var _banner: Label
 var _banner_left := 0.0
 var _auto_btn: Button
+var _auto_set_btn: Button
+## デバッグ用：オート選択のボタンを表示しているか（M キーで切り替え。ふだんは隠しておく）
+static var debug_auto_visible := false
 var _speed_btn: Button
 var _notice: Label
 var _notice_left := 0.0
@@ -149,14 +152,17 @@ func _ready() -> void:
 	update_auto_button()
 
 	# オート選択設定ボタン（オート選択ボタンの下）
-	var auto_set_btn := Button.new()
-	auto_set_btn.text = "オート選択設定"
-	auto_set_btn.add_theme_font_size_override("font_size", 16)
-	auto_set_btn.position = Vector2(16, 204)
-	auto_set_btn.size = Vector2(170, 34)
-	auto_set_btn.focus_mode = Control.FOCUS_NONE
-	auto_set_btn.pressed.connect(func() -> void: game.toggle_auto_pick_settings())
-	root.add_child(auto_set_btn)
+	_auto_set_btn = Button.new()
+	_auto_set_btn.text = "オート選択設定"
+	_auto_set_btn.add_theme_font_size_override("font_size", 16)
+	_auto_set_btn.position = Vector2(16, 204)
+	_auto_set_btn.size = Vector2(170, 34)
+	_auto_set_btn.focus_mode = Control.FOCUS_NONE
+	_auto_set_btn.pressed.connect(func() -> void: game.toggle_auto_pick_settings())
+	root.add_child(_auto_set_btn)
+	# オート選択まわりはデバッグ用。ふだんは隠しておく（M キーで表示）
+	_auto_btn.visible = debug_auto_visible
+	_auto_set_btn.visible = debug_auto_visible
 
 	# 速度切り替えボタン（画面右下）
 	_speed_btn = Button.new()
@@ -389,9 +395,15 @@ func show_game_over() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _game_over.visible and event is InputEventKey and event.pressed and event.keycode == KEY_R:
 		game.restart()
-	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_A and not _game_over.visible:
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_A and not _game_over.visible and debug_auto_visible:
 		get_viewport().set_input_as_handled()
 		game.set_auto_pick(not game.auto_pick)
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_M:
+		# デバッグ用：オート選択のボタンを表示・非表示
+		get_viewport().set_input_as_handled()
+		debug_auto_visible = not debug_auto_visible
+		_auto_btn.visible = debug_auto_visible
+		_auto_set_btn.visible = debug_auto_visible
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F and not _game_over.visible:
 		get_viewport().set_input_as_handled()
 		game.toggle_speed()

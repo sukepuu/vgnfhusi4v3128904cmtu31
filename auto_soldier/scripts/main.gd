@@ -660,13 +660,13 @@ const SPAWN_MAX := 11.0
 const SPAWN_CAP_TIME := (SPAWN_MAX - SPAWN_BASE) / SPAWN_GROWTH
 ## 敵のHP倍率：0〜10分は1分ごとに +HP_EARLY_PER_MIN。
 ## HP_SWITCH_MIN 分からは、上がり幅そのものが1分ごとに HP_ACCEL ずつ大きくなる
-## （10分で毎分+0.5 → 20分で毎分+3 → 40分で毎分+8 → 60分で毎分+13 …）
+## （10分で毎分+0.5 → 20分で毎分+3.5 → 40分で毎分+9.5 → 60分で毎分+15.5 …）
 const HP_EARLY_PER_MIN := 0.5
 const HP_SWITCH_MIN := 10.0
-const HP_ACCEL := 0.25
+const HP_ACCEL := 0.3
 
 
-## 敵のHP倍率（5分で×3.5、10分で×6、20分で×24、30分で×66、40分で×134、60分で×344）
+## 敵のHP倍率（5分で×3.5、10分で×6、20分で×26、30分で×76、40分で×156、60分で×406、90分で×1006）
 func _hp_mult() -> float:
 	var m := elapsed / 60.0
 	var d := maxf(0.0, m - HP_SWITCH_MIN)

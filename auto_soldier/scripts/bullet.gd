@@ -12,6 +12,8 @@ var boss_pierce := false
 const BOSS_HITS := 2
 var _boss_hits_left := BOSS_HITS
 var _hit_walls := {}
+## 壁を素通りする（黒衣の大司教の号令で敵が撃つ、貫通無限の弾）
+var ignore_walls := false
 var color := Color(1, 1, 0.5)
 var life := 1.0
 ## true ならバリスタの矢（太く長く描く）
@@ -117,7 +119,7 @@ func _process(delta: float) -> void:
 					continue
 				queue_free()
 				return
-		var wi: int = game.walls.hit_test(global_position, radius)
+		var wi: int = -1 if ignore_walls else game.walls.hit_test(global_position, radius)
 		if wi >= 0 and not _hit_walls.has(wi):
 			# 壁が1発分防ぐ
 			game.walls.absorb(wi, global_position)

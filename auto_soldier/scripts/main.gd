@@ -154,6 +154,9 @@ var _shown_level := 1
 
 var _spawn_acc := 0.0
 var _next_wave := 50.0
+## 黒衣の大司教：BISHOP_EVERY 秒（10分）ごとに出現する（レベルのボスとは別）
+const BISHOP_EVERY := 600.0
+var _next_bishop := BISHOP_EVERY
 ## 出現中のボス（いなければ null）
 var boss: Node2D = null
 var bosses_spawned := 0
@@ -591,6 +594,11 @@ func _update_spawning(delta: float) -> void:
 			elif k == "mortar" or k == "seeker":
 				pos = _mortar_spawn_pos()
 			_spawn_enemy(k, pos)
+	# 10分ごとに黒衣の大司教（まだ前の大司教が残っていれば出さない）
+	if elapsed >= _next_bishop:
+		_next_bishop += BISHOP_EVERY
+		if not bishop_alive():
+			_spawn_bishop()
 	# 定期的に横一列の大群
 	if elapsed >= _next_wave:
 		_next_wave += 50.0
@@ -768,6 +776,27 @@ func _spawn_boss() -> void:
 			first = e
 	boss = first
 	hud.show_banner("⚠ BOSS%s出現！ ⚠" % "＆".join(titles), Color(1.0, 0.4, 0.5))
+
+
+## 黒衣の大司教を出す（HPは時間の倍率に合わせる）
+func _spawn_bishop() -> void:
+	var e := EnemyScript.new()
+	e.game = self
+	e.boss_rank = maxi(1, int(elapsed / BISHOP_EVERY))
+	e.setup("boss4", _hp_mult() * level_hp_bonus())
+	e.position = Vector2(MAP_RECT.get_center().x, MAP_RECT.position.y + 60.0)
+	world.add_child(e)
+	if boss == null or not is_instance_valid(boss) or boss.dead:
+		boss = e
+	hud.show_banner("⚠ BOSS「黒衣の大司教」出現！ ⚠", Color(0.75, 0.45, 1.0))
+
+
+## 黒衣の大司教が生きているか
+func bishop_alive() -> bool:
+	for e in enemies_cache:
+		if is_instance_valid(e) and not e.dead and e.kind == "boss4":
+			return true
+	return false
 
 
 ## 生きているボス（分裂の魔獣は分かれた体も1体ずつ）

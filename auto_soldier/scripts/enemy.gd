@@ -48,6 +48,11 @@ var _spiral_angle := 0.0
 ## 迫撃砲・砲台要塞の砲身の反動
 var _recoil := 0.0
 var _hp_mult := 1.0
+## 黒衣の大司教の力で、もう1回復活したか（1回だけ復活する）
+var _revived := false
+## 黒衣の大司教：ふわふわ漂う動きと、号令（全員の全方位射撃）のタイマー
+var _bishop_t := 0.0
+var _bishop_cd := 3.0
 var _skill_cd := 3.0
 var _summon_cd := 8.0
 var _heal_fx := 0.0
@@ -139,6 +144,12 @@ func setup(k: String, hp_mult: float) -> void:
 			# 出てきてすぐ、全方位ぐるぐる射撃から始める
 			_pattern = 3
 			_pattern_left = 0.0
+		"boss4":
+			# 黒衣の大司教：画面の上のほうに浮かんで漂う。自分では戦わず、ほかの敵を強くする
+			max_hp = 1500.0; speed = 0.0; damage = 10.0; castle_damage = 0.0; radius = 40.0; xp_value = 80
+			color = Color(0.16, 0.12, 0.2)
+			is_boss = true
+			boss_title = "黒衣の大司教"
 		"boss3":
 			# 分裂するたびにHPは半分、体は小さく、足は速くなる
 			# 最初の体のHPは 123.75。分かれた体ぜんぶの合計（最初の体の5倍 = 618.75）が、砲台要塞（412.5）の1.5倍になる
@@ -180,6 +191,9 @@ func _process(delta: float) -> void:
 		return
 	if kind == "mortar" or kind == "boss2" or kind == "seeker":
 		_update_stationary(delta)
+		return
+	if kind == "boss4":
+		_update_bishop(delta)
 		return
 	var castle: Node2D = game.castle
 	var move := Vector2.ZERO
@@ -675,7 +689,7 @@ func no_castle_push(v: Vector2) -> Vector2:
 ## 攻撃で押される強さの倍率。大型は吹き飛びにくい
 ## 破城の魔王・分裂の魔獣は重いので押されにくい（ふつうの敵の4割）。砲台要塞・迫撃砲・誘導砲兵は押されない
 func _kb_mult() -> float:
-	if kind == "boss2" or kind == "mortar" or kind == "seeker":
+	if kind == "boss2" or kind == "mortar" or kind == "seeker" or kind == "boss4":
 		return 0.0
 	if is_boss:
 		return 0.4
@@ -717,9 +731,11 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	# 城ロボ起動中：城にくっついている兵装（矢倉・大砲・投石器・バリスタ）の与ダメージ +15%
 	if src.get("robot_boost", false) and game.castle.robot_active():
 		amount *= game.castle.ROBOT_BOOST
+	# 黒衣の大司教がいるあいだは、倒されたザコ敵が1回だけその場でHP50%で復活する
+	var revive: bool = hp - amount <= 0.0 and not is_boss and not _revived and game.bishop_alive()
 	if not src.is_empty():
 		var dealt := minf(amount, hp)
-		var killed := hp - amount <= 0.0
+		var killed: bool = hp - amount <= 0.0 and not revive
 		var rec: Dictionary = src
 		# 特別強化のダメージ（game.sp_src で作ったカード）は、元の兵士の戦績にも入れて、特別強化ごとにも記録する
 		if src.has("sp_id"):
@@ -733,6 +749,12 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	_flash = 0.1
 	apply_knock(knockback)
 	game.spawn_damage_text(global_position, amount, Color(1, 1, 1))
+	if revive:
+		_revived = true
+		hp = max_hp * 0.5
+		game.spawn_burst(global_position, Color(0.6, 0.3, 0.9), radius * 1.6)
+		queue_redraw()
+		return
 	if hp <= 0.0:
 		dead = true
 		remove_from_group("enemies")
@@ -747,10 +769,49 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 		queue_free()
 
 
+## 黒衣の大司教：画面の上のほうをゆっくり左右に漂い、10秒ごとに「号令」でほかの敵全員に全方位射撃をさせる
+func _update_bishop(delta: float) -> void:
+	_bishop_t += delta
+	var rect: Rect2 = game.MAP_RECT
+	var goal := Vector2(rect.get_center().x + sin(_bishop_t * 0.35) * rect.size.x * 0.35, rect.position.y + 130.0 + sin(_bishop_t * 0.9) * 25.0)
+	position = position.move_toward(goal, 60.0 * delta)
+	_bishop_cd -= delta
+	if _bishop_cd <= 0.0:
+		_bishop_cd = BISHOP_VOLLEY_INTERVAL
+		_bishop_volley()
+	queue_redraw()
+
+
+const BISHOP_VOLLEY_INTERVAL := 10.0
+const BISHOP_VOLLEY_SHOTS := 6
+
+
+## 号令：大司教以外のすべての敵が、全方位へ貫通無限の弾を撃つ（壁は素通り。城に当たったら消える）
+func _bishop_volley() -> void:
+	game.spawn_burst(global_position, Color(0.65, 0.3, 0.95), 160.0)
+	for e in game.enemies_cache:
+		if not is_instance_valid(e) or e.dead or e.kind == "boss4":
+			continue
+		var base := randf() * TAU
+		for i in BISHOP_VOLLEY_SHOTS:
+			var dir := Vector2.from_angle(base + TAU * i / BISHOP_VOLLEY_SHOTS)
+			var b: Node2D = e._shoot(dir, maxf(2.0, e.damage * 0.5), 210.0, 6.0, Color(0.7, 0.35, 1.0), 2.5)
+			b.boss_pierce = true
+			b._boss_hits_left = 1000000
+			b.ignore_walls = true
+			b.castle_ratio = 0.2
+
+
 func _draw() -> void:
 	# 隠密兵は半透明
 	modulate.a = 0.45 if kind == "stealth" else 1.0
+	if kind == "boss4":
+		_draw_bishop()
+		return
 	draw_circle(Vector2(0, radius * 0.45), radius, Color(0, 0, 0, 0.3))
+	# 大司教の力で復活した敵は、紫のもやをまとう
+	if _revived:
+		draw_circle(Vector2.ZERO, radius + 5.0, Color(0.6, 0.3, 0.9, 0.35))
 	var c := Color(1, 1, 1) if _flash > 0.0 else color
 	match kind:
 		"archer":
@@ -898,3 +959,36 @@ func _draw() -> void:
 		var top := Vector2(-radius, -radius - 9.0)
 		draw_rect(Rect2(top, Vector2(w, 4)), Color(0, 0, 0, 0.6))
 		draw_rect(Rect2(top, Vector2(w * hp / max_hp, 4)), Color(0.9, 0.2, 0.2))
+
+
+## 黒衣の大司教の絵：足元で回る紫の魔法陣、黒いローブとフード、光る目、杖
+func _draw_bishop() -> void:
+	var r := radius
+	var t := Time.get_ticks_msec() / 1000.0
+	var bob := sin(t * 2.0) * 4.0
+	# 魔法陣（二重の輪と、回る文字の点）
+	draw_arc(Vector2(0, r * 0.9), r * 1.5, 0.0, TAU, 48, Color(0.65, 0.3, 0.95, 0.6), 3.0)
+	draw_arc(Vector2(0, r * 0.9), r * 1.15, 0.0, TAU, 40, Color(0.65, 0.3, 0.95, 0.4), 2.0)
+	for i in 8:
+		var a := t * 0.8 + TAU * i / 8.0
+		draw_circle(Vector2(0, r * 0.9) + Vector2.from_angle(a) * r * 1.32, 4.0, Color(0.85, 0.6, 1.0, 0.8))
+	var c := Color(1, 1, 1) if _flash > 0.0 else color
+	# ローブ（すそが広がった三角）
+	draw_colored_polygon(PackedVector2Array([Vector2(-r * 0.45, -r * 0.4 + bob), Vector2(r * 0.45, -r * 0.4 + bob),
+		Vector2(r * 0.95, r * 1.0 + bob), Vector2(-r * 0.95, r * 1.0 + bob)]), c)
+	draw_line(Vector2(0, -r * 0.3 + bob), Vector2(0, r * 0.95 + bob), Color(0.45, 0.2, 0.6), 4.0)
+	# フード
+	draw_circle(Vector2(0, -r * 0.55 + bob), r * 0.5, c)
+	draw_colored_polygon(PackedVector2Array([Vector2(-r * 0.5, -r * 0.55 + bob), Vector2(0, -r * 1.25 + bob), Vector2(r * 0.5, -r * 0.55 + bob)]), c)
+	draw_circle(Vector2(0, -r * 0.5 + bob), r * 0.32, Color(0.04, 0.02, 0.06))
+	# 光る目
+	var glow := 0.7 + 0.3 * sin(t * 6.0)
+	draw_circle(Vector2(-r * 0.13, -r * 0.52 + bob), 3.5, Color(0.85, 0.45, 1.0, glow))
+	draw_circle(Vector2(r * 0.13, -r * 0.52 + bob), 3.5, Color(0.85, 0.45, 1.0, glow))
+	# 杖（先に紫の玉）
+	draw_line(Vector2(r * 0.8, -r * 0.9 + bob), Vector2(r * 0.8, r * 0.9 + bob), Color(0.45, 0.32, 0.2), 4.0)
+	draw_circle(Vector2(r * 0.8, -r * 0.95 + bob), 9.0, Color(0.7, 0.35, 1.0, 0.5 + 0.4 * glow))
+	draw_circle(Vector2(r * 0.8, -r * 0.95 + bob), 5.0, Color(0.95, 0.85, 1.0))
+	# 号令の直前は、魔法陣が強く光る
+	if _bishop_cd < 1.0:
+		draw_circle(Vector2.ZERO, r * 1.8, Color(0.7, 0.35, 1.0, 0.25 * (1.0 - _bishop_cd)))

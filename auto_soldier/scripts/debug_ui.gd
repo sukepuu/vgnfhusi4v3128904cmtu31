@@ -24,6 +24,7 @@ var _rows := {}
 var _bodies := {}
 var _arrows := {}
 var _save_note: Label
+var _desc: Label
 var _load_btn: Button
 
 
@@ -115,6 +116,17 @@ func _ready() -> void:
 	_save_note = _label("", 18, Color(0.6, 1.0, 0.6))
 	info.add_child(_save_note)
 
+	# 強化の説明欄（一覧の強化の名前を押すと出る）
+	var desc_panel := PanelContainer.new()
+	desc_panel.custom_minimum_size = Vector2(0, 62)
+	box.add_child(desc_panel)
+	_desc = Label.new()
+	_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_desc.add_theme_font_size_override("font_size", 17)
+	_desc.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	_desc.text = "強化の名前を押すと、ここに説明が出ます"
+	desc_panel.add_child(_desc)
+
 	# 部隊・兵装ごとの一覧（スクロール）
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -196,11 +208,18 @@ func _build_list() -> void:
 			cell.custom_minimum_size = Vector2(380, 0)
 			body.add_child(cell)
 			_add_check(cell, u)
-			var name_l := _label(("★" if u.get("special", false) else "") + u["name"], 16,
-				Color(1.0, 0.85, 0.45) if u.get("special", false) else Color(0.9, 0.9, 0.9))
-			name_l.tooltip_text = u["desc"]
-			name_l.mouse_filter = Control.MOUSE_FILTER_PASS
-			cell.add_child(name_l)
+			# 名前を押すと、上の説明欄にその強化の説明が出る
+			var name_b := Button.new()
+			name_b.flat = true
+			name_b.focus_mode = Control.FOCUS_NONE
+			name_b.text = ("★" if u.get("special", false) else "") + u["name"]
+			name_b.add_theme_font_size_override("font_size", 16)
+			var name_col := Color(1.0, 0.85, 0.45) if u.get("special", false) else Color(0.9, 0.9, 0.9)
+			name_b.add_theme_color_override("font_color", name_col)
+			name_b.add_theme_color_override("font_hover_color", name_col.lightened(0.4))
+			name_b.add_theme_color_override("font_pressed_color", name_col)
+			name_b.pressed.connect(_show_desc.bind(u))
+			cell.add_child(name_b)
 			_add_spin(cell, u)
 		_update_arrow(key)
 
@@ -233,6 +252,14 @@ func _add_spin(parent: Control, u: Dictionary) -> void:
 	_rows[u["id"]][1] = s
 	# レベルを変えたら、その強化を取ったことにする
 	s.value_changed.connect(func(_v: float) -> void: _rows[u["id"]][0].button_pressed = true)
+
+
+func _show_desc(u: Dictionary) -> void:
+	var text: String = "【%s%s】%s" % ["★" if u.get("special", false) else "", u["name"], u["desc"]]
+	if u.has("desc_up"):
+		text += "\n（2回目以降：%s）" % u["desc_up"]
+	text += "　最大Lv%d" % int(u["max"])
+	_desc.text = text
 
 
 ## 見出しをクリック：部隊・兵装にチェックを付けて、中身を開く（開いていたら閉じる）

@@ -7,10 +7,11 @@ var damage := 10.0
 var pierce := 0
 var radius := 5.0
 var from_enemy := false
-## ボスの弾：味方を BOSS_PIERCE 体まで貫通する（迎撃兵・壁・城に当たったら消える）
+## ボスの弾：味方でも壁でも、BOSS_HITS 回当たるまで突き抜けて飛ぶ（例：壁＋迎撃兵で消える。城に当たったら消える）
 var boss_pierce := false
-const BOSS_PIERCE := 2
-var _boss_pierce_left := BOSS_PIERCE
+const BOSS_HITS := 2
+var _boss_hits_left := BOSS_HITS
+var _hit_walls := {}
 var color := Color(1, 1, 0.5)
 var life := 1.0
 ## true ならバリスタの矢（太く長く描く）
@@ -105,9 +106,10 @@ func _process(delta: float) -> void:
 			if not s.dead and not _hit.has(s) and global_position.distance_to(s.global_position) < radius + s.radius:
 				# 弾が飛んできた方向を渡す（迎撃部隊の盾の判定用）
 				s.take_damage(damage, global_position - velocity.normalized() * 30.0)
-				# ボスの弾は迎撃兵以外を2体まで貫通する（迎撃兵の盾で止まる）
-				if boss_pierce and _boss_pierce_left > 0 and not game.guards.has(s):
-					_boss_pierce_left -= 1
+				# ボスの弾は、2回当たるまで突き抜ける（味方・壁どちらに当たっても1回）
+				if boss_pierce:
+					_boss_hits_left -= 1
+				if boss_pierce and _boss_hits_left > 0:
 					_hit[s] = true
 					# 追いかけていた相手に当たったら、そこからはまっすぐ飛ぶ
 					if seek == s:
@@ -116,12 +118,17 @@ func _process(delta: float) -> void:
 				queue_free()
 				return
 		var wi: int = game.walls.hit_test(global_position, radius)
-		if wi >= 0:
+		if wi >= 0 and not _hit_walls.has(wi):
 			# 壁が1発分防ぐ
 			game.walls.absorb(wi, global_position)
 			# 反撃壁：防いだ場所から、敵へ弾を撃ち返す
 			if game.walls.counter:
 				game.walls.counter_shot(global_position)
+			if boss_pierce:
+				_boss_hits_left -= 1
+				if _boss_hits_left > 0:
+					_hit_walls[wi] = true
+					return
 			queue_free()
 			return
 		if game.castle.distance_to_point(global_position) < radius:

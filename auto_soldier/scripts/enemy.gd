@@ -637,7 +637,7 @@ func _shoot(dir: Vector2, dmg: float, spd: float = 260.0, r: float = 7.0, col: C
 	b.color = col
 	b.life = life
 	b.position = global_position + dir * (radius + 4.0)
-	# ボスの弾は味方を2体まで貫通する（迎撃兵・壁では止まる）
+	# ボスの弾は、味方・壁に2回当たるまで突き抜ける
 	b.boss_pierce = is_boss
 	# 砲台要塞の弾幕は兵士向け。城に当たったときは2割のダメージ
 	if kind == "boss2":

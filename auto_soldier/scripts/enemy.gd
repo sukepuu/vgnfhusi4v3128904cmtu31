@@ -637,6 +637,8 @@ func _shoot(dir: Vector2, dmg: float, spd: float = 260.0, r: float = 7.0, col: C
 	b.color = col
 	b.life = life
 	b.position = global_position + dir * (radius + 4.0)
+	# ボスの弾は貫通無限（味方も壁も突き抜けていく）
+	b.boss_pierce = is_boss
 	# 砲台要塞の弾幕は兵士向け。城に当たったときは2割のダメージ
 	if kind == "boss2":
 		b.castle_ratio = 0.2

@@ -7,6 +7,9 @@ var damage := 10.0
 var pierce := 0
 var radius := 5.0
 var from_enemy := false
+## ボスの弾：味方も壁も貫通していく（同じ相手には1回だけ当たる。城に当たったら消える）
+var boss_pierce := false
+var _hit_walls := {}
 var color := Color(1, 1, 0.5)
 var life := 1.0
 ## true ならバリスタの矢（太く長く描く）
@@ -98,20 +101,29 @@ func _process(delta: float) -> void:
 			queue_free()
 			return
 		for s in game.allies():
-			if not s.dead and global_position.distance_to(s.global_position) < radius + s.radius:
+			if not s.dead and not _hit.has(s) and global_position.distance_to(s.global_position) < radius + s.radius:
 				# 弾が飛んできた方向を渡す（迎撃部隊の盾の判定用）
 				s.take_damage(damage, global_position - velocity.normalized() * 30.0)
+				if boss_pierce:
+					_hit[s] = true
+					# 追いかけていた相手に当たったら、そこからはまっすぐ飛ぶ
+					if seek == s:
+						seek = null
+					continue
 				queue_free()
 				return
 		var wi: int = game.walls.hit_test(global_position, radius)
-		if wi >= 0:
+		if wi >= 0 and not _hit_walls.has(wi):
 			# 壁が1発分防ぐ
 			game.walls.absorb(wi, global_position)
 			# 反撃壁：防いだ場所から、敵へ弾を撃ち返す
 			if game.walls.counter:
 				game.walls.counter_shot(global_position)
-			queue_free()
-			return
+			if not boss_pierce:
+				queue_free()
+				return
+			# ボスの弾は壁の耐久を1削って、そのまま突き抜ける
+			_hit_walls[wi] = true
 		if game.castle.distance_to_point(global_position) < radius:
 			game.castle.take_damage(damage * castle_ratio)
 			queue_free()

@@ -141,6 +141,9 @@ var _laser_angle := 0.0
 var _laser_hit := {}
 ## ファイナルモードの2本目の城レーザー（下から始まる）に当たった敵
 var _laser_hit2 := {}
+## 真・ファイナルモードの間、城レーザーが回り続けているか
+var _laser_spin := false
+var _laser_round := 0.0
 const LASER_TIME := 2.0
 ## 城レーザーは正面（真上）から始まって、ぐるっと1周して正面で終わる
 const LASER_START := PI * 1.5
@@ -163,6 +166,8 @@ var robot_enabled := false
 ## 城ロボ フライトモード・ファイナルモード（城ロボの戦い方が変わる）
 var robot_flight := false
 var robot_final := false
+## 真・ファイナルモード（城ロボがずっと出撃したまま、真・ファイナル → 通常 → 光をためる をくり返す）
+var robot_true := false
 var _robot_cd := 10.0
 var robot: Node2D = null
 var _ground_tick := 0.0
@@ -855,7 +860,26 @@ func robot_active() -> bool:
 
 func _update_castle_specials(delta: float) -> void:
 	# 城レーザー：30秒ごとに、城から全方位をぐるっと薙ぎ払う（城ロボを持っていれば、城ロボの出撃から7秒後）
-	if laser:
+	if laser and _laser_endless():
+		# 真・ファイナルモードの間は、上下2本の城レーザーがずっと回り続ける（1周ごとに同じ敵にまた当たる）
+		if not _laser_spin:
+			_laser_spin = true
+			_laser_left = 0.0
+			_laser_angle = LASER_START
+			_laser_round = 0.0
+			_laser_hit.clear()
+			_laser_hit2.clear()
+		var prev := _laser_angle
+		_laser_angle += TAU * delta / LASER_TIME
+		_laser_sweep(prev, _laser_angle, _laser_hit)
+		_laser_sweep(prev + PI, _laser_angle + PI, _laser_hit2)
+		_laser_round += delta
+		if _laser_round >= LASER_TIME:
+			_laser_round -= LASER_TIME
+			_laser_hit.clear()
+			_laser_hit2.clear()
+	elif laser:
+		_laser_spin = false
 		if _laser_left > 0.0:
 			var prev := _laser_angle
 			_laser_left -= delta
@@ -898,9 +922,33 @@ func _update_castle_specials(delta: float) -> void:
 			# ファイナルモードは画面の真ん中に出撃する
 			robot.position = game.MAP_RECT.get_center() if robot_final else global_position + Vector2(0, -HALF.y - 60.0)
 			game.world.add_child(robot)
-			# 城レーザーは、城ロボの出撃から7秒後に撃つ
-			if laser and _laser_left <= 0.0:
-				_laser_cd = LASER_AFTER_ROBOT
+			if robot_true:
+				# 真・ファイナルモード：もう城に戻らず、ずっとくり返す
+				robot.start_true_cycle()
+			else:
+				on_robot_sortie()
+
+
+## 城ロボが出撃したとき（真・ファイナルモードのくり返しでは、通常の城ロボになったとき）
+func on_robot_sortie() -> void:
+	# 城レーザーは、城ロボの出撃から7秒後に撃つ
+	if laser and _laser_left <= 0.0:
+		_laser_cd = LASER_AFTER_ROBOT
+
+
+## 真・ファイナルモードを取ったとき：出撃中の城ロボはその場で真ん中へ移って切り替わり、いなければすぐ出撃する
+func enable_robot_true() -> void:
+	robot_true = true
+	if robot_active():
+		robot.position = game.MAP_RECT.get_center()
+		robot.start_true_cycle()
+	else:
+		_robot_cd = minf(_robot_cd, 1.0)
+
+
+## 城レーザーがずっと回り続けるとき（城ロボが真・ファイナルモードの間）
+func _laser_endless() -> bool:
+	return robot_active() and robot.mode == "true"
 
 
 ## 火炎くしゃみが出る場所（城の中心。城ロボ起動中は城ロボの中心）
@@ -910,7 +958,7 @@ func _flame_origin() -> Vector2:
 
 ## 火炎くしゃみの向き。いつもマップの真ん中を目がける。ファイナルモードの城ロボは右上・右下・左上・左下の4方向
 func _flame_dirs() -> Array:
-	if robot_active() and robot.mode == "final":
+	if robot_active() and robot.is_final_like():
 		return [Vector2(1, -1).normalized(), Vector2(1, 1).normalized(), Vector2(-1, -1).normalized(), Vector2(-1, 1).normalized()]
 	var to: Vector2 = game.MAP_RECT.get_center() - _flame_origin()
 	return [to.normalized() if to.length() > 1.0 else Vector2.UP]
@@ -942,7 +990,7 @@ func _laser_origin() -> Vector2:
 
 ## 城レーザー：from 〜 to の角度のあいだにいる敵に1回ずつダメージ（威力はレベル×15）
 func _laser_double() -> bool:
-	return robot_active() and robot.mode == "final"
+	return robot_active() and robot.is_final_like()
 
 
 func _laser_sweep(from: float, to: float, hit: Dictionary) -> void:
@@ -989,7 +1037,7 @@ func _draw_castle_specials() -> void:
 		draw_rect(Rect2(-HALF - Vector2(6, 6), HALF * 2.0 + Vector2(12, 12)), Color(1.0, 0.25, 0.15, a), false, 6.0)
 	if _flame_left > 0.0:
 		_draw_flames()
-	if _laser_left > 0.0:
+	if _laser_left > 0.0 or _laser_spin:
 		# 城レーザー：城（城ロボ起動中は城ロボ）から長い光線
 		var o := _laser_origin() - global_position
 		var angles := [_laser_angle, _laser_angle + PI] if _laser_double() else [_laser_angle]

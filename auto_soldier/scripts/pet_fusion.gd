@@ -162,9 +162,6 @@ func _shoot_update(delta: float) -> void:
 		b.position = global_position + dir * _radius
 		b.src = record
 		b.homing = game.pet_homing
-		if game.pet_frost:
-			b.stun_on_hit = 0.4
-			b.color = Color(0.7, 0.95, 1.0)
 		if game.pet_giant:
 			b.damage *= 1.4
 			b.radius *= 1.4

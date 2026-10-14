@@ -28,7 +28,11 @@ var _orb_cd := 3.0
 var automaton := false
 ## からくり兵団：からくり兵を一度に2体置く
 var automaton_squad := false
+## からくり兵の戦績カード（工兵とは別に記録する）
+var _automaton_record: Dictionary = {}
 var _auto_cd := 5.0
+## ペット：凍える羽根（10秒ごとに、全ペットが敵を追いかける凍結弾を撃つ。当たった敵は0.5秒凍る）
+var _frost_cd := 3.0
 
 
 func _process(delta: float) -> void:
@@ -57,6 +61,11 @@ func _process(delta: float) -> void:
 		if _dance_cd <= 0.0:
 			_dance_cd = 5.0
 			_do_dance()
+	if game.pet_frost and not game.pets.is_empty():
+		_frost_cd -= delta
+		if _frost_cd <= 0.0:
+			_frost_cd = 10.0
+			_frost_volley()
 	if automaton and not game.engineers.is_empty():
 		_auto_cd -= delta
 		if _auto_cd <= 0.0:
@@ -142,6 +151,43 @@ func _do_dance() -> void:
 			game.world.add_child(b)
 
 
+## 凍える羽根：全ペットが、近くの敵を追いかける凍結弾を1発ずつ撃つ（狙う敵はなるべくばらけさせる）
+func _frost_volley() -> void:
+	var f: Node2D = game.pet_fusion
+	var used := {}
+	for p in game.pets:
+		# 合体中は巨大ペットの体から撃つ
+		var from: Vector2 = p.global_position
+		if not p.visible and f != null and f.merged():
+			from = f.global_position
+		var t: Node2D = null
+		var best: float = game.pet_range * 1.5
+		for e in game.enemies_near(from, best):
+			if not is_instance_valid(e) or e.dead or used.has(e):
+				continue
+			var d: float = from.distance_to(e.global_position)
+			if d < best:
+				best = d
+				t = e
+		if t == null:
+			t = game.nearest_enemy(from, game.pet_range * 1.5)
+		if t == null:
+			continue
+		used[t] = true
+		var b := BulletScript.new()
+		b.game = game
+		b.velocity = (t.global_position - from).normalized() * 380.0
+		b.damage = game.pet_damage * 2.0 * (1.4 if game.pet_giant else 1.0)
+		b.radius = 8.0
+		b.color = Color(0.7, 0.95, 1.0)
+		b.aim_target = t
+		b.stun_on_hit = 0.5
+		b.life = 3.0
+		b.position = from
+		b.src = p.record
+		game.world.add_child(b)
+
+
 ## 敵が一番集まっている所の少し手前（城側）に置く。敵がいなければ城の前
 func _place_automaton() -> void:
 	var castle: Node2D = game.castle
@@ -151,9 +197,12 @@ func _place_automaton() -> void:
 		pos = best.global_position + (castle.global_position - best.global_position).normalized() * 160.0
 	var dmg: float = game.engineer_stats.bomb_damage
 	var life := 10.0
-	game.spawn_placed("automaton", pos, dmg, 92.0, life, game.engineers[0].record)
+	if _automaton_record.is_empty():
+		_automaton_record = game.new_record("engineer", "からくり兵")
+	var rec: Dictionary = _automaton_record
+	game.spawn_placed("automaton", pos, dmg, 92.0, life, rec)
 	if automaton_squad:
 		# 2体目は横に並べて置く
 		var side: Vector2 = (pos - castle.global_position).normalized().orthogonal() * 200.0
-		game.spawn_placed("automaton", game.clamp_to_map(pos + side, 92.0), dmg, 92.0, life, game.engineers[0].record)
+		game.spawn_placed("automaton", game.clamp_to_map(pos + side, 92.0), dmg, 92.0, life, rec)
 	game.spawn_burst(pos, Color(1.0, 0.8, 0.4), 50.0)

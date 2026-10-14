@@ -68,7 +68,7 @@ const LIST := [
 	# ---- 工兵部隊
 	{"id": "engineer", "cat": "engineer", "name": "工兵部隊", "desc": "フィールドを回って、爆弾（範囲ダメージ）と落とし穴（範囲ダメージ＋10秒足止め）を交互に仕掛ける工兵が加わる",
 		"desc_up": "工兵が1人増える（最大3人）", "max": 3, "weight": 1.5},
-	{"id": "trap_dmg", "cat": "engineer", "name": "高性能火薬", "desc": "爆弾と落とし穴の威力 +40%（仕掛け済みの罠にも反映）", "max": 5, "req": "engineer"},
+	{"id": "trap_dmg", "cat": "engineer", "name": "高性能火薬", "desc": "工兵の攻撃すべての威力 +40%（爆弾・落とし穴・毒沼・子爆弾・自動砲台・からくり兵・絨毯爆撃など。仕掛け済みの罠にも反映）", "max": 5, "req": "engineer"},
 	{"id": "trap_speed", "cat": "engineer", "name": "手際", "desc": "罠の設置時間 -20%、工兵の移動速度 +15%", "max": 4, "req": "engineer"},
 	{"id": "trap_range", "cat": "engineer", "name": "広域罠", "desc": "罠の効果範囲 +20%、反応する距離 +15%", "max": 3, "req": "engineer"},
 	{"id": "pit_stun", "cat": "engineer", "name": "深い落とし穴", "desc": "落とし穴の足止め時間 +3秒", "max": 3, "req": "engineer"},
@@ -160,7 +160,7 @@ const SPECIAL := [
 	{"id": "sp_pet_burst", "cat": "pet", "special": true, "name": "爆裂ペット弾", "desc": "ペットの弾が当たると小爆発する（威力60%）", "max": 1, "req": "pet"},
 	{"id": "sp_pet_giant", "cat": "pet", "special": true, "name": "巨大ペット", "desc": "ペットが大きくなり、弾も大きく2体貫通、威力 +40%", "max": 1, "req": "pet"},
 	{"id": "sp_pet_homing", "cat": "pet", "special": true, "name": "追尾ペット弾", "desc": "ペットの弾が、近くの敵の方へ曲がって追いかける", "max": 1, "req": "pet"},
-	{"id": "sp_pet_frost", "cat": "pet", "special": true, "name": "凍える羽根", "desc": "ペットの弾が氷になり、当たった敵が0.4秒止まる", "max": 1, "req": "pet"},
+	{"id": "sp_pet_frost", "cat": "pet", "special": true, "name": "凍える羽根", "desc": "10秒ごとに、全ペットが敵を追いかける凍結弾を撃つ。当たった敵は0.5秒凍る", "max": 1, "req": "pet"},
 	{"id": "sp_pet_heal", "cat": "pet", "special": true, "name": "癒しのさえずり", "desc": "ペット1匹につき、担当の遊撃兵のHPが毎秒2回復する", "max": 1, "req": "pet"},
 	{"id": "sp_chain_dash", "cat": "knight", "special": true, "name": "連続突撃", "desc": "突進のあと、近くのまだ貫いていない敵へ続けて2回まで突進する", "max": 1, "req": "knight"},
 	{"id": "sp_dash_quake", "cat": "knight", "special": true, "name": "突撃の衝撃", "desc": "突進が止まった所で爆発が起きる（突進の60%の威力）", "max": 1, "req": "knight"},
@@ -195,7 +195,7 @@ const SPECIAL := [
 	{"id": "sp_blast_arrow", "cat": "sniper", "special": true, "name": "爆裂矢", "desc": "矢が当たった敵が爆発し、周りの敵に矢の3倍ダメージ", "max": 1, "req": "sniper"},
 	{"id": "sp_rage", "cat": "heavy", "special": true, "name": "怒りの闘志", "desc": "ダメージを受けるたびに重装兵の与ダメージ +5%（最大+100%）。2秒ダメージを受けないと元に戻る", "max": 1, "req": "heavy"},
 	{"id": "sp_counter_wall", "cat": "builder", "special": true, "name": "反撃壁", "desc": "敵の弾が壁に当たると、その場所から近くの敵へ弾を撃ち返す", "max": 1, "req": "builder"},
-	{"id": "sp_automaton", "cat": "engineer", "special": true, "name": "巨大からくり兵", "desc": "20秒ごとに、ボスの2倍の大きさのからくり兵を置く（10秒で消える）。ゆっくり歩き、広い全方位斬り1回→10体貫通の高速連射をくり返す。消えるときに超広範囲の大爆発", "max": 1, "req": "engineer"},
+	{"id": "sp_automaton", "cat": "engineer", "special": true, "name": "巨大からくり兵", "desc": "20秒ごとに、ボスの2倍の大きさのからくり兵を置く（10秒で消える）。ゆっくり歩き、広い全方位斬り1回→別々の2か所へ大きな弾（10体貫通）の高速連射をくり返す。消えるときに超広範囲の大爆発", "max": 1, "req": "engineer"},
 	{"id": "sp_tower_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂矢", "desc": "矢倉の矢が当たった敵が爆発し、周りの敵に矢の3倍ダメージ", "max": 1, "req": "tower"},
 	{"id": "sp_double_cannon", "cat": "castle", "special": true, "name": "大砲・二連砲", "desc": "大砲が一度に2発撃つ（2発目は別の密集地へ）", "max": 1, "req": "cannon"},
 	{"id": "sp_stay_rock", "cat": "castle", "special": true, "name": "投石器・居座り岩", "desc": "着弾地点に大岩が5秒間残り、上にいる敵にダメージを与え続け、移動速度 -30%", "max": 1, "req": "catapult"},
@@ -386,6 +386,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"trap_dmg":
 			game.engineer_stats.bomb_damage *= 1.4
 			game.engineer_stats.pit_damage *= 1.4
+			game.engineer_stats.power_mult *= 1.4
 		"trap_speed":
 			game.engineer_stats.plant_time *= 0.8
 			game.engineer_stats.move_speed *= 1.15

@@ -7,6 +7,8 @@ var move_speed := 110.0
 var plant_time := 6.0
 
 # --- 罠
+## 高性能火薬の倍率（工兵の攻撃すべてにかかる。爆弾・落とし穴の威力には直接かけてある）
+var power_mult := 1.0
 var bomb_damage := 200.0
 var bomb_radius := 110.0
 var pit_damage := 100.0

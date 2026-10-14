@@ -69,10 +69,6 @@ func _shoot_one(target: Node2D, k: int) -> void:
 	b.src = record
 	# 追尾ペット弾：敵を少し追いかける
 	b.homing = game.pet_homing
-	# 凍える羽根：当たった敵が0.4秒止まる
-	if game.pet_frost:
-		b.stun_on_hit = 0.4
-		b.color = Color(0.7, 0.95, 1.0)
 	# 巨大ペット：弾も大きく、2体貫通して威力アップ
 	if game.pet_giant:
 		b.damage *= 1.4

@@ -167,15 +167,49 @@ func _update_automaton(delta: float) -> void:
 	else:
 		_cd = 0.08
 		if t != null:
-			var b := _fire(600.0, damage * 0.1, 800.0, Color(1.0, 0.8, 0.4))
-			if b != null:
-				# からくり兵の弾は10体まで貫通する
-				b.pierce = 10
+			_automaton_volley()
 		_mode_count += 1
 		if _mode_count >= 12:
 			_mode = "slash"
 			_mode_count = 0
 			_cd = 0.4
+
+
+## からくり兵の射撃：別々の2か所（一番近い敵と、2番目に近い敵）へ同時に、大きな弾を撃つ
+func _automaton_volley() -> void:
+	var near: Array = game.enemies_near(global_position, 600.0).filter(func(e: Node2D) -> bool:
+		return is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < 600.0)
+	if near.is_empty():
+		return
+	near.sort_custom(func(a: Node2D, b: Node2D) -> bool:
+		return global_position.distance_squared_to(a.global_position) < global_position.distance_squared_to(b.global_position))
+	var targets: Array = [near[0]]
+	# 2つ目は、1つ目と少し離れた敵を選ぶ（いなければ同じ敵の近く）
+	for e in near:
+		if e.global_position.distance_to(near[0].global_position) > 80.0:
+			targets.append(e)
+			break
+	if targets.size() == 1:
+		targets.append(near[0])
+	for i in 2:
+		var t: Node2D = targets[i]
+		var from := global_position + Vector2((i * 2 - 1) * 30.0, -8.0)
+		var dir: Vector2 = (t.global_position - from).normalized()
+		if i == 1 and targets[0] == targets[1]:
+			dir = dir.rotated(0.25)
+		_aim = dir
+		var b := BulletScript.new()
+		b.game = game
+		b.velocity = dir * 800.0
+		b.damage = damage * 0.1
+		# ふつうの弾の3倍の大きさ。10体まで貫通する
+		b.radius = 12.0
+		b.pierce = 10
+		b.color = Color(1.0, 0.8, 0.4)
+		b.life = 600.0 / 800.0 + 0.2
+		b.position = from
+		b.src = src
+		game.world.add_child(b)
 
 
 ## 敵の攻撃を受ける（見張り櫓・かかし）

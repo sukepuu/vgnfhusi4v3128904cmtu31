@@ -198,7 +198,7 @@ const SPECIAL := [
 	{"id": "sp_rage", "cat": "heavy", "special": true, "name": "怒りの闘志", "desc": "ダメージを受けるたびに重装兵の与ダメージ +5%（最大+100%）。2秒ダメージを受けないと元に戻る", "max": 1, "req": "heavy"},
 	{"id": "sp_counter_wall", "cat": "builder", "special": true, "name": "反撃壁", "desc": "敵の弾が壁に当たると、その場所から近くの敵へ弾を撃ち返す", "max": 1, "req": "builder"},
 	{"id": "sp_automaton", "cat": "engineer", "special": true, "name": "巨大からくり兵", "desc": "20秒ごとに、ボスの2倍の大きさのからくり兵を置く（10秒で消える）。ゆっくり歩き、広い全方位斬り1回→別々の2か所へ大きな弾（10体貫通）の高速連射をくり返す。消えるときに超広範囲の大爆発", "max": 1, "req": "engineer"},
-	{"id": "sp_tower_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂矢", "desc": "矢倉の矢が当たった敵が爆発し、周りの敵に矢の3倍ダメージ", "max": 1, "req": "tower"},
+	{"id": "sp_tower_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂矢", "desc": "矢倉の矢が当たった敵が爆発し、周りの敵に矢と同じダメージ", "max": 1, "req": "tower"},
 	{"id": "sp_double_cannon", "cat": "castle", "special": true, "name": "大砲・二連砲", "desc": "大砲が一度に2発撃つ（2発目は別の密集地へ）", "max": 1, "req": "cannon"},
 	{"id": "sp_stay_rock", "cat": "castle", "special": true, "name": "投石器・居座り岩", "desc": "着弾地点に大岩が5秒間残り、上にいる敵にダメージを与え続け、移動速度 -30%", "max": 1, "req": "catapult"},
 	{"id": "sp_mega_bolt", "cat": "castle", "special": true, "name": "バリスタ・巨大弩砲", "desc": "8秒ごとに、3倍の大きさ・3倍の威力の矢を、HPが一番多い敵へゆっくり（速さ1/3）撃つ", "max": 1, "req": "ballista"},
@@ -216,7 +216,7 @@ const SPECIAL := [
 	{"id": "sp_ult_carpet", "cat": "engineer", "special": true, "name": "必殺・絨毯爆撃", "desc": "15秒ごとに、敵が密集した所へ一直線に13個の爆弾が降りそそぐ", "max": 1, "req": "engineer"},
 	{"id": "sp_ult_thousand", "cat": "castle", "special": true, "name": "矢倉・必殺・千本矢", "desc": "15秒ごとに、フィールド中の敵30か所へ一斉に矢の雨が降る（矢倉の3倍の威力）", "max": 1, "req": "tower"},
 	{"id": "sp_ult_barrage", "cat": "castle", "special": true, "name": "大砲・必殺・一斉砲撃", "desc": "15秒ごとに、12発の砲弾を一気に撃ち込む（大砲の2倍の威力）", "max": 1, "req": "cannon"},
-	{"id": "sp_ult_meteor", "cat": "castle", "special": true, "name": "投石器・必殺・隕石落とし", "desc": "15秒ごとに、敵の群れへ巨大な燃える隕石を落とす（投石器の6倍の威力・超広範囲、跡が燃える）", "max": 1, "req": "catapult"},
+	{"id": "sp_ult_meteor", "cat": "castle", "special": true, "name": "投石器・必殺・隕石落とし", "desc": "15秒ごとに、敵の群れへ巨大な燃える隕石を落とす（投石器の3倍の威力・超広範囲、跡が燃える）", "max": 1, "req": "catapult"},
 	{"id": "sp_ult_thunder", "cat": "castle", "special": true, "name": "バリスタ・必殺・雷神の大槍", "desc": "15秒ごとに、敵が一番多く並ぶ方向へ雷の大槍を放つ（バリスタの6倍の威力＋1秒しびれる）", "max": 1, "req": "ballista"},
 	{"id": "sp_ult_ice_age", "cat": "castle", "special": true, "name": "結界・必殺・氷河期", "desc": "15秒ごとに、結界の2倍以上の広さの敵をまとめて1秒凍らせてダメージ", "max": 1, "req": "frost"},
 	# --- 9つ目の特別強化（面白くてしっかり強いもの）
@@ -247,7 +247,7 @@ const SPECIAL := [
 	{"id": "sp_castle_robot_final", "cat": "castle", "special": true, "name": "城・城ロボ ファイナルモード", "desc": "城ロボが画面の真ん中に出撃して動かずに戦う。10本のビームをそれぞれランダムな敵へ撃ち続け（途中にいる敵にも当たる）、城レーザーは上下2本同時に撃ちながら、両手から誘導ミサイルを撃ち続ける（攻撃の切れ目なし）。城に設置する各種兵装の通常強化を全て取得した場合のみ取得可能", "max": 1, "req": "sp_castle_robot_flight", "group": "castle",
 		# 候補には出るが、城の兵装（矢倉・大砲・投石器・バリスタ・砲術）の通常強化を全部最大まで取っていないと選べない
 		"req_maxed": ["tower", "cannon", "catapult", "ballista", "artillery"]},
-	{"id": "sp_castle_robot_true", "cat": "castle", "special": true, "name": "城・城ロボ 真・ファイナルモード", "desc": "城ロボがずっと出撃したままになり、薄い金色の真・ファイナルモード（15秒）→ 通常の城ロボ（10秒）→ 震えながら光をためる（5秒）をくり返す。真・ファイナルモードはファイナルモードの攻撃に加えて、出撃から10秒後に両目から太い虹色レーザーを体力が一番多い敵へ4秒間撃つ。城レーザーを持っていると、真・ファイナルモードの間は上下2本の城レーザーがずっと回り続ける", "max": 1, "req": "sp_castle_robot_final", "group": "castle"},
+	{"id": "sp_castle_robot_true", "cat": "castle", "special": true, "name": "城・城ロボ 真・ファイナルモード", "desc": "城ロボがずっと出撃したままになり、金色の真・ファイナルモード（15秒）→ 通常の城ロボ（10秒）→ 震えながら光をためる（5秒）をくり返す。真・ファイナルモードはファイナルモードの攻撃に加えて、出撃から10秒後に両目から太い虹色レーザーを体力が一番多い敵へ4秒間撃つ。城レーザーを持っていると、真・ファイナルモードの間は上下2本の城レーザーがずっと回り続ける", "max": 1, "req": "sp_castle_robot_final", "group": "castle"},
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",

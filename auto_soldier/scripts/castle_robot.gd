@@ -7,7 +7,7 @@ extends Node2D
 ##   "walk"   … ふつう（上の動き）
 ##   "flight" … フライトモード。翼で飛び、両手を上げて遠くの敵へ高速タックル → 両手から誘導ミサイル30発 をくり返す
 ##   "final"  … ファイナルモード。画面の真ん中から動かず、10本のビームをランダムな敵へ撃ち続けながら、両手から誘導ミサイルを撃ち続ける
-##   "true"   … 真・ファイナルモード（薄い金色）。ファイナルモードの攻撃 ＋ 出撃10秒後に両目から虹色レーザー
+##   "true"   … 真・ファイナルモード（金色）。ファイナルモードの攻撃 ＋ 出撃10秒後に両目から虹色レーザー
 ##   "charge" … 真・ファイナルモードに戻る前に、足を止めて震えながら光をためる
 ## 真・ファイナルモードを取ると城ロボは城に戻らなくなり、
 ##   真・ファイナル（15秒）→ 通常の城ロボ "walk"（10秒）→ "charge"（5秒）→ 真・ファイナル … をくり返す
@@ -511,11 +511,11 @@ func _draw_arm(side: int, dark: Color) -> void:
 	draw_circle(fist + Vector2(-6, -6), 6.0, _gold(Color(0.75, 0.73, 0.7)))
 
 
-## 真・ファイナルモードは体が薄い金色になる
+## 真・ファイナルモードは体が金色になる
 func _gold(c: Color) -> Color:
 	if mode != "true":
 		return c
-	return Color(0.98, 0.86, 0.5).lerp(Color(1, 1, 1), 0.15).darkened(0.55 - c.v * 0.6)
+	return Color(1.0, 0.8, 0.22).darkened(maxf(0.0, 0.45 - c.v * 0.6))
 
 
 func _draw() -> void:
@@ -559,6 +559,13 @@ func _draw() -> void:
 	# 体（城そのもの）
 	draw_rect(Rect2(-half, half * 2.0), wall)
 	draw_rect(Rect2(-half, half * 2.0), dark, false, 3.0)
+	if mode == "true":
+		# 金色の輝き（ふちが光り、ななめの光の筋が流れる）
+		var shine := 0.5 + 0.3 * sin(_t * 4.0)
+		draw_rect(Rect2(-half - Vector2(4, 4), half * 2.0 + Vector2(8, 8)), Color(1.0, 0.85, 0.3, shine), false, 4.0)
+		var sx := fposmod(_t * 160.0, half.x * 4.0) - half.x * 2.0
+		if absf(sx) < half.x - 26.0:
+			draw_line(Vector2(sx - 20.0, half.y), Vector2(sx + 20.0, -half.y), Color(1.0, 0.97, 0.75, 0.55), 10.0)
 	var bw := 16.0
 	var x := -half.x
 	while x < half.x - 1.0:

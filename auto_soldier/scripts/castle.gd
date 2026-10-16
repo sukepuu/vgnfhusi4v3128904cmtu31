@@ -13,11 +13,15 @@ var game: Node2D
 var max_hp := 600.0
 var hp := 600.0
 ## 城のHPの自然回復（毎秒1）。もっと回復させるには修理部隊が必要
-var regen := 1.0
+## 城の自然回復（毎秒）。基本は2
+const BASE_REGEN := 2.0
+var regen := BASE_REGEN
 ## これまでに回復したHPの合計（修理玉が「10秒で回復した量」を数えるのに使う）
 var healed_total := 0.0
 ## 受けるダメージの倍率（修理部隊の「鉄壁補強」で下がる）
 var damage_taken_mult := 1.0
+## この秒数（5分）までは、城が受けるダメージがすべて半分（ふつうの敵もボスも）
+const EARLY_HALF_UNTIL := 300.0
 ## 背水の修繕：修理兵1人につき、城のHPが毎秒 OVERWORK_DRAIN ずつ減る（最大HPの40%より下にはならない）
 var overwork := false
 const OVERWORK_DRAIN := 50.0
@@ -38,7 +42,8 @@ const MAX_GUNS := 3
 const MAX_BALLISTAS := 4
 var cannon_level := 0
 var cannon_interval := 4.0
-var cannon_damage := 52.0
+## 大砲の基本の威力（前の52の2倍）。通常の砲弾も特別強化も、ぜんぶここから計算する
+var cannon_damage := 104.0
 var cannon_radius := 90.0
 var cannon_range := 650.0
 var _cannon_cds: Array = [1.0, 2.3, 3.6]
@@ -47,14 +52,16 @@ var _cannon_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP]
 # --- 投石器（大砲より範囲が広いが、発射間隔が長い）。最大3台
 var catapult_level := 0
 var catapult_interval := 9.0
-var catapult_damage := 67.2
+## 投石器の基本の威力（前の67.2の2倍）。通常の岩も特別強化も、ぜんぶここから計算する
+var catapult_damage := 134.4
 var catapult_radius := 150.0
 var _catapult_cds: Array = [2.0, 5.0, 8.0]
 var _catapult_swings: Array = [0.0, 0.0, 0.0]
 # --- バリスタ（矢倉より発射間隔が長いが、高威力・射程無限・貫通無限）。最大3基
 var ballista_level := 0
 var ballista_interval := 4.0
-var ballista_damage := 96.0
+## バリスタの基本の威力（前の96の2倍）。通常の矢も特別強化も、ぜんぶここから計算する
+var ballista_damage := 192.0
 var _ballista_cds: Array = [1.0, 2.3, 3.6, 4.9]
 var _ballista_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
 var _ballista_recoil: Array = [0.0, 0.0, 0.0, 0.0]
@@ -100,6 +107,16 @@ var _catapult_shot_counts := [0, 1, 2]
 ## 8つ目の特別強化
 ## 矢倉：爆裂矢（当たった敵が爆発して矢の3倍ダメージ）
 var tower_blast := false
+## ビリヤード機雷（跳ねた砲弾も機雷をばらまく）
+var billiard_mines := false
+## 投石器・隕石の居座り岩（条件付き）：隕石落としの落下地点にも居座り岩が残る
+var meteor_rock := false
+## バリスタ・破竹の雷槍（条件付き）：雷神の大槍も当たるたびに威力 +10%
+var thunder_momentum := false
+## 結界・雪だるま合戦（条件付き）：雪玉が当たった所に雪だるまを置く
+var snowball_snowman := false
+## 爆裂追尾火矢（追尾火矢が当たった敵にも爆裂矢の爆発）
+var homing_blast := false
 ## 大砲：二連砲（1回に2発撃つ）
 var double_cannon := false
 ## 投石器：居座り岩（着弾地点に岩が5秒残り、持続ダメージ＋足が30%遅くなる）
@@ -158,6 +175,8 @@ const FLAME_TIME := 2.0
 const FLAME_LEN := 560.0
 const FLAME_HALF_ANGLE := 0.32
 const FLAME_TICK := 0.1
+## 火炎くしゃみの0.1秒ごとのダメージ（レベル×これ。前は1.5）
+const FLAME_DAMAGE_PER_LEVEL := 2.25
 ## 城の蓄え：城が受けたダメージ10ごとに経験値+1
 var store := false
 var _store_dmg := 0.0
@@ -213,10 +232,10 @@ func _process(delta: float) -> void:
 	_flash -= delta
 	# 自然回復（毎秒 regen ずつ）。修理玉がためる「回復した量」にも入る
 	if regen > 0.0 and hp > 0.0 and hp < max_hp:
-		# 生命の泉で増えたぶん（基本の毎秒1を超えたぶん）は生命の泉の回復として記録
-		heal(minf(regen, 1.0) * delta, record)
-		if regen > 1.0:
-			heal((regen - 1.0) * delta, record, "sp_castle_fountain")
+		# 生命の泉で増えたぶん（基本の毎秒2を超えたぶん）は生命の泉の回復として記録
+		heal(minf(regen, BASE_REGEN) * delta, record)
+		if regen > BASE_REGEN:
+			heal((regen - BASE_REGEN) * delta, record, "sp_castle_fountain")
 	# 背水の修繕：城のHPが減り続ける（最大HPの40%より下にはならない。40%を超えたらまたすぐ減る）
 	if overwork and hp > max_hp * OVERWORK_FLOOR and not game.repairers.is_empty():
 		hp = maxf(max_hp * OVERWORK_FLOOR, hp - OVERWORK_DRAIN * game.repairers.size() * delta)
@@ -265,11 +284,16 @@ func heal(amount: float, rec: Dictionary = {}, sp_id: String = "") -> void:
 	game.add_heal(rec, hp - before, sp_id)
 
 
-func take_damage(amount: float) -> void:
+## from_boss = ボス（の体当たり・ビーム・弾）からのダメージ（今は区別だけで、倍率はかからない）
+func take_damage(amount: float, from_boss: bool = false) -> void:
 	if hp <= 0.0:
 		return
+	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）。城の被ダメージ倍率より先に足す
+	amount += game.overtime_dmg_bonus()
 	amount *= damage_taken_mult
+	amount *= game.early_damage_mult()
 	record["taken"] += minf(amount, hp)
+	game.note_taken("castle", minf(amount, hp))
 	hp -= amount
 	_flash = 0.15
 	game.spawn_damage_text(global_position + Vector2(randf_range(-60, 60), -HALF.y), amount, Color(1.0, 0.5, 0.2))
@@ -328,15 +352,11 @@ func _update_towers(delta: float) -> void:
 			b.game = game
 			b.velocity = dir * 760.0
 			b.damage = tower_damage * power
-			# 戦績の分け記録：連射で増えた矢 → 執念の矢 → 会心の一矢 の順に上書き
-			var arrow_sp := "sp_tower_multi" if k > 0 else ""
-			if power > 1.0:
-				arrow_sp = "sp_tower_lock"
+			# 連射・執念の矢・会心の一矢は戦績を分けず、通常攻撃として数える
 			# 会心の一矢：25%でダメージ3倍
 			if tower_crit and randf() < 0.25:
 				b.damage = tower_damage * power * 3.0
 				b.radius = 6.0
-				arrow_sp = "sp_tower_crit"
 			b.pierce = tower_pierce
 			b.radius = 4.0
 			b.color = Color(0.95, 0.8, 0.55)
@@ -350,10 +370,9 @@ func _update_towers(delta: float) -> void:
 			b.src = _equip_record("tower", "矢倉", i)
 			if tower_blast:
 				b.explode_radius = 70.0
+				# 爆裂矢：矢の1/8（前は1/16）
 				b.explode_ratio = 0.125
 				b.explode_src = game.sp_src(b.src, "sp_tower_blast")
-			if arrow_sp != "":
-				b.src = game.sp_src(b.src, arrow_sp)
 			b.life = tower_range / 760.0 + 0.2
 			b.position = from
 			game.world.add_child(b)
@@ -386,7 +405,7 @@ func _update_cannon(delta: float) -> void:
 		if double_cannon:
 			var second := _densest_enemy(cannon_range, cannon_radius)
 			var to2: Vector2 = second.global_position if second != null else best.global_position + Vector2.from_angle(randf() * TAU) * 80.0
-			shells.append(_fire_shell(from + Vector2(8, 0), to2, cannon_damage, cannon_radius, false, game.sp_src(rec, "sp_double_cannon")))
+			shells.append(_fire_shell(from + Vector2(8, 0), to2, cannon_damage, cannon_radius, false, rec))
 		# 散弾砲：着弾地点の周りにも落ちる
 		for k in scatter_level * 2:
 			var off := Vector2.from_angle(randf() * TAU) * randf_range(60.0, 110.0)
@@ -395,7 +414,7 @@ func _update_cannon(delta: float) -> void:
 		if fire_level > 0:
 			for s in shells:
 				s.fire_time = 4.0 + 2.0 * (fire_level - 1)
-				s.fire_dps = cannon_damage * 0.3 * fire_level
+				s.fire_dps = cannon_damage * 0.15 * fire_level
 		_cannon_cds[i] = cannon_interval
 
 
@@ -413,7 +432,7 @@ func _update_catapult(delta: float) -> void:
 		if split_level > 0:
 			s.split_count = 2 + 2 * split_level
 		if direct_hit:
-			s.direct_bonus = catapult_damage * 7.0
+			s.direct_bonus = catapult_damage * 35.0
 		if stay_rock:
 			s.stay_rock = true
 		# 牛投げ：3回に1回、岩のかわりに牛を投げる
@@ -424,11 +443,11 @@ func _update_catapult(delta: float) -> void:
 		if iron_chunk and _catapult_shot_counts[i] % 4 == 0:
 			var big := _toughest_enemy_in(wpos(), INF)
 			if big != null:
-				# 威力：落ちた所の範囲に投石器×4、追いかけた敵への直撃に投石器×64
-				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_damage * 4.0, 50.0, true, game.sp_src(s.src, "sp_iron_chunk"))
+				# 威力：落ちた所の範囲に投石器×8、追いかけた敵への直撃に投石器×128
+				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_damage * 8.0, 50.0, true, game.sp_src(s.src, "sp_iron_chunk"))
 				iron.iron = true
 				iron.chase = big
-				iron.direct_bonus = catapult_damage * 64.0
+				iron.direct_bonus = catapult_damage * 128.0
 		if cow_throw and _catapult_shot_counts[i] % 3 == 0:
 			s.cow = true
 		if rolling_rock:
@@ -463,7 +482,8 @@ func _update_ballista(delta: float) -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 1000.0
-			b.damage = ballista_damage
+			# 通常攻撃の矢は ballista_damage の1.3倍（特別強化は ballista_damage から計算するので、これはかからない）
+			b.damage = ballista_damage * 1.3
 			b.pierce = 1000000
 			b.radius = 7.0
 			if big_bolt:
@@ -478,18 +498,17 @@ func _update_ballista(delta: float) -> void:
 				b.rainbow = true
 				b.confuse_on_hit = 1.5
 			b.src = _equip_record("ballista", "バリスタ", i)
-			# 連装で増えた矢は、連装のダメージとして記録
-			if k > 0:
-				b.src = game.sp_src(b.src, "sp_ballista_multi")
+			# 連装で増えた矢も、通常攻撃として数える
 			b.life = 2.5
 			b.position = from + offset
 			if blast_bolt:
 				b.first_blast_radius = 140.0
-				b.first_blast_damage = ballista_damage * 1.5
+				b.first_blast_damage = ballista_damage * 1.2
 				b.first_blast_src = game.sp_src(b.src, "sp_blast_bolt")
 			if bolt_blast_level > 0:
 				b.explode_radius = 40.0 + 15.0 * bolt_blast_level
-				b.explode_ratio = 0.15 + 0.15 * bolt_blast_level
+				# 矢の威力（1.3倍）に対する割合。爆発のダメージは前の80%になるように 0.8/1.3 をかける
+				b.explode_ratio = (0.15 + 0.15 * bolt_blast_level) * 0.5 * 0.8 / 1.3
 				b.explode_src = game.sp_src(b.src, "sp_ballista_blast")
 			game.world.add_child(b)
 		_ballista_cds[i] = ballista_interval
@@ -561,13 +580,13 @@ func _update_new_specials(delta: float) -> void:
 				var b := BulletScript.new()
 				b.game = game
 				b.velocity = dir * 1100.0
-				b.damage = cannon_damage * 8.0
+				b.damage = cannon_damage * 80.0
 				b.radius = 10.0
 				b.color = Color(1.0, 0.45, 0.2)
 				b.life = 2.0
 				b.only_target = big
 				b.first_blast_radius = 50.0
-				b.first_blast_damage = cannon_damage
+				b.first_blast_damage = cannon_damage * 10.0
 				b.position = from
 				b.src = game.sp_src(_equip_record("cannon", "大砲", i), "sp_ap_shell")
 				game.world.add_child(b)
@@ -579,7 +598,7 @@ func _update_new_specials(delta: float) -> void:
 			_lance_cd = 3.0
 			var big := _toughest_enemy_in(global_position, frost_radius)
 			if big != null:
-				var dmg: float = 300.0 * (1.0 + game.elapsed / 120.0)
+				var dmg: float = 150.0 * (1.0 + game.elapsed / 120.0)
 				game.spawn_blast(big.global_position, 0.4, 30.0, dmg, game.sp_src(_equip_record("frost", "氷結の結界", 0), "sp_ice_lance"), Color(0.6, 0.9, 1.0), "ice")
 
 
@@ -598,7 +617,7 @@ func _update_eighth_specials(delta: float) -> void:
 					var b := BulletScript.new()
 					b.game = game
 					b.velocity = dir * 1000.0 / 3.0
-					b.damage = ballista_damage * 3.0
+					b.damage = ballista_damage * 7.2
 					b.pierce = 1000000
 					b.radius = 21.0
 					b.scale = Vector2(3.0, 3.0)
@@ -611,7 +630,7 @@ func _update_eighth_specials(delta: float) -> void:
 		_ground_tick -= delta
 		if _ground_tick <= 0.0:
 			_ground_tick = 0.5
-			var dps: float = 25.0 * (1.0 + game.elapsed / 120.0)
+			var dps: float = 25.0 / 12.0 * (1.0 + game.elapsed / 120.0)
 			var rec: Dictionary = game.sp_src(_equip_record("frost", "氷結の結界", 0), "sp_frost_ground")
 			for e in game.enemies_cache:
 				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < frost_radius:
@@ -628,8 +647,13 @@ func _update_fifth_specials(delta: float) -> void:
 				var from := wpos() + _tower_local_pos(i)
 				for k in 2:
 					var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(-PI / 2.0 + (k - 0.5) * 1.6) * 420.0,
-						tower_damage * 1.5, 8.0, 4.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_homing"))
+						tower_damage * 15.0, 8.0, 4.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_homing"))
 					m.target = game.nearest_enemy(from, tower_range * 1.5)
+					# 爆裂追尾火矢：当たった敵の所で、矢倉の爆裂矢の爆発（当たったダメージの1/16。爆裂矢として記録）。
+					# 追尾火矢の威力が2倍になったので、割合はそのままで爆発も前の2倍になる
+					if homing_blast and tower_blast:
+						m.blast_ratio = 0.0625
+						m.blast_src = game.sp_src(_equip_record("tower", "矢倉", i), "sp_tower_blast")
 	if lightning and ballista_level > 0:
 		_lightning_cd -= delta
 		if _lightning_cd <= 0.0:
@@ -642,14 +666,14 @@ func _update_fifth_specials(delta: float) -> void:
 				if pool.is_empty():
 					break
 				var first: Node2D = pool.pick_random()
-				game.chain_lightning(from, first, 7, ballista_damage * 0.8, 200.0, game.sp_src(_equip_record("ballista", "バリスタ", i), "sp_lightning"))
+				game.chain_lightning(from, first, 7, ballista_damage * 12.8, 200.0, game.sp_src(_equip_record("ballista", "バリスタ", i), "sp_lightning"))
 	if snowman and frost_radius > 0.0:
 		_snowman_cd -= delta
 		if _snowman_cd <= 0.0:
 			_snowman_cd = 5.0
 			if game.get_tree().get_nodes_in_group("placed_snowman").size() < 6:
 				var p := global_position + Vector2.from_angle(randf_range(PI + 0.2, TAU - 0.2)) * frost_radius * randf_range(0.75, 1.0)
-				var dmg: float = 150.0 * (1.0 + game.elapsed / 120.0)
+				var dmg: float = 18.75 * (1.0 + game.elapsed / 120.0)
 				game.spawn_placed("snowman", p, dmg, 40.0, 40.0, game.sp_src(_equip_record("frost", "氷結の結界", 0), "sp_snowman"))
 
 
@@ -682,7 +706,7 @@ func _update_frost_specials(delta: float) -> void:
 		_blizzard_tick -= delta
 		if _blizzard_tick <= 0.0:
 			_blizzard_tick = 0.5
-			var dps: float = 20.0 * (1.0 + game.elapsed / 120.0)
+			var dps: float = 2.5 * (1.0 + game.elapsed / 120.0)
 			var rec: Dictionary = game.sp_src(_equip_record("frost", "氷結の結界", 0), "sp_blizzard")
 			for e in game.enemies_cache:
 				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < frost_radius:
@@ -696,7 +720,7 @@ func _update_frost_specials(delta: float) -> void:
 				if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) < frost_radius:
 					inside.append(e)
 			inside.shuffle()
-			var dmg: float = 60.0 * icicle_level * (1.0 + game.elapsed / 180.0)
+			var dmg: float = 15.0 * icicle_level * (1.0 + game.elapsed / 180.0)
 			for e in inside.slice(0, icicle_level):
 				game.spawn_blast(e.global_position, 0.5, 45.0, dmg, game.sp_src(_equip_record("frost", "氷結の結界", 0), "sp_icicle"), Color(0.7, 0.95, 1.0), "ice", 0.5)
 
@@ -899,6 +923,9 @@ func _update_castle_specials(delta: float) -> void:
 				_laser_hit2.clear()
 	# 城の火炎くしゃみ：15秒ごとに、マップの真ん中へ向けて2秒間の火炎放射
 	if sneeze:
+		# 真・ファイナルモードの間は、城レーザーと同じように火炎を出し続ける（終わったら、残り1秒で消える）
+		if _laser_endless():
+			_flame_left = maxf(_flame_left, 1.0)
 		if _flame_left > 0.0:
 			_flame_left -= delta
 			_flame_tick -= delta
@@ -911,11 +938,11 @@ func _update_castle_specials(delta: float) -> void:
 				_sneeze_cd = FLAME_INTERVAL
 				_flame_left = FLAME_TIME
 				_flame_tick = 0.0
-	# 城ロボ起動：30秒ごとに15秒間出撃
+	# 城ロボ起動：25秒間出撃し、戻ってから25秒後にまた出撃（フライト・ファイナルモードも同じ）
 	if robot_enabled and not robot_active():
 		_robot_cd -= delta
 		if _robot_cd <= 0.0:
-			_robot_cd = 30.0
+			_robot_cd = 25.0
 			robot = RobotScript.new()
 			robot.game = game
 			robot.mode = "final" if robot_final else ("flight" if robot_flight else "walk")
@@ -964,10 +991,10 @@ func _flame_dirs() -> Array:
 	return [to.normalized() if to.length() > 1.0 else Vector2.UP]
 
 
-## 火炎の中にいる敵にダメージ（0.1秒ごとに レベル×1.5。吹き飛ばしはしない）
+## 火炎の中にいる敵にダメージ（0.1秒ごとに レベル×FLAME_DAMAGE_PER_LEVEL。吹き飛ばしはしない）
 func _flame_damage() -> void:
 	var origin := _flame_origin()
-	var dmg := float(game.level) * 1.5
+	var dmg := float(game.level) * FLAME_DAMAGE_PER_LEVEL
 	var src: Dictionary = game.sp_src(record, "sp_castle_sneeze")
 	for dir in _flame_dirs():
 		var mid: Vector2 = origin + dir * FLAME_LEN * 0.5
@@ -993,8 +1020,14 @@ func _laser_double() -> bool:
 	return robot_active() and robot.is_final_like()
 
 
+## 真・ファイナルモード（金色の間だけ。通常の城ロボ・光をためる間は入らない）の城レーザーのダメージの倍率
+const LASER_TRUE_MULT := 0.25
+
+
 func _laser_sweep(from: float, to: float, hit: Dictionary) -> void:
 	var dmg := float(game.level) * 15.0
+	if _laser_endless():
+		dmg *= LASER_TRUE_MULT
 	var origin := _laser_origin()
 	for e in game.enemies_cache:
 		if not is_instance_valid(e) or e.dead or hit.has(e):

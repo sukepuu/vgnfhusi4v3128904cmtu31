@@ -5,13 +5,18 @@ extends CanvasLayer
 ## 「この状態で出撃する」を押すと、チェックした内容でゲームを最初から作り直して始める（main.debug_start）。
 
 const Upgrades := preload("res://scripts/upgrades.gd")
-## 「この設定を保存」で保存する場所（ゲームを閉じても残る）
-const SAVE_PATH := "user://debug_preset.json"
+## 「この設定を保存」で名前を付けて保存する場所（ゲームを閉じても残る。最大20個）
+const SAVE_PATH := "user://debug_presets.json"
+## 前の1つだけ保存する方式のファイル（あれば「以前の保存」として一覧に引き継ぐ）
+const LEGACY_PATH := "user://debug_preset.json"
+const CheckStyle := preload("res://scripts/check_style.gd")
+const NamedSaves := preload("res://scripts/named_saves.gd")
+const SaveSlotsPopup := preload("res://scripts/save_slots_popup.gd")
 
 ## 部隊・兵装を出す強化（見出しのチェックボックスになる）。遊撃と城（本体）は最初からあるのでなし
 const UNIT_IDS := {"pet": "pet", "guard": "guard", "sniper": "sniper", "knight": "knight", "heavy": "heavy",
 	"engineer": "engineer", "builder": "builder", "repair": "repairer", "tower": "tower", "cannon": "cannon",
-	"catapult": "catapult", "ballista": "ballista", "frost": "frost"}
+	"catapult": "catapult", "ballista": "ballista", "frost": "frost", "mine_site": "mine_site"}
 
 var game: Node2D
 var _was_paused := false
@@ -81,6 +86,13 @@ func _ready() -> void:
 	_load_btn.focus_mode = Control.FOCUS_NONE
 	_load_btn.pressed.connect(_load)
 	top.add_child(_load_btn)
+	var reset := Button.new()
+	reset.text = "部隊戦績リセット"
+	reset.custom_minimum_size = Vector2(180, 48)
+	reset.add_theme_font_size_override("font_size", 18)
+	reset.focus_mode = Control.FOCUS_NONE
+	reset.pressed.connect(_reset_records)
+	top.add_child(reset)
 	var title := Label.new()
 	title.text = "デバッグ設定"
 	title.add_theme_font_size_override("font_size", 28)
@@ -192,6 +204,19 @@ func _build_list() -> void:
 		_arrows[key] = [btn, entry[0]]
 		if unit_id != "":
 			_add_spin(head, _find(unit_id))
+		# その部隊・兵装の強化をまとめてチェック／はずすボタン
+		var ids: Array = []
+		if unit_id != "":
+			ids.append(unit_id)
+		for u in items.get(key, []):
+			ids.append(u["id"])
+		for pair in [["全取得", true], ["全解除", false]]:
+			var gb := Button.new()
+			gb.text = pair[0]
+			gb.focus_mode = Control.FOCUS_NONE
+			gb.add_theme_font_size_override("font_size", 15)
+			gb.pressed.connect(_set_ids.bind(ids, pair[1]))
+			head.add_child(gb)
 		# 中身（ふだんは閉じている）。3列に並べる
 		var body := GridContainer.new()
 		body.columns = 3
@@ -234,6 +259,7 @@ func _find(id: String) -> Dictionary:
 func _add_check(parent: Control, u: Dictionary) -> void:
 	var c := CheckBox.new()
 	c.focus_mode = Control.FOCUS_NONE
+	CheckStyle.apply(c)
 	c.custom_minimum_size = Vector2(34, 28)
 	parent.add_child(c)
 	_rows[u["id"]] = [c, null]
@@ -277,7 +303,14 @@ func _update_arrow(key: String) -> void:
 
 
 func _set_all(on: bool) -> void:
-	for id in _rows:
+	_set_ids(_rows.keys(), on)
+
+
+## 指定した強化をまとめてチェックする（レベルは最大に）／はずす
+func _set_ids(ids: Array, on: bool) -> void:
+	for id in ids:
+		if not _rows.has(id):
+			continue
 		_rows[id][0].button_pressed = on
 		if on and _rows[id][1] != null:
 			_rows[id][1].set_value_no_signal(_rows[id][1].max_value)
@@ -319,33 +352,47 @@ func _sortie() -> void:
 	game.start_debug(_current())
 
 
-## 今のメニューの内容をファイルに保存する
+## 「この設定を保存」：名前を付けて保存する小窓を出す
 func _save() -> void:
+	var pop := SaveSlotsPopup.new()
+	add_child(pop)
+	pop.setup_save(_save_as)
+
+
+## 今のメニューの内容を、名前を付けて保存する（20個あったら古いものから消える）
+func _save_as(save_name: String) -> void:
 	var cfg := _current()
 	var t := int(cfg["elapsed"])
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if f == null:
+	var res := NamedSaves.save(SAVE_PATH, save_name, cfg, LEGACY_PATH)
+	if not res["ok"]:
 		_save_note.text = "保存できませんでした"
 		return
-	f.store_string(JSON.stringify(cfg))
-	f.close()
-	_save_note.text = "保存しました（%02d:%02d・Lv%d・強化%d個）" % [t / 60, t % 60, cfg["level"], cfg["levels"].size()]
-	_load_btn.disabled = false
+	_save_note.text = "「%s」を保存しました（%02d:%02d・Lv%d・強化%d個）" % [save_name, t / 60, t % 60, cfg["level"], cfg["levels"].size()]
+	if not res["removed"].is_empty():
+		_save_note.text += "　古い「%s」を消しました" % "」「".join(PackedStringArray(res["removed"]))
+	_update_load_btn()
 
 
-## 保存した設定（なければ空）
-static func load_saved() -> Dictionary:
-	if not FileAccess.file_exists(SAVE_PATH):
-		return {}
-	var data = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
-	return data if data is Dictionary else {}
-
-
-## 保存した設定をメニューに入れる（出撃はまだしない）
+## 「保存した設定を読み込む」：保存の一覧の小窓を出す
 func _load() -> void:
-	var cfg := load_saved()
-	if cfg.is_empty():
-		_save_note.text = "保存した設定がありません"
+	var pop := SaveSlotsPopup.new()
+	add_child(pop)
+	pop.setup_load(SAVE_PATH, LEGACY_PATH, _apply_saved, _on_saves_changed)
+
+
+func _on_saves_changed() -> void:
+	_save_note.text = "保存を消しました"
+	_update_load_btn()
+
+
+func _update_load_btn() -> void:
+	_load_btn.disabled = NamedSaves.entries(SAVE_PATH, LEGACY_PATH).is_empty()
+
+
+## 選んだ保存をメニューに入れる（出撃はまだしない）
+func _apply_saved(entry: Dictionary) -> void:
+	var cfg = entry.get("data", {})
+	if not cfg is Dictionary:
 		return
 	var t := int(cfg.get("elapsed", 0.0))
 	_time_edit.text = "%02d:%02d" % [t / 60, t % 60]
@@ -356,7 +403,7 @@ func _load() -> void:
 		_rows[id][0].set_pressed_no_signal(lv > 0)
 		if _rows[id][1] != null:
 			_rows[id][1].set_value_no_signal(lv if lv > 0 else _rows[id][1].max_value)
-	_save_note.text = "保存した設定を読み込みました"
+	_save_note.text = "「%s」を読み込みました" % str(entry.get("name", ""))
 
 
 func open_panel() -> void:
@@ -366,15 +413,29 @@ func open_panel() -> void:
 	get_tree().paused = true
 	_refresh()
 	_save_note.text = ""
-	_load_btn.disabled = load_saved().is_empty()
+	_update_load_btn()
 	visible = true
+
+
+## 部隊戦績の数字をすべて0に戻す（ゲームはそのまま続く）
+func _reset_records() -> void:
+	game.reset_records()
+	_save_note.text = "部隊戦績をリセットしました"
 
 
 func close_panel() -> void:
 	if not visible:
 		return
+	_close_popups()
 	visible = false
 	get_tree().paused = _was_paused
+
+
+## 開いている保存・読み込みの小窓を消す
+func _close_popups() -> void:
+	for c in get_children():
+		if c is SaveSlotsPopup:
+			c.queue_free()
 
 
 func _unhandled_input(event: InputEvent) -> void:

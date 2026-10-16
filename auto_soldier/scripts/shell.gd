@@ -33,6 +33,8 @@ var roll_damage := 0.0
 var meteor := false
 ## ビリヤード砲弾（大砲のおもしろ強化）：着弾したあと、同じ向きにあと何回跳ねるか
 var bounces := 0
+## ビリヤード：次に跳ねたときの威力の倍率（1回目は砲弾の2.5倍、2回目からはその半分）
+var bounce_ratio := 2.5
 ## 牛投げ（投石器のおもしろ強化）：岩のかわりに牛が飛んでいき、着地したら走り出す
 var cow := false
 ## 居座り岩（投石器）：着弾地点に岩が5秒残る
@@ -85,12 +87,17 @@ func _explode() -> void:
 	if bounces > 0:
 		# ビリヤード：同じ向きにポーンと跳ねて、もう一度小さく爆発
 		var dir := (target - start).normalized()
-		var s: Node2D = game.castle._fire_shell(target, game.clamp_to_map(target + dir * 150.0, 20.0), damage * 0.5, blast_radius * 0.75, false, game.sp_src(src, "sp_fun_billiard"))
+		var s: Node2D = game.castle._fire_shell(target, game.clamp_to_map(target + dir * 150.0, 20.0), damage * bounce_ratio, blast_radius * 0.75, false, game.sp_src(src, "sp_fun_billiard"))
 		s.flight_time = 0.45
+		s.bounce_ratio = 0.5
 		s.bounces = bounces - 1
+		# ビリヤード機雷：跳ねた砲弾の着地点にも機雷をばらまく（機雷散布として記録）
+		if game.castle.billiard_mines and mines > 0:
+			s.mines = mines
+			s.mine_damage = mine_damage
 	if cow:
-		# 着地した牛が、6秒間近くの敵へ何度も突進する
-		game.spawn_missile("cow", target, Vector2.ZERO, damage * 1.5, 66.0, 6.0, game.sp_src(src, "sp_fun_cow"))
+		# 着地した牛が、6秒間近くの敵へ何度も突進する（岩の1.5倍。投石器の基本の威力が2倍になったので、前の2倍）
+		game.spawn_missile("cow", target, Vector2.ZERO, damage * 1.5, 66.0 * 0.7, 6.0, game.sp_src(src, "sp_fun_cow"))
 	if fire_time > 0.0:
 		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), src if fire_sp == "" else game.sp_src(src, fire_sp))
 	for i in mines:
@@ -110,23 +117,24 @@ func _explode() -> void:
 		b.position = target
 		game.ground.add_child(b)
 	if stay_rock:
-		game.spawn_placed("boulder", target, damage * 0.3, blast_radius * 0.6, 5.0, game.sp_src(src, "sp_stay_rock"))
+		game.spawn_placed("boulder", target, damage * 0.6, blast_radius * 0.6, 5.0, game.sp_src(src, "sp_stay_rock"))
 	if roll_damage > 0.0:
 		var away: Vector2 = (target - game.castle.global_position).normalized()
 		var m: Node2D = game.spawn_missile("ball", target, away.rotated(randf_range(-0.3, 0.3)) * 420.0, roll_damage, 30.0, 3.0, game.sp_src(src, "sp_rolling"))
 		m.look = "rock"
 	for i in split_count:
 		var p := target + Vector2.from_angle(TAU * i / split_count + randf() * 0.5) * randf_range(blast_radius * 0.8, blast_radius * 1.2)
-		game.spawn_blast(p, 0.3 + 0.08 * i, 70.0, damage * 0.4, game.sp_src(src, "sp_split_rock"), Color(0.75, 0.65, 0.5), "rock")
+		game.spawn_blast(p, 0.3 + 0.08 * i, 70.0, damage * 1.2, game.sp_src(src, "sp_split_rock"), Color(0.75, 0.65, 0.5), "rock")
 	queue_free()
 
 
 func _draw() -> void:
 	if cow:
 		# 空飛ぶ牛（くるくる回る）
-		draw_circle(Vector2.ZERO, 36.0, Color(0, 0, 0, 0.3))
+		# 大きさは元の70%
+		draw_circle(Vector2.ZERO, 36.0 * 0.7, Color(0, 0, 0, 0.3))
 		draw_set_transform(Vector2(0, -_height), _t * 8.0, Vector2.ONE)
-		MissileScript.draw_cow(self, false, _t * 10.0, 3.0)
+		MissileScript.draw_cow(self, false, _t * 10.0, 3.0 * 0.7)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		return
 	if meteor:

@@ -3,13 +3,15 @@ extends RefCounted
 
 var max_hp := 110.0
 var move_speed := 190.0
-## 突進の威力の倍率（剛突で上がる）。突進の威力 = 遊撃兵の射撃の威力 × 2 × これ。
+## 突進の威力の倍率（剛突で上がる）。突進の威力 = 80（main.gd の KNIGHT_BASE_DAMAGE）× これ。
 ## 隠密兵は威力に関係なく、当たったらダメージなしで倒れる
 var damage := 1.0
 ## 突進の間隔（秒）
 var interval := 1.6
 ## 突進で進む距離
 var dash_distance := 260.0
+## 突進の当たる幅の倍率（大槍で上がる）。近衛兵の体の大きさ＋6px にこれを掛けた幅で当たる
+var hit_width := 1.0
 
 # --- 特別強化
 ## 連続突撃：突進のあと、続けてもう何回突進できるか
@@ -20,6 +22,8 @@ var kill_chain := false
 var quake := false
 ## 流れ星突撃：突進の跡に星が残って弾ける
 var star_trail := false
+## 流星百騎（百騎突撃の騎士の幻も流れ星を残す）
+var cavalry_star := false
 ## 衝撃の槍：突進で貫いた敵を1秒気絶させる
 var stun_hit := false
 ## 勇猛の突撃：突進で敵を1体貫くたびにHPが8回復

@@ -8,6 +8,7 @@ extends Node2D
 ## 治癒師（healer）は後方にとどまり、周りの敵を定期的に回復する。
 ## 自爆兵（bomber）は兵士・壁・城にぶつかると爆発する（壁は3発分削る）。
 ## 隠密兵（stealth）は右下・左下から現れて城を狙う。半透明で見えにくい。
+## エリート隠密兵（elite_stealth）は隠密兵と同じ動きで、速さは半分・HPは3倍。濃い紫の体に金のふち。
 ## 迫撃砲（mortar）はマップの端から動かず、壁を飛び越える砲弾で城を撃ってくる。
 ## 弾幕兵（ringer）は5秒ごとに全方位へ赤い弾を撃ちながら城へ進む。
 ## 誘導砲兵（seeker）はマップの端から動かず、迎撃と設置物以外の味方（遊撃・近衛・重装）へ誘導弾を撃つ。
@@ -17,6 +18,10 @@ extends Node2D
 
 const BulletScript := preload("res://scripts/bullet.gd")
 const EnemyShellScript := preload("res://scripts/enemy_shell.gd")
+## 被害状況に出す敵の名前（ボスは boss_title）
+const KIND_NAME := {"grunt": "赤い敵", "runner": "オレンジの敵", "archer": "紫ひし形", "brute": "大きい暗赤の敵",
+	"hunter": "刺客", "splitter": "分裂体", "splitling": "小さな分裂体", "healer": "治癒師", "bomber": "自爆兵",
+	"stealth": "隠密兵", "elite_stealth": "エリート隠密兵", "ironclad": "鉄甲兵", "mortar": "迫撃砲", "ringer": "弾幕兵", "seeker": "誘導砲兵"}
 
 var game: Node2D
 var kind := "grunt"
@@ -36,6 +41,8 @@ var is_boss := false
 var boss_rank := 1
 ## 分裂の魔獣：何回分裂したあとの体か（0〜4。4まで分裂すると16体）
 var split_gen := 0
+## 分裂の魔獣：分かれた体どうしで共有する情報（bodies = 全部の体, full = 全部合わせた最大HP）
+var split_pool: Dictionary = {}
 const MAX_SPLIT := 4
 ## ボスの名前（HPバーに表示）
 var boss_title := ""
@@ -44,13 +51,20 @@ var _pattern := 0
 var _pattern_left := 0.0
 var _pattern_tick := 0.0
 var _pattern_count := 0
+## FORTRESS_SEQ の今どこか（-1 = まだ始まっていない）
+var _seq_i := -1
+## 紫ひし形：撃ち始めたか（一度着いたら、離れても撃ち続ける）
+var _ranged_engaged := false
+## 紫ひし形：出てきてからの時間（ARCHER_FIRE_DELAY 秒たったら撃ち始める）
+var _archer_age := 0.0
+const ARCHER_FIRE_DELAY := 8.0
 var _spiral_angle := 0.0
 ## 迫撃砲・砲台要塞の砲身の反動
 var _recoil := 0.0
 var _hp_mult := 1.0
 ## 黒衣の大司教の力で、もう1回復活したか（1回だけ復活する）
 var _revived := false
-## 黒衣の大司教：ふわふわ漂う動きと、号令（全員の全方位射撃）のタイマー
+## 黒衣の大司教：ふわふわ漂う動きと、号令（大司教自身の射撃）のタイマー
 var _bishop_t := 0.0
 var _bishop_cd := 3.0
 var _skill_cd := 3.0
@@ -69,6 +83,26 @@ var _contact_cd := 0.0
 var _flash := 0.0
 var _strafe_sign := 1.0
 var speed_mult := 1.0
+## ボスのHPの上乗せ倍率：Lv10で1.3倍から、Lv10ごとに0.1倍ずつ減っていき、1.0倍で止まる
+## （Lv10 1.3 → Lv20 1.2 → Lv30 1.1 → Lv40から1.0）
+## ボス（大司教・分裂の魔獣の分かれた体も）のHPを全体にこの倍率にする
+const BOSS_HP_SCALE := 0.85
+const BOSS_HP_BONUS := 1.3
+const BOSS_HP_BONUS_STEP := 0.1
+const BOSS_HP_BONUS_MIN := 1.0
+## ボスが出たときのレベル（分裂の魔獣の分かれた体は、最初の体のレベルを引き継ぐ）
+var boss_level := -1
+
+
+## いまのレベルでのボスのHPの上乗せ倍率（大司教も、出たときのレベルで決まる）
+static func boss_hp_bonus_at(lv: int) -> float:
+	var steps := maxi(0, floori(lv / 10.0) - 1)
+	return maxf(BOSS_HP_BONUS_MIN, BOSS_HP_BONUS - BOSS_HP_BONUS_STEP * steps)
+## ボスの速さ：HP満タンのときの倍率と、1倍になる残りHPの割合
+const BOSS_SLOW_MIN := 0.1
+const BOSS_FULL_SPEED_AT := 0.25
+## 砲台要塞の攻撃パターンの順番（0 ぐるぐる射撃×2.5周・1 誘導弾・2 ビーム）。最後まで行ったら最初に戻る
+const FORTRESS_SEQ := [0, 1, 0, 1, 2]
 ## 落とし穴で動けない残り時間
 var stun_left := 0.0
 ## 弱点看破（狙撃部隊）：この時間のあいだ受けるダメージ +20%
@@ -111,7 +145,7 @@ func setup(k: String, hp_mult: float) -> void:
 			max_hp = 10.0; speed = 95.0; damage = 4.0; castle_damage = 4.0; radius = 9.0; xp_value = 1
 			color = Color(0.85, 0.95, 0.35)
 		"healer":
-			max_hp = 150.0; speed = 50.0; damage = 4.0; castle_damage = 6.0; radius = 14.0; xp_value = 3
+			max_hp = 75.0; speed = 50.0; damage = 4.0; castle_damage = 6.0; radius = 14.0; xp_value = 3
 			color = Color(1.0, 0.6, 0.8)
 		"bomber":
 			max_hp = 25.0; speed = 120.0; damage = 30.0; castle_damage = 30.0; radius = 13.0; xp_value = 2
@@ -119,6 +153,14 @@ func setup(k: String, hp_mult: float) -> void:
 		"stealth":
 			max_hp = 15.0; speed = 160.0; damage = 8.0; castle_damage = 10.0; radius = 12.0; xp_value = 2
 			color = Color(0.3, 0.35, 0.45)
+		"elite_stealth":
+			# エリート隠密兵：隠密兵の速さ半分・HP3倍（攻撃は同じ）。少し大きい。経験値も隠密兵の3倍
+			max_hp = 45.0; speed = 80.0; damage = 8.0; castle_damage = 10.0; radius = 14.0; xp_value = 6
+			color = Color(0.32, 0.18, 0.45)
+		"ironclad":
+			# 鉄甲兵：とても遅いが硬い。ノックバックが効かない（5分ごとに10体ずつまとめて出る）
+			max_hp = 500.0; speed = 20.0; damage = 15.0; castle_damage = 20.0; radius = 24.0; xp_value = 8
+			color = Color(0.35, 0.45, 0.6)
 		"boss":
 			max_hp = 770.0 * (1.0 + 0.3 * (boss_rank - 1)); speed = 20.0; damage = 30.0
 			castle_damage = 40.0; radius = 46.0; xp_value = 60
@@ -142,7 +184,7 @@ func setup(k: String, hp_mult: float) -> void:
 			is_boss = true
 			boss_title = "砲台要塞"
 			# 出てきてすぐ、全方位ぐるぐる射撃から始める
-			_pattern = 3
+			_pattern = 2
 			_pattern_left = 0.0
 		"boss4":
 			# 黒衣の大司教：画面の上のほうに浮かんで漂う。自分では戦わず、ほかの敵を強くする
@@ -152,10 +194,10 @@ func setup(k: String, hp_mult: float) -> void:
 			boss_title = "黒衣の大司教"
 		"boss3":
 			# 分裂するたびにHPは半分、体は小さく、足は速くなる
-			# 最初の体のHPは 123.75。分かれた体ぜんぶの合計（最初の体の5倍 = 618.75）が、砲台要塞（412.5）の1.5倍になる
+			# 最初の体のHPは 154。分かれた体ぜんぶの合計（最初の体の5倍 = 770）が、破城の魔王（770）と同じになる
 			var shrink := pow(0.5, split_gen)
-			max_hp = 123.75 * (1.0 + 0.3 * (boss_rank - 1)) * shrink; speed = 22.0 * pow(1.18, split_gen); damage = 20.0 * pow(0.75, split_gen)
-			castle_damage = 36.0 * pow(0.6, split_gen); radius = 44.0 * pow(0.78, split_gen)
+			max_hp = 154.0 * (1.0 + 0.3 * (boss_rank - 1)) * shrink; speed = 22.0 * pow(1.18, split_gen); damage = 20.0
+			castle_damage = 20.0; radius = 44.0 * pow(0.78, split_gen)
 			xp_value = [40, 20, 10, 6, 4][split_gen]
 			color = Color(0.35, 0.75, 0.4).lerp(Color(0.6, 0.95, 0.5), split_gen / 4.0)
 			is_boss = true
@@ -163,6 +205,13 @@ func setup(k: String, hp_mult: float) -> void:
 			_skill_cd = randf_range(1.0, 3.0)
 	_hp_mult = hp_mult
 	max_hp *= hp_mult
+	# ボスは、HPがさらに上乗せ（Lv10で1.3倍 → Lv10ごとに-0.1 → 1.0倍まで）
+	if is_boss:
+		if boss_level < 0:
+			boss_level = game.level if game != null else 10
+		max_hp *= boss_hp_bonus_at(boss_level)
+		# ボスのHPは全体に BOSS_HP_SCALE 倍（85%）
+		max_hp *= BOSS_HP_SCALE
 	hp = max_hp
 	if not is_boss:
 		speed *= randf_range(0.9, 1.1)
@@ -171,9 +220,26 @@ func setup(k: String, hp_mult: float) -> void:
 	add_to_group("enemies")
 
 
+## 被害状況に出す名前
+func display_name() -> String:
+	if boss_title != "":
+		return boss_title
+	return KIND_NAME.get(kind, "その他")
+
+
 func _process(delta: float) -> void:
 	if dead:
 		return
+	# この敵が動いている間に与えたダメージ（体当たり・爆発・ビーム）は、この敵のものとして被害状況に記録する
+	# 紫ひし形の8秒は、凍結・足止めなどに関係なく出てきた時から数える
+	if kind == "archer":
+		_archer_age += delta
+	game.dmg_from = display_name()
+	_update(delta)
+	game.dmg_from = ""
+
+
+func _update(delta: float) -> void:
 	_flash -= delta
 	_contact_cd -= delta
 	mark_left -= delta
@@ -249,9 +315,12 @@ func _process(delta: float) -> void:
 			move = -dir
 		else:
 			move = dir.orthogonal() * _strafe_sign * 0.5
-		_shoot_cd -= delta
-		# 射程は無限（どこからでも撃つ。城へ近づく動きはそのまま）
-		if _shoot_cd <= 0.0 and confuse_left <= 0.0:
+		# 紫ひし形：出てきてから8秒たったら撃ち始め、そのあとはずっと撃ち続ける（射程は無限）
+		if kind == "archer" and _archer_age >= ARCHER_FIRE_DELAY:
+			_ranged_engaged = true
+		if _ranged_engaged or kind != "archer":
+			_shoot_cd -= delta
+		if (_ranged_engaged or kind != "archer") and _shoot_cd <= 0.0 and confuse_left <= 0.0:
 			# 城への弾は少し弱い。遠くからでも届くように、弾は届くまで消えない
 			_shoot(dir, damage if soldier != null else damage * 0.5, 260.0, 7.0, Color(0.85, 0.45, 1.0), d / 260.0 + 1.0)
 			_shoot_cd = randf_range(2.2, 3.0)
@@ -286,7 +355,7 @@ func _process(delta: float) -> void:
 		if castle.distance_to_point(global_position) < radius:
 			move = Vector2.ZERO
 			if _contact_cd <= 0.0:
-				castle.take_damage(castle_damage)
+				castle.take_damage(castle_damage, true)
 				_contact_cd = 2.0
 	elif not hunter and not _check_wall():
 		return
@@ -310,10 +379,9 @@ func _process(delta: float) -> void:
 			_confuse_dir = Vector2.from_angle(randf() * TAU)
 		move = _confuse_dir
 	speed_mult = castle.slow_factor_at(global_position)
-	# ボスはHPが減るほど速くなる（HP満タンで0.5倍 → 残り20%で1倍。それ以上は速くならない）
+	# ボスはHPが減るほど速くなる（HP満タンで0.1倍 → 残り25%で1倍。それ以上は速くならない）
 	if is_boss:
-		var ratio := clampf(hp / maxf(max_hp, 1.0), 0.0, 1.0)
-		speed_mult *= 0.5 + 0.5 * clampf((1.0 - ratio) / 0.8, 0.0, 1.0)
+		speed_mult *= boss_speed_rate()
 	if slow_left > 0.0:
 		speed_mult *= 1.0 - slow_ratio
 	position += (move * speed * speed_mult + knock) * delta
@@ -349,7 +417,11 @@ func _nearest_guard(max_dist: float) -> Node2D:
 	return best
 
 
-## 壁に触れたら、壁の耐久を削って、この敵はHP半分・大きく弾き飛ばされて1秒気絶（false を返す）
+## 壁にぶつかった敵が受けるダメージ（最大HPに対する割合）
+const WALL_HIT_RATIO := 0.0
+
+
+## 壁に触れたら、壁の耐久を削って、この敵は最大HPの10%のダメージ・大きく弾き飛ばされて1秒気絶（false を返す）
 func _check_wall() -> bool:
 	var wi: int = game.walls.hit_test(global_position, radius)
 	if wi < 0:
@@ -369,15 +441,18 @@ func _check_wall() -> bool:
 		queue_free()
 		return false
 	game.spawn_burst(global_position, color, radius)
-	# HPが半分になる（倒れはしない）。ダメージは築城部隊の手柄
-	var src: Dictionary = game.builders[0].record if not game.builders.is_empty() else {}
-	take_damage(hp * 0.5, Vector2.ZERO, src)
-	if dead:
-		return false
+	# 最大HPの WALL_HIT_RATIO のダメージ（いまは0＝ダメージなし）。ダメージは築城部隊の手柄
+	if WALL_HIT_RATIO > 0.0:
+		var src: Dictionary = game.builders[0].record if not game.builders.is_empty() else {}
+		take_damage(max_hp * WALL_HIT_RATIO, Vector2.ZERO, src)
+		if dead:
+			return false
 	# 1秒気絶して、上側のランダムな方向へ大きく弾き飛ばされる（だいたい170くらい）
 	# （knock は毎秒1400ずつ弱まるので、進む距離 = 速さ² ÷ 2800）
 	stun(1.0)
-	knock = Vector2.from_angle(randf_range(PI + 0.35, TAU - 0.35)) * sqrt(2800.0 * 170.0)
+	# ノックバックが効かない敵（鉄甲兵）は弾き飛ばされない（気絶だけ）
+	if _kb_mult() > 0.0:
+		knock = Vector2.from_angle(randf_range(PI + 0.35, TAU - 0.35)) * sqrt(2800.0 * 170.0)
 	return false
 
 
@@ -386,12 +461,14 @@ func _boss_skills(delta: float) -> void:
 	_skill_cd -= delta
 	_summon_cd -= delta
 	if _skill_cd <= 0.0:
-		_skill_cd = 5.0
+		# 全方位射撃は5秒ごとの3倍の頻度（5/3秒ごと）
+		_skill_cd = 5.0 / 3.0
 		var n := 16
 		for i in n:
-			_shoot(Vector2.from_angle(TAU * i / n + randf() * 0.2), 12.0 * (1.0 + 0.3 * (boss_rank - 1)))
+			# 弾の威力はレベル（何体目のボスか）に関係なく一定
+			_shoot(Vector2.from_angle(TAU * i / n + randf() * 0.2), 12.0)
 	if _summon_cd <= 0.0:
-		_summon_cd = 12.0
+		_summon_cd = 8.0
 		for i in 5:
 			game.spawn_enemy_at("grunt", global_position + Vector2.from_angle(TAU * i / 5.0) * (radius + 30.0))
 
@@ -432,8 +509,9 @@ func _update_stationary(delta: float) -> void:
 			_shoot_cd -= delta
 			if _shoot_cd <= 0.0:
 				_shoot_cd = randf_range(2.0, 2.75)
-				var b: Node2D = _shoot(_facing, damage, 190.0, 8.0, Color(1.0, 0.45, 0.2), 7.0)
+				var b: Node2D = _shoot(_facing, damage, 190.0, 16.0, Color(1.0, 0.45, 0.2), 7.0)
 				b.seek = t
+				b.no_castle = true
 				_recoil = 0.3
 	else:
 		_fortress_skills(delta)
@@ -459,6 +537,7 @@ func _lob_at_castle(dmg: float, area: float, size: float) -> void:
 	var half: Vector2 = castle.HALF
 	s.target = castle.global_position + Vector2(randf_range(-half.x, half.x), randf_range(-half.y, half.y) * 0.6)
 	s.damage = dmg
+	s.from_name = display_name()
 	s.blast_radius = area
 	s.size = size
 	s.flight_time = clampf(muzzle.distance_to(s.target) / 320.0, 1.5, 3.2)
@@ -466,20 +545,40 @@ func _lob_at_castle(dmg: float, area: float, size: float) -> void:
 	_recoil = 0.3
 
 
+## 砲台要塞の全方位ぐるぐる射撃：1周24回 × 2.5周（弾の間隔は5周だったときと同じ。そのぶん早く終わる）
+const SPIRAL_SHOTS := 60
+const SPIRAL_TICK := 0.07 * (24 * 3 - 1) / (24 * 5 - 1)
+## 砲台要塞の誘導弾：20発。全体の長さは前の10発（0.18秒ごと）と同じ
+const HOMING_SHOTS := 20
+const HOMING_TICK := 0.18 * 9 / (HOMING_SHOTS - 1)
+## 砲台要塞のビームが城に与えるダメージ（城の最大HPに対する割合）
+const BEAM_CASTLE_RATIO := 0.1
+
+
+## ボスの速さの倍率（移動速度・砲台要塞の攻撃速度）：HP満タンで BOSS_SLOW_MIN 倍 → 残り BOSS_FULL_SPEED_AT で1倍
+func boss_speed_rate() -> float:
+	var ratio := clampf(hp / maxf(max_hp, 1.0), 0.0, 1.0)
+	# 分裂の魔獣は、分かれた体ぜんぶの合計HPの割合で決める（全部の体が同じ速さの倍率）
+	if kind == "boss3":
+		ratio = _split_total_ratio()
+	return BOSS_SLOW_MIN + (1.0 - BOSS_SLOW_MIN) * clampf((1.0 - ratio) / (1.0 - BOSS_FULL_SPEED_AT), 0.0, 1.0)
+
+
 ## 砲台要塞の技：いろんな弾幕を順番に。合間に城への砲撃
 ## 砲台要塞の攻撃パターン（くり返し）：
-## 0 全方位ぐるぐる射撃×3 → 1 城狙いの連射 → 2 近くのキャラクターへ誘導弾10発 → 3 城狙いのビーム → 0 …
+## 0 全方位ぐるぐる射撃×2.5周 → 1 誘導弾20発 → 0 ぐるぐる射撃×2.5周 → 1 誘導弾20発 → 2 城狙いのビーム → 最初に戻る（FORTRESS_SEQ）
 func _fortress_skills(delta: float) -> void:
-	var rm := 1.0 + 0.3 * (boss_rank - 1)
-	# 城を狙う攻撃は、出るたびに少しずつ強くなる
-	var crm := 1.0 + 0.15 * (boss_rank - 1)
-	var dmg := 10.0 * rm
+	# 弾・ビームの威力はレベル（何体目のボスか）に関係なく一定
+	var dmg := 10.0
 	var to_castle: Vector2 = (game.castle.global_position - global_position).normalized()
-	_pattern_left -= delta
-	_pattern_tick -= delta
+	# 移動速度と同じ：HP満タンで攻撃速度0.1倍 → 残り25%で1倍
+	var rate := boss_speed_rate()
+	_pattern_left -= delta * rate
+	_pattern_tick -= delta * rate
 	if _pattern_left <= 0.0:
 		# 次の攻撃パターンへ（少し休んでから）
-		_pattern = (_pattern + 1) % 4
+		_seq_i = (_seq_i + 1) % FORTRESS_SEQ.size()
+		_pattern = FORTRESS_SEQ[_seq_i]
 		_pattern_left = 99.0
 		_pattern_tick = 0.8
 		_pattern_count = 0
@@ -488,45 +587,42 @@ func _fortress_skills(delta: float) -> void:
 		return
 	match _pattern:
 		0:
-			# 全方位ぐるぐる射撃：10本の腕（濃い弾幕）がぐるっと1周するのを3回（回るペースは前と同じ）
-			_pattern_tick = 0.07
+			# 全方位ぐるぐる射撃：10本の腕（濃い弾幕）がぐるっと1周するのを2.5回。
+			# 全体の長さは前（3周・0.07秒ごと）と同じなので、そのぶん密度が上がる。弾は1発当たったら消える
+			_pattern_tick = SPIRAL_TICK
 			_spiral_angle += TAU / 24.0
 			for arm in 10:
-				_shoot(Vector2.from_angle(_spiral_angle + TAU * arm / 10.0), dmg, 220.0, 7.0, Color(0.95, 0.5, 1.0), 4.5)
-			if _pattern_count >= 24 * 3 - 1:
+				var sb: Node2D = _shoot(Vector2.from_angle(_spiral_angle + TAU * arm / 10.0), dmg, 220.0, 7.0, Color(0.95, 0.5, 1.0), 4.5)
+				sb.boss_pierce = false
+			if _pattern_count >= SPIRAL_SHOTS - 1:
 				_pattern_left = 0.0
 		1:
-			# 城狙いの連射（城に当たるとそのままのダメージ。壁があれば壁が防ぐ）
-			_pattern_tick = 0.12
-			var b: Node2D = _shoot(to_castle.rotated(randf_range(-0.05, 0.05)), 5.0 * crm, 380.0, 8.0, Color(1.0, 0.3, 0.2), 4.0)
-			b.castle_ratio = 1.0
-			if _pattern_count >= 15:
-				_pattern_left = 0.0
-		2:
-			# 一番近いキャラクターへ誘導弾を10発（いなければ城へまっすぐ）
-			_pattern_tick = 0.18
+			# 一番近いキャラクターへ誘導弾を20発（いなければ城へまっすぐ）。
+			# 全体の長さは前（10発・0.18秒ごと）と同じなので、そのぶん密度が上がる
+			_pattern_tick = HOMING_TICK
 			var t: Node2D = game.nearest_ally(global_position, INF)
 			var aim: Vector2 = (t.global_position - global_position).normalized() if t != null else to_castle
-			var m: Node2D = _shoot(aim.rotated(randf_range(-0.6, 0.6)), dmg * 1.2, 230.0, 8.0, Color(1.0, 0.45, 0.2), 6.0)
+			var m: Node2D = _shoot(aim.rotated(randf_range(-0.6, 0.6)), dmg * 1.2, 230.0, 16.0, Color(1.0, 0.45, 0.2), 6.0)
 			if t != null:
 				m.seek = t
-			if _pattern_count >= 9:
+				m.no_castle = true
+			if _pattern_count >= HOMING_SHOTS - 1:
 				_pattern_left = 0.0
-		3:
+		2:
 			# 城狙いのビーム：1秒前に予告線を出してから、城までの線上にあるものを全部まとめて撃ち抜く
 			if _pattern_count == 0:
 				var warn: Node2D = game.spawn_fun_fx("beam_warn", global_position)
 				warn.end = game.castle.global_position
 				_pattern_tick = 1.0
 			else:
-				_fire_beam(dmg, crm)
+				_fire_beam(dmg)
 				_pattern_left = 0.0
 	_pattern_count += 1
 	_recoil = 0.15
 
 
 ## 砲台要塞のビーム：城までの一直線上の味方・壁・城にまとめてダメージ
-func _fire_beam(dmg: float, crm: float) -> void:
+func _fire_beam(dmg: float) -> void:
 	var from := global_position
 	var to: Vector2 = game.castle.global_position
 	var fx: Node2D = game.spawn_fun_fx("beam", from)
@@ -545,8 +641,8 @@ func _fire_beam(dmg: float, crm: float) -> void:
 	var wi: int = walls.hit_test(cross, WIDTH)
 	if wi >= 0:
 		walls.damage_wall(wi, 5.0)
-	# 城
-	game.castle.take_damage(30.0 * crm)
+	# 城：城の最大HPの BEAM_CASTLE_RATIO（10%）を減らす
+	game.castle.take_damage(game.castle.max_hp * BEAM_CASTLE_RATIO, true)
 	game.spawn_burst(to + (from - to).normalized() * 60.0, Color(1.0, 0.4, 0.3), 40.0)
 
 
@@ -562,27 +658,47 @@ func _ring_skill(delta: float) -> void:
 	_recoil = 0.3
 
 
-## 分裂の魔獣の技：全方位へ弾を撃ちながら城へ進む（小さい体ほど弾は少なく弱い）
+## 分裂の魔獣の技：全方位へ弾を撃ちながら城へ進む（小さい体ほど弾は少ない。1発の威力は同じ）
 func _split_boss_skills(delta: float) -> void:
 	_skill_cd -= delta
 	if _skill_cd > 0.0:
 		return
-	_skill_cd = 3.5
+	# 3.5秒ごとの3倍の頻度（3.5/3秒ごと）
+	_skill_cd = 3.5 / 3.0
 	var n: int = [20, 14, 10, 8, 6][split_gen]
-	var dmg := 11.0 * (1.0 + 0.3 * (boss_rank - 1)) * pow(0.75, split_gen)
+	# 弾の威力はレベル（何体目のボスか）に関係なく一定
+	var dmg := 11.0
 	_spiral_angle += 0.5
 	for i in n:
 		_shoot(Vector2.from_angle(TAU * i / n + _spiral_angle), dmg, 230.0, 7.0 - split_gen, Color(0.55, 1.0, 0.5), 3.5)
 
 
+## 分裂の魔獣の合計HPの割合。まだ分かれていない分も含める
+## （ある体の残り = 今のHP + これから分かれて出てくる体のHP。分かれるたびに合計は同じなので、最大HP×あと何回分かれるか）
+## 最初の体の満タン = 1.0 → 最後の16体が全部倒れる = 0.0
+func _split_total_ratio() -> float:
+	if split_pool.is_empty():
+		split_pool = {"bodies": [self], "full": max_hp * (MAX_SPLIT - split_gen + 1)}
+	var rem := 0.0
+	for b in split_pool.bodies:
+		if is_instance_valid(b) and not b.dead:
+			rem += maxf(b.hp, 0.0) + b.max_hp * (MAX_SPLIT - b.split_gen)
+	return clampf(rem / maxf(split_pool.full, 1.0), 0.0, 1.0)
+
+
 ## 分裂の魔獣：倒されたら少し小さい体2体に分かれる
 func _split() -> void:
+	if split_pool.is_empty():
+		_split_total_ratio()
 	for i in 2:
 		var side := Vector2.from_angle(PI * i + randf_range(-0.4, 0.4)) * radius * 0.7
 		var child: Node2D = get_script().new()
 		child.game = game
 		child.boss_rank = boss_rank
 		child.split_gen = split_gen + 1
+		child.split_pool = split_pool
+		child.boss_level = boss_level
+		split_pool.bodies.append(child)
 		child.setup("boss3", _hp_mult)
 		child.position = game.clamp_to_map(global_position + side, 20.0)
 		child.knock = side.normalized() * 260.0
@@ -630,6 +746,11 @@ func _separate() -> void:
 	for o in game.enemies_near(position, radius + 26.0):
 		if o == self or not is_instance_valid(o) or o.dead:
 			continue
+		# ボスと鉄甲兵はほかの敵（ほかのボスも）とぶつからない。分裂の魔獣どうし・鉄甲兵どうしはぶつかる
+		var self_solo: bool = is_boss or kind == "ironclad"
+		var other_solo: bool = o.is_boss or o.kind == "ironclad"
+		if (self_solo or other_solo) and not (kind == o.kind and (kind == "boss3" or kind == "ironclad")):
+			continue
 		var diff: Vector2 = position - o.position
 		var min_d: float = radius + o.radius
 		var dl := diff.length_squared()
@@ -646,6 +767,7 @@ func _shoot(dir: Vector2, dmg: float, spd: float = 260.0, r: float = 7.0, col: C
 	var b := BulletScript.new()
 	b.game = game
 	b.from_enemy = true
+	b.from_name = display_name()
 	b.velocity = dir * spd
 	b.damage = dmg
 	b.radius = r
@@ -654,6 +776,7 @@ func _shoot(dir: Vector2, dmg: float, spd: float = 260.0, r: float = 7.0, col: C
 	b.position = global_position + dir * (radius + 4.0)
 	# ボスの弾は、味方・壁に2回当たるまで突き抜ける
 	b.boss_pierce = is_boss
+	b.from_boss = is_boss
 	# 砲台要塞の弾幕は兵士向け。城に当たったときは2割のダメージ
 	if kind == "boss2":
 		b.castle_ratio = 0.2
@@ -688,9 +811,9 @@ func no_castle_push(v: Vector2) -> Vector2:
 
 
 ## 攻撃で押される強さの倍率。大型は吹き飛びにくい
-## 破城の魔王・分裂の魔獣は重いので押されにくい（ふつうの敵の4割）。砲台要塞・迫撃砲・誘導砲兵は押されない
+## 破城の魔王・分裂の魔獣は重いので押されにくい（ふつうの敵の4割）。砲台要塞・迫撃砲・誘導砲兵・鉄甲兵は押されない
 func _kb_mult() -> float:
-	if kind == "boss2" or kind == "mortar" or kind == "seeker" or kind == "boss4":
+	if kind == "boss2" or kind == "mortar" or kind == "seeker" or kind == "boss4" or kind == "ironclad":
 		return 0.0
 	if is_boss:
 		return 0.4
@@ -793,45 +916,65 @@ func _die() -> void:
 		queue_free()
 
 
-## 黒衣の大司教：画面の上のほうをゆっくり左右に漂い、10秒ごとに「号令」でほかの敵全員に全方位射撃をさせる
+## 黒衣の大司教：画面の上のほうをゆっくり左右に漂い、10秒ごとに「号令」で、侵攻中の敵の数×2発を高速連射する
 func _update_bishop(delta: float) -> void:
 	_bishop_t += delta
 	var rect: Rect2 = game.MAP_RECT
 	var goal := Vector2(rect.get_center().x + sin(_bishop_t * 0.35) * rect.size.x * 0.35, rect.position.y + 130.0 + sin(_bishop_t * 0.9) * 25.0)
 	position = position.move_toward(goal, 60.0 * delta)
-	_bishop_cd -= delta
-	if _bishop_cd <= 0.0:
-		_bishop_cd = BISHOP_VOLLEY_INTERVAL
-		_bishop_volley()
+	if _bishop_shots_left > 0:
+		# 連射中：1秒に BISHOP_FIRE_RATE 発。撃ち終わるまで次の号令のタイマーは進まない
+		_bishop_fire_acc += delta * BISHOP_FIRE_RATE
+		while _bishop_fire_acc >= 1.0 and _bishop_shots_left > 0:
+			_bishop_fire_acc -= 1.0
+			_bishop_shots_left -= 1
+			_bishop_shot()
+		if _bishop_shots_left <= 0:
+			_bishop_cd = BISHOP_VOLLEY_INTERVAL
+	else:
+		_bishop_cd -= delta
+		if _bishop_cd <= 0.0:
+			_bishop_volley()
 	queue_redraw()
 
 
+## 号令の間隔（連射が終わってからの秒数）
 const BISHOP_VOLLEY_INTERVAL := 10.0
-const BISHOP_VOLLEY_SHOTS := 6
+## 号令で撃つ数：撃ち始めたときの侵攻中の敵の数 × これ
+const BISHOP_SHOTS_PER_ENEMY := 2
+## 号令の連射の速さ（1秒に何発）
+const BISHOP_FIRE_RATE := 30.0
 ## 大司教の力で復活した敵のHP（最大HPの30%）
 const BISHOP_REVIVE_HP := 0.3
+## 号令の連射の残り弾数と、連射のたまり
+var _bishop_shots_left := 0
+var _bishop_fire_acc := 0.0
 
 
-## 号令：大司教以外のすべての敵が、全方位へ貫通無限の弾を撃つ（壁は素通り。城に当たったら消える）
+## 号令：撃ち始めたときの侵攻中の敵の数（画面右上の数と同じ）× 2 発を、1秒に30発で連射し始める
 func _bishop_volley() -> void:
 	game.spawn_burst(global_position, Color(0.65, 0.3, 0.95), 160.0)
-	for e in game.enemies_cache:
-		# 撃つのは大きい敵（大きい暗赤とボス）だけ。そのかわり1発の威力は敵の攻撃力の1.5倍
-		if not is_instance_valid(e) or e.dead or e.kind == "boss4" or not (e.kind == "brute" or e.is_boss):
-			continue
-		var base := randf() * TAU
-		for i in BISHOP_VOLLEY_SHOTS:
-			var dir := Vector2.from_angle(base + TAU * i / BISHOP_VOLLEY_SHOTS)
-			var b: Node2D = e._shoot(dir, maxf(6.0, e.damage * 1.5), 210.0, 9.0, Color(0.7, 0.35, 1.0), 2.5)
-			b.boss_pierce = true
-			b._boss_hits_left = 1000000
-			b.ignore_walls = true
-			b.castle_ratio = 0.2
+	_bishop_shots_left = game.enemies_cache.size() * BISHOP_SHOTS_PER_ENEMY
+	_bishop_fire_acc = 1.0
+	if _bishop_shots_left <= 0:
+		_bishop_cd = BISHOP_VOLLEY_INTERVAL
+
+
+## 号令の1発：上以外のランダムな方向へ貫通無限の弾（壁は素通り。城に当たったら消える）
+func _bishop_shot() -> void:
+	# 右（0）から下を通って左（PI）までの、上半分を除いた向き
+	var dir := Vector2.from_angle(randf() * PI)
+	var b: Node2D = _shoot(dir, maxf(6.0, damage * 1.5), 210.0, 9.0, Color(0.7, 0.35, 1.0), 2.5)
+	b.boss_pierce = true
+	b._boss_hits_left = 1000000
+	b.ignore_walls = true
+	# 城に当たったら消える。城へのダメージは減らさずそのまま
+	b.castle_ratio = 1.0
 
 
 func _draw() -> void:
 	# 隠密兵は半透明
-	modulate.a = 0.45 if kind == "stealth" else 1.0
+	modulate.a = 0.45 if kind == "stealth" or kind == "elite_stealth" else 1.0
 	if kind == "boss4":
 		_draw_bishop()
 		return
@@ -885,6 +1028,22 @@ func _draw() -> void:
 			draw_line(top, top - _facing * 8.0 + _facing.orthogonal() * 4.0, Color(0.7, 0.6, 0.4), 2.0)
 			if int(Time.get_ticks_msec() / 100) % 2 == 0:
 				draw_circle(top - _facing * 9.0 + _facing.orthogonal() * 4.0, 3.5, Color(1.0, 0.8, 0.2))
+		"elite_stealth":
+			# エリート隠密兵：濃い紫の体に金のふち（隠密兵と同じく半透明）
+			draw_circle(Vector2.ZERO, radius, c)
+			draw_arc(Vector2.ZERO, radius - 1.5, 0.0, TAU, 32, Color(1.0, 0.82, 0.3), 3.0)
+		"ironclad":
+			# 鉄甲兵：鋼の鎧の大きな体。明るい縁どりと、正面の盾板・リベット
+			draw_circle(Vector2.ZERO, radius, c)
+			draw_arc(Vector2.ZERO, radius - 2.0, 0.0, TAU, 40, Color(0.7, 0.8, 0.92), 4.0)
+			draw_arc(Vector2.ZERO, radius * 0.62, 0.0, TAU, 32, Color(0.2, 0.26, 0.36), 3.0)
+			var fo := _facing.orthogonal()
+			var plate_c := _facing * radius * 0.55
+			draw_colored_polygon(PackedVector2Array([
+				plate_c + fo * radius * 0.55 - _facing * 5.0, plate_c + _facing * 7.0 + fo * radius * 0.4,
+				plate_c + _facing * 7.0 - fo * radius * 0.4, plate_c - fo * radius * 0.55 - _facing * 5.0]), Color(0.62, 0.72, 0.86))
+			for i in 6:
+				draw_circle(Vector2.from_angle(TAU * i / 6.0 + 0.5) * radius * 0.8, 2.2, Color(0.85, 0.9, 0.97))
 		"boss":
 			# 大きな体とトゲ、王冠
 			for i in 10:

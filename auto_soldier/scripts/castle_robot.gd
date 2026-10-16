@@ -14,7 +14,7 @@ extends Node2D
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
-const LIFE := 15.0
+const LIFE := 25.0
 const SPEED := 32.0
 const PUNCH_RANGE := 150.0
 
@@ -99,7 +99,7 @@ func _process(delta: float) -> void:
 			b.color = Color(1.0, 0.85, 0.45)
 			b.life = 1.3
 			b.position = global_position + dir * 60.0
-			b.src = _record()
+			b.src = _walk_src()
 			game.world.add_child(b)
 	# 2秒ごとに近くの敵をパンチ（ゆっくりモーションで、突き出しきったところで当たる）
 	_punch_cd -= delta
@@ -110,7 +110,7 @@ func _process(delta: float) -> void:
 		if not _punch_done and _punch_t >= PUNCH_HIT:
 			_punch_done = true
 			var hit_pos: Vector2 = global_position + _fist_reach()
-			game.explode(hit_pos, 80.0, 40.0 * game._hp_mult(), _record(), Color(1.0, 0.75, 0.4), 0.0, 600.0)
+			game.explode(hit_pos, 80.0, 40.0 * game._hp_mult(), _walk_src(), Color(1.0, 0.75, 0.4), 0.0, 600.0)
 		if _punch_t >= PUNCH_TIME:
 			_punch_t = -1.0
 	elif _punch_cd <= 0.0:
@@ -126,8 +126,8 @@ func _process(delta: float) -> void:
 
 
 # ---------------- 真・ファイナルモードのくり返し ----------------
-const TRUE_TIME := 15.0
-const CYCLE_WALK_TIME := 10.0
+const TRUE_TIME := 25.0
+const CYCLE_WALK_TIME := 20.0
 const CHARGE_TIME := 5.0
 var _cycle := false
 ## 今の段階の長さ（残り時間のバー用）
@@ -213,7 +213,8 @@ func _draw_rays() -> void:
 
 
 # ---------------- 真・ファイナルモードの虹色レーザー ----------------
-const RAINBOW_DELAY := 10.0
+## 真・ファイナルモードが始まってから、虹色レーザーを撃ち始める時間（10秒後と20秒後の2回）
+const RAINBOW_STARTS := [10.0, 20.0]
 const RAINBOW_TIME := 4.0
 const RAINBOW_WIDTH := 30.0
 const RAINBOW_TICK := 0.1
@@ -223,13 +224,26 @@ var _rainbow_target: Node2D = null
 var _rainbow_cd := 0.0
 
 
+## ふつうの城ロボ（歩き）の射撃・パンチの記録先。
+## 真・ファイナルモードのくり返しの途中で通常の城ロボに戻っている間は「真・ファイナルモード・クールタイムロボ」として記録する
+func _walk_src() -> Dictionary:
+	if _cycle:
+		return game.sp_src(_record(), "robot_true_cool")
+	return _record()
+
+
 func _true_src() -> Dictionary:
 	return game.sp_src(_record(), "sp_castle_robot_true")
 
 
 func _rainbow_on() -> bool:
+	if mode != "true":
+		return false
 	var passed := TRUE_TIME - _life
-	return mode == "true" and passed >= RAINBOW_DELAY and passed < RAINBOW_DELAY + RAINBOW_TIME
+	for s in RAINBOW_STARTS:
+		if passed >= s and passed < s + RAINBOW_TIME:
+			return true
+	return false
 
 
 func _eye(side: int) -> Vector2:
@@ -326,7 +340,7 @@ func _update_flight(delta: float) -> void:
 				continue
 			if global_position.distance_to(e.global_position) < r + e.radius:
 				_tackle_hit[e] = true
-				e.take_damage(25.0 * game._hp_mult(), _fly_dir * 500.0, _flight_src())
+				e.take_damage(12.5 * game._hp_mult(), _fly_dir * 500.0, _flight_src())
 		if _fly_left <= 0.0:
 			_fly_state = "missile"
 			_missiles_left = MISSILE_COUNT
@@ -338,7 +352,7 @@ func _update_flight(delta: float) -> void:
 	if _missiles_left > 0 and _missile_cd <= 0.0:
 		_missile_cd = MISSILE_INTERVAL
 		_missiles_left -= 1
-		_fire_missile(_flight_src(), 6.0 * game._hp_mult())
+		_fire_missile(_flight_src(), 3.0 * game._hp_mult())
 	if _missiles_left <= 0 and _missile_cd <= -0.2:
 		_start_tackle()
 
@@ -372,7 +386,7 @@ func _fire_missile(src: Dictionary, dmg: float) -> void:
 	var p: Vector2 = global_position + _arm_pose(_missile_arm)[1]
 	# 手の向き（斜め上）へ飛び出してから、敵を追いかける
 	var dir := Vector2.from_angle(-PI / 2.0 + _missile_arm * 0.6 + randf_range(-0.35, 0.35))
-	var m: Node2D = game.spawn_missile("homing", p, dir * 520.0, dmg, 9.0, 3.0, src)
+	var m: Node2D = game.spawn_missile("homing", p, dir * 520.0, dmg, 18.0, 3.0, src)
 	m.look = "rocket"
 	m.target = _random_target()
 
@@ -394,7 +408,10 @@ var _beam_targets: Array = []
 var _beam_cd := 0.0
 
 
+## ファイナルモードのビーム・ミサイルの記録先。真・ファイナルモード中は、真・ファイナルモードとして記録する
 func _final_src() -> Dictionary:
+	if mode == "true":
+		return _true_src()
 	return game.sp_src(_record(), "sp_castle_robot_final")
 
 
@@ -410,7 +427,7 @@ func _update_final(delta: float) -> void:
 	_beam_cd -= delta
 	if _beam_cd <= 0.0:
 		_beam_cd = BEAM_TICK
-		var dmg: float = 4.0 * game._hp_mult()
+		var dmg: float = 4.0 / 3.0 * game._hp_mult()
 		var from: Vector2 = global_position + _beam_origin()
 		# ビーム1本ごとに、胸から的までの線の上にいる敵すべてにダメージ
 		for t in _beam_targets.duplicate():
@@ -429,7 +446,7 @@ func _update_final(delta: float) -> void:
 	_missile_cd -= delta
 	if _missile_cd <= 0.0:
 		_missile_cd = FINAL_MISSILE_INTERVAL
-		_fire_missile(_final_src(), 12.0 * game._hp_mult())
+		_fire_missile(_final_src(), 4.0 * game._hp_mult())
 
 
 ## ビームが出る場所（胸の真ん中）

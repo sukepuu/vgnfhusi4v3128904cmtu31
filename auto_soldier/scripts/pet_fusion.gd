@@ -4,8 +4,14 @@ extends Node2D
 ## 巨大ペットは「立ち止まって特大弾を連射 → まっすぐ高速突進」をくり返す。合体したペットが多いほど強く大きい。
 ## ペットの強化（間隔・威力・射程・弾数）とペットの特別強化の効果も、合体中にそのまま乗る。
 ## 合体中、元のペットは隠れて休んでいる。
+## 突撃ペットを持っていたら、合体中も6秒ごとの区切り（ふつうのペットと同じタイミング）で、
+## 合体前のペットを1匹ずつ（LAUNCH_GAP 秒おきに、合体した数だけ）体の中心から突進させる（pet_charger.gd）。
 
 const BulletScript := preload("res://scripts/bullet.gd")
+const PetScript := preload("res://scripts/pet.gd")
+const ChargerScript := preload("res://scripts/pet_charger.gd")
+## 合体中の突撃：1匹ずつ飛び出す間隔
+const LAUNCH_GAP := 0.5
 
 const CYCLE := 20.0
 const DURATION := 10.0
@@ -21,6 +27,11 @@ var _radius := 20.0
 var _shot_cd := 0.0
 var _ram_cd := {}
 var _t := 0.0
+## 合体中の突撃：最後に飛び出させた区切りの番号・まだ飛び出していない数・次に飛び出すまでの時間・次に飛び出すペットの番号
+var _charge_tick := 0
+var _launch_left := 0
+var _launch_cd := 0.0
+var _launch_i := 0
 
 
 func _ready() -> void:
@@ -45,6 +56,7 @@ func _process(delta: float) -> void:
 		if p.visible:
 			_hide_pet(p)
 	_update_body(delta)
+	_update_launch(delta)
 	if _left <= 0.0:
 		_split()
 	queue_redraw()
@@ -66,6 +78,8 @@ func _merge() -> void:
 	_left = DURATION
 	_cd = CYCLE - DURATION
 	_ram_cd.clear()
+	_charge_tick = PetScript.charge_cycle(game)
+	_launch_left = 0
 	_mode = "shoot"
 	_mode_left = SHOOT_TIME
 	_shot_cd = 0.0
@@ -76,10 +90,13 @@ func _merge() -> void:
 func _split() -> void:
 	_left = 0.0
 	visible = false
+	_launch_left = 0
 	for p in game.pets:
 		p.visible = true
 		p.process_mode = Node.PROCESS_MODE_INHERIT
 		p.position = position + Vector2.from_angle(randf() * TAU) * 20.0
+		# 合体中に過ぎた区切りのぶんは突進しない（次の区切りでほかのペットといっしょに突進する）
+		p._charge_tick = PetScript.charge_cycle(game)
 	game.spawn_burst(position, Color(0.5, 1.0, 0.7), _radius)
 
 
@@ -87,11 +104,15 @@ func _split() -> void:
 ## 強さは合体した数にそのまま比例するだけ（たくさん合体しても1匹あたりの強さは増えない）。
 ## 弾の火力（1秒あたり）が、何匹合体しても合体前のペット全員の合計とほぼ同じ（×1.0）になる
 const FUSION_SCALE := 0.1874
+## 合体ペットのダメージ補正（合体中の攻撃すべてに1.875倍。前の1.25倍の1.5倍）
+const FUSION_BONUS := 1.875
+## 合体中の爆裂ペット弾の爆発の倍率（ふつうのペットの爆発の割合 × これ。80%）
+const FUSION_BURST_MULT := 0.8
 
 
 ## 合体ペットの強さの倍率（弾1発 = ペットの攻撃力 × これ）
 func _power() -> float:
-	return _n * FUSION_SCALE
+	return _n * FUSION_SCALE * FUSION_BONUS
 
 
 ## 行動：立ち止まって射撃（SHOOT_TIME秒）→ 一番近い敵へまっすぐ高速突進 → 立ち止まって射撃 … をくり返す
@@ -132,9 +153,44 @@ func _update_body(delta: float) -> void:
 			_shot_cd = 0.0
 
 
-## 突進中に触れた敵へ体当たり（1回の突進で同じ敵には1回）。体当たりペットを持っていると2倍
+## 合体中の突撃：区切りが来たら、合体した数だけ1匹ずつ（LAUNCH_GAP 秒おき）体の中心から突進させる。
+## 前の区切りのぶんが残っていたら、新しい区切りの数に入れ替える
+func _update_launch(delta: float) -> void:
+	if not game.pet_charge:
+		_launch_left = 0
+		_charge_tick = PetScript.charge_cycle(game)
+		return
+	var cyc: int = PetScript.charge_cycle(game)
+	if cyc > _charge_tick:
+		_charge_tick = cyc
+		_launch_left = _n
+		_launch_cd = 0.0
+	if _launch_left <= 0:
+		return
+	_launch_cd -= delta
+	if _launch_cd > 0.0:
+		return
+	var target: Node2D = PetScript.strongest_enemy_of(game)
+	if target == null:
+		# 敵がいなければ、出てくるまで待つ
+		return
+	_launch_left -= 1
+	_launch_cd = LAUNCH_GAP
+	var c := ChargerScript.new()
+	c.game = game
+	c.fusion = self
+	# ダメージは合体前のペットの戦績に、突撃ペット・爆裂突撃ペットとして記録する
+	if not game.pets.is_empty():
+		c.record = game.pets[_launch_i % game.pets.size()].record
+	_launch_i += 1
+	c.target = target
+	c.position = global_position
+	game.world.add_child(c)
+
+
+## 突進中に触れた敵へ体当たり（1回の突進で同じ敵には1回）。体当たりペットを持っていると4倍
 func _ram() -> void:
-	var dmg: float = game.pet_damage * 2.0 * _power() * (2.0 if game.pet_body else 1.0)
+	var dmg: float = game.pet_damage * 2.0 * _power() * (4.0 if game.pet_body else 1.0)
 	for e in game.enemies_near(global_position, _radius + 40.0):
 		if not is_instance_valid(e) or e.dead or _ram_cd.has(e):
 			continue
@@ -160,21 +216,21 @@ func _shoot_update(delta: float) -> void:
 		var b := BulletScript.new()
 		b.game = game
 		b.velocity = dir * 560.0
-		b.damage = game.pet_damage * _power()
+		# 通常攻撃なので、ふつうのペットと同じ倍率（pet.gd の SHOT_MULT）
+		b.damage = game.pet_damage * _power() * PetScript.SHOT_MULT
 		b.radius = 9.0 + minf(_n, 8.0)
 		b.pierce = 2
 		b.color = Color.from_hsv(fmod(_t * 0.7, 1.0), 0.5, 1.0)
 		b.life = rng / 560.0 + 0.2
 		b.position = global_position + dir * _radius
 		b.src = record
-		b.homing = game.pet_homing
 		if game.pet_giant:
 			b.damage *= 1.4
 			b.radius *= 1.4
 			b.pierce += 2
 		if game.pet_burst:
 			b.explode_radius = 45.0 + 3.0 * _n
-			b.explode_ratio = 0.6
+			b.explode_ratio = PetScript.BURST_RATIO * FUSION_BURST_MULT
 			b.explode_src = game.sp_src(record, "sp_pet_burst")
 		game.world.add_child(b)
 

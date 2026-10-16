@@ -24,6 +24,8 @@ var src: Dictionary = {}
 
 var _t := 0.0
 var _cd := 0.0
+## 見張り砲台：櫓から撃つ砲台壁の弾の待ち時間
+var _turret_cd := randf() * 1.5
 var _aim := Vector2.UP
 var _forever := false
 ## からくり兵：今の動き（"slash" 全方位斬り / "fire" 高速連射）と、その残り回数
@@ -89,6 +91,11 @@ func _process(delta: float) -> void:
 				src = game.sp_src(rider.record, "sp_watchtower")
 			if _cd <= 0.0 and rider != null and _fire(400.0, damage * (1.0 + game.elapsed / 180.0), 680.0, Color(0.95, 0.85, 0.6)) != null:
 				_cd = 0.7
+			# 見張り砲台：築城兵が乗っていなくても、櫓から砲台壁と同じ弾を撃つ（砲台壁として記録）
+			if game.walls.tower_turret and game.walls.turret_level > 0 and not game.builders.is_empty():
+				_turret_cd -= delta
+				if _turret_cd <= 0.0 and game.walls.fire_turret_from(global_position + Vector2(0, -22.0), game.sp_src(game.builders[0].record, "sp_wall_turret")):
+					_turret_cd = game.walls.turret_interval()
 		"sentry":
 			if _cd <= 0.0 and _fire(330.0, damage, 720.0, Color(1.0, 0.95, 0.5)) != null:
 				_cd = 0.25
@@ -125,9 +132,18 @@ func _fire_orb() -> void:
 	if dmg <= 0.0 or t == null:
 		game.spawn_burst(global_position, Color(0.5, 1.0, 0.6), 20.0)
 		return
+	var dir := (t.global_position - global_position).normalized()
+	_orb_shot(dir, dmg, t)
+	# 三連修理玉：左右30度にも1個ずつ（同じ威力。この2個は狙った敵を追わず、まっすぐ飛ぶ）
+	if game.fun.repair_orb_triple:
+		_orb_shot(dir.rotated(deg_to_rad(30.0)), dmg, null)
+		_orb_shot(dir.rotated(deg_to_rad(-30.0)), dmg, null)
+
+
+func _orb_shot(dir: Vector2, dmg: float, t: Node2D) -> void:
 	var b := BulletScript.new()
 	b.game = game
-	b.velocity = (t.global_position - global_position).normalized() * 220.0
+	b.velocity = dir * 220.0
 	b.damage = dmg
 	# 撃った玉は、置いた玉の1.5倍の大きさの、水色の玉（半透明じゃない）
 	b.radius = ORB_RADIUS * 1.5
@@ -220,9 +236,12 @@ func _automaton_volley() -> void:
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 	if dead or max_hp <= 0.0:
 		return
+	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
+	amount += game.overtime_dmg_bonus()
 	# 氷像は威力に関係なく、1回攻撃されるごとに耐久が1減る
 	if kind == "ice_statue":
 		amount = 1.0
+	game.note_taken(kind, minf(amount, hp))
 	hp -= amount
 	_hurt = 0.15
 	if kind != "ice_statue":
@@ -230,6 +249,11 @@ func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 	if hp <= 0.0:
 		dead = true
 		game.spawn_burst(global_position, Color(0.6, 0.45, 0.3), 30.0)
+		# 毒かかし：壊されたかかしの跡が、落とし穴の毒沼と同じ毒の沼になる（毒沼として記録）
+		var est = game.engineer_stats
+		if kind == "scarecrow" and est.scarecrow_poison and est.poison_level > 0:
+			game.spawn_hazard(global_position, est.pit_radius, est.pit_damage * 0.15 * est.poison_level,
+				6.0 + 3.0 * (est.poison_level - 1), Color(0.5, 0.9, 0.3), game.sp_src(src, "sp_poison"))
 		queue_free()
 
 
@@ -316,11 +340,13 @@ func _draw() -> void:
 			# 地面に残った大岩（足元に砂ぼこりの輪）
 			draw_circle(Vector2.ZERO, radius, Color(0.55, 0.45, 0.3, 0.18))
 			draw_arc(Vector2.ZERO, radius, 0.0, TAU, 32, Color(0.6, 0.5, 0.35, 0.5), 2.0)
-			draw_circle(Vector2(0, 8), 26.0, Color(0, 0, 0, 0.3))
-			draw_circle(Vector2.ZERO, 26.0, Color(0.45, 0.42, 0.4))
-			draw_circle(Vector2(-8, -8), 9.0, Color(0.58, 0.55, 0.52))
-			draw_line(Vector2(-6, 4), Vector2(8, -2), Color(0.3, 0.28, 0.26), 2.0)
-			draw_line(Vector2(8, -2), Vector2(14, 8), Color(0.3, 0.28, 0.26), 2.0)
+			# 隕石の跡に残る岩は範囲が広いぶん大きく描く
+			var rk := maxf(1.0, radius / 90.0)
+			draw_circle(Vector2(0, 8) * rk, 26.0 * rk, Color(0, 0, 0, 0.3))
+			draw_circle(Vector2.ZERO, 26.0 * rk, Color(0.45, 0.42, 0.4))
+			draw_circle(Vector2(-8, -8) * rk, 9.0 * rk, Color(0.58, 0.55, 0.52))
+			draw_line(Vector2(-6, 4) * rk, Vector2(8, -2) * rk, Color(0.3, 0.28, 0.26), 2.0)
+			draw_line(Vector2(8, -2) * rk, Vector2(14, 8) * rk, Color(0.3, 0.28, 0.26), 2.0)
 		"repair_orb":
 			# 当たり判定のない、水色の半透明の玉。水色にふわ〜っと光っている
 			var glow := 0.5 + 0.5 * sin(_t * 3.0)

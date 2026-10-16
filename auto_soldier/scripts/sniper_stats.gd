@@ -26,5 +26,7 @@ var bounces := 0
 var mark := false
 ## 花火矢（4回に1回、矢と一緒に花火も撃ち込む）
 var firework_arrow := false
-## 爆裂矢（当たった敵が爆発して、周りに矢の3倍ダメージ）
+## 爆裂矢（当たった敵が爆発して、周りに矢の0.5倍ダメージ。急所狙いの4倍は乗らない）
 var blast_arrow := false
+## 花火爆裂矢（花火でも爆裂矢が発動・爆裂矢で花火のエフェクト）
+var firework_blast := false

@@ -1,5 +1,6 @@
 extends CanvasLayer
 ## 強化状態の確認画面。取得した強化を部隊・設備ごとに一覧表示する（スクロール可）。
+## 部隊・兵装ごとに折りたたんであり（開くたびに全部閉じた状態）、見出しをクリックで開く・閉じる。
 ## 項目をクリックすると、右側に詳しい内容を表示する。開いているあいだはゲームを一時停止する。
 
 const Upgrades := preload("res://scripts/upgrades.gd")
@@ -38,7 +39,7 @@ func _ready() -> void:
 	box.add_child(title)
 
 	var hint := Label.new()
-	hint.text = "項目をクリックすると詳しい内容が見られます"
+	hint.text = "見出しをクリックで開く・閉じる／項目をクリックすると詳しい内容が見られます"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	box.add_child(hint)
@@ -131,20 +132,33 @@ func _unhandled_input(event: InputEvent) -> void:
 func _rebuild() -> void:
 	for c in _list.get_children():
 		c.queue_free()
-	var first: Dictionary = {}
-	for cat in CAT_ORDER:
+	var any := false
+	for entry in Upgrades.GROUPS:
+		var key: String = entry[1]
 		var owned: Array = []
 		for u in Upgrades.LIST + Upgrades.SPECIAL:
-			if u["cat"] == cat and game.upgrade_levels.get(u["id"], 0) > 0:
+			if game.upgrade_levels.get(u["id"], 0) > 0 and Upgrades.groups_of(u).has(key):
 				owned.append(u)
 		if owned.is_empty():
 			continue
-		var col: Color = Upgrades.CAT_COLOR[cat]
-		var header := Label.new()
-		header.text = "■ " + Upgrades.CAT_LABEL[cat]
-		header.add_theme_font_size_override("font_size", 18)
-		header.add_theme_color_override("font_color", col)
-		_list.add_child(header)
+		any = true
+		var col: Color = Upgrades.CAT_COLOR[key if Upgrades.CAT_COLOR.has(key) else "castle"]
+		# 見出し（クリックで中身を開く・閉じる。最初は閉じている）
+		var head := Button.new()
+		head.flat = true
+		head.focus_mode = Control.FOCUS_NONE
+		head.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		head.add_theme_font_size_override("font_size", 18)
+		head.add_theme_color_override("font_color", col)
+		head.add_theme_color_override("font_hover_color", col.lightened(0.3))
+		_list.add_child(head)
+		var body := VBoxContainer.new()
+		body.add_theme_constant_override("separation", 3)
+		body.visible = false
+		_list.add_child(body)
+		var label: String = "%s（%d）" % [entry[0], owned.size()]
+		head.text = "▶ " + label
+		head.pressed.connect(_toggle_group.bind(head, body, label))
 		for u in owned:
 			var lv: int = game.upgrade_levels.get(u["id"], 0)
 			var btn := Button.new()
@@ -156,16 +170,25 @@ func _rebuild() -> void:
 				btn.text = "  ★" + u["name"]
 			else:
 				btn.text = "  %s  Lv%d" % [u["name"], lv]
+				# 最大レベルまで取った強化は、Lvの右に★
+				if lv >= int(u.get("max", 0)):
+					btn.text += "★"
 			btn.pressed.connect(_show_detail.bind(u))
-			_list.add_child(btn)
-			if first.is_empty():
-				first = u
-	if first.is_empty():
+			body.add_child(btn)
+	if not any:
 		_detail_title.text = "まだ強化を取っていません"
 		_detail_title.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 		_detail_body.text = "レベルアップすると、ここに取った強化が並びます。"
 	else:
-		_show_detail(first)
+		_detail_title.text = "強化を選んでください"
+		_detail_title.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+		_detail_body.text = "左の部隊・兵装の見出しをクリックすると、取った強化が開きます。\n強化をクリックすると、ここに詳しい内容が出ます。"
+
+
+## 見出しをクリック：その部隊・兵装の強化一覧を開く・閉じる
+func _toggle_group(head: Button, body: Control, label: String) -> void:
+	body.visible = not body.visible
+	head.text = ("▼ " if body.visible else "▶ ") + label
 
 
 func _show_detail(u: Dictionary) -> void:

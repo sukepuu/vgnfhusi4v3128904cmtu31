@@ -6,6 +6,8 @@ var game: Node2D
 var start := Vector2.ZERO
 var target := Vector2.ZERO
 var damage := 10.0
+## 撃った敵の名前（被害状況の記録用）
+var from_name := ""
 var blast_radius := 50.0
 var flight_time := 2.5
 ## 砲弾の大きさ（見た目だけ）
@@ -32,12 +34,14 @@ func _land() -> void:
 		game.spawn_burst(target, Color(0.6, 1.0, 0.7), blast_radius / 2.0)
 		queue_free()
 		return
+	game.dmg_from = from_name
 	if game.castle.distance_to_point(target) < blast_radius:
 		game.castle.take_damage(damage)
 	for a in game.allies():
 		if not a.dead and target.distance_to(a.global_position) < blast_radius + a.radius:
 			# 上から降ってくるので盾では防げない
 			a.take_damage(damage)
+	game.dmg_from = ""
 	game.spawn_burst(target, Color(1.0, 0.35, 0.2), blast_radius / 2.0)
 	queue_free()
 

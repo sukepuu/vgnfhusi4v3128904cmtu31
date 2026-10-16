@@ -29,7 +29,8 @@ func _process(delta: float) -> void:
 	_t += delta
 	match state:
 		"waiting":
-			_move_to(game.castle.gate_position() + Vector2(-60.0 - index * 30.0, 10.0), delta)
+			# 罠が上限で置けないあいだは、採掘場が空いていれば掘りに行く
+			_move_to(game.mine_spot(self, game.castle.gate_position() + Vector2(-60.0 - index * 30.0, 10.0)), delta)
 			var cap := MAX_TRAPS + (10 if game.engineer_stats.double_plant else 0)
 			if game.get_tree().get_nodes_in_group("traps").size() < cap:
 				target_pos = _random_spot()
@@ -76,7 +77,7 @@ func _place_trap() -> void:
 			if is_same(p.src, game.sp_src(record, "sp_sentry")):
 				mine += 1
 		if mine < 3:
-			game.spawn_placed("sentry", position - _facing.orthogonal() * 40.0, 14.0 * (1.0 + game.elapsed / 150.0) * game.engineer_stats.power_mult, 0.0, 30.0, game.sp_src(record, "sp_sentry"))
+			game.spawn_placed("sentry", position - _facing.orthogonal() * 40.0, 5.6 * (1.0 + game.elapsed / 150.0) * game.engineer_stats.power_mult, 0.0, 30.0, game.sp_src(record, "sp_sentry"))
 	# 二重設置：もう1種類の罠も隣に仕掛ける
 	if game.engineer_stats.double_plant:
 		_spawn_trap("pit" if next_kind == "bomb" else "bomb", game.clamp_to_map(position + _facing.orthogonal() * 45.0, 20.0), "sp_double_plant")
@@ -100,7 +101,7 @@ func _move_to(p: Vector2, delta: float) -> bool:
 	if d < 4.0:
 		return true
 	_facing = to / d
-	position += _facing * minf(game.engineer_stats.move_speed * delta, d)
+	position += _facing * minf(game.engineer_stats.move_speed * game.mine_speed_mult(self) * delta, d)
 	return false
 
 

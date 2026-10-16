@@ -26,6 +26,13 @@ var bird_wing := Color(0, 0, 0, 0)
 ## 見た目（ball："iron" 鉄球 / "rock" 岩 / "cow" 牛、homing："arrow" 火矢 / "bird" 鳩）
 var look := "iron"
 
+## 流星百騎：通った跡に流れ星を残す（0より大きいとき。星1つのダメージ）
+var star_damage := 0.0
+## 爆裂追尾火矢：当たった敵の所で爆裂矢の爆発（当たったダメージのこの倍率）
+var blast_ratio := 0.0
+var blast_src: Dictionary = {}
+var star_src: Dictionary = {}
+var _star_cd := 0.0
 var _t := 0.0
 var _hit := {}
 var _returning := false
@@ -53,6 +60,11 @@ func _process(delta: float) -> void:
 	if _stuck_on != null:
 		_update_stuck(delta)
 		return
+	if star_damage > 0.0:
+		_star_cd -= delta
+		if _star_cd <= 0.0:
+			_star_cd = 0.05
+			game.spawn_blast(global_position + Vector2(randf_range(-10, 10), randf_range(-10, 10)), 1.4, 34.0, star_damage, star_src, Color(1.0, 0.95, 0.4), "star")
 	match kind:
 		"boomerang":
 			_spin += delta * 18.0
@@ -108,6 +120,8 @@ func _check_hits() -> void:
 				# 追尾火矢・鳩も射撃のノックバック（下側へは押さない）
 				e.shot_knockback(velocity.normalized() * 100.0)
 				game.explode(global_position, 55.0, damage * 0.5, src, Color(1.0, 0.5, 0.15), 0.0, 120.0)
+				if blast_ratio > 0.0:
+					game.explode(global_position, 70.0, damage * blast_ratio, blast_src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
 				if look == "bird" and is_instance_valid(e) and not e.dead:
 					# 鳩：敵が生き残っていたらくっついて、1秒ごとに2回つつく
 					_stuck_on = e
@@ -236,12 +250,14 @@ func _draw() -> void:
 				return
 			if look == "rocket":
 				# 城ロボの誘導ミサイル：白い胴体に赤い先っぽ、後ろから火を噴く
+				# 大きさは当たり判定（radius）に合わせる（radius 9 で元の大きさ）
+				var k := radius / 9.0
 				var side := dir.orthogonal()
 				for i in 3:
-					draw_circle(-dir * (12.0 + i * 6.0), 4.5 - i, Color(1.0, 0.6 - i * 0.12, 0.15, 0.7 - i * 0.18))
-				draw_colored_polygon(PackedVector2Array([-dir * 9.0 + side * 5.0, -dir * 9.0 - side * 5.0, -dir * 5.0]), Color(0.6, 0.6, 0.65))
-				draw_line(-dir * 8.0, dir * 6.0, Color(0.92, 0.92, 0.95), 5.0)
-				draw_circle(dir * 7.0, 3.0, Color(1.0, 0.3, 0.25))
+					draw_circle(-dir * (12.0 + i * 6.0) * k, (4.5 - i) * k, Color(1.0, 0.6 - i * 0.12, 0.15, 0.7 - i * 0.18))
+				draw_colored_polygon(PackedVector2Array([(-dir * 9.0 + side * 5.0) * k, (-dir * 9.0 - side * 5.0) * k, -dir * 5.0 * k]), Color(0.6, 0.6, 0.65))
+				draw_line(-dir * 8.0 * k, dir * 6.0 * k, Color(0.92, 0.92, 0.95), 5.0 * k)
+				draw_circle(dir * 7.0 * k, 3.0 * k, Color(1.0, 0.3, 0.25))
 				return
 			for i in 4:
 				draw_circle(-dir * (6.0 + i * 6.0), 5.0 - i, Color(1.0, 0.5 - i * 0.08, 0.1, 0.6 - i * 0.12))

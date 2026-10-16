@@ -3,7 +3,7 @@ extends RefCounted
 
 # --- 修理部隊
 ## 修理兵1人が1秒に回復する城のHP
-var heal_per_sec := 3.0
+var heal_per_sec := 1.0
 ## 壁職人：ついでに壁も直す
 var wall_fix := false
 ## 応急手当：フィールド全体の味方のHPも、城と同じ量だけ回復する

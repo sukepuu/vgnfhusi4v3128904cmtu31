@@ -4,6 +4,7 @@ extends Node2D
 ## 敵がいないときはマップの真ん中で待つ。攻撃は遊撃部隊と同じ扇形の斬撃のみ。
 
 const SlashScript := preload("res://scripts/slash_effect.gd")
+const SlashWaveScript := preload("res://scripts/heavy_slash_wave.gd")
 
 const RESPAWN_TIME := 15.0
 
@@ -22,6 +23,11 @@ var hp := 270.0
 var regen := 4.0
 var move_speed := 60.0
 var slash_damage := 94.5
+## ふつうの斬撃だけにかける倍率（特別強化の「斬撃○倍」は slash_damage をもとにするので、これはかからない。一刀両断は「通常攻撃の5倍」なので、これがかかる）
+const SLASH_RATIO := 1.0 / 3.0
+## 怒りの闘志・仁王立ちの上乗せの上限
+const RAGE_MAX := 0.4
+const PROVOKE_MAX := 0.4
 var slash_radius := 105.0
 var slash_arc := deg_to_rad(150.0)
 var slash_interval := 1.1
@@ -38,14 +44,20 @@ var extra_slashes := 0
 var quake_level := 0
 ## 吸命の剣：斬撃で与えたダメージのこの割合だけ回復
 var lifesteal := 0.0
-## 一刀両断：4秒ごとにHPの多い敵へ大ダメージの一撃
+## 一刀両断：8秒ごとに、重装兵のいる高さの横一列を白い斬撃が左端から右端へ駆け抜ける（通常攻撃の50倍。前は5倍）
 var execute := false
 var _exec_cd := 2.0
+const EXECUTE_INTERVAL := 8.0
+const EXECUTE_MULT := 50.0
 var _pending_slashes := 0
 var _followup_cd := 0.0
 var _quake_cd := 3.0
 ## 鉄球投げ：5秒ごとに転がる鉄球を投げる
 var iron_ball := false
+## 仁王の鉄球：仁王立ちが終わったとき、挑発した敵全部へ鉄球を投げる
+var provoke_ball := false
+var _provoked: Array = []
+var _provoke_left := 0.0
 var _ball_cd := 2.0
 ## 怒りの闘志：ダメージを受けるたびに与ダメージ +5%（最大+100%）。2秒ダメージがなければ元に戻る
 var rage_enabled := false
@@ -85,10 +97,19 @@ func _process(delta: float) -> void:
 		_provoke_cd -= delta
 		if _provoke_cd <= 0.0 and not dead and game.nearest_enemy(global_position, game.PROVOKE_RANGE) != null:
 			_provoke_cd = game.PROVOKE_INTERVAL
+			_provoked.clear()
+			_provoke_left = game.PROVOKE_TIME
 			for e in game.enemies_near(global_position, game.PROVOKE_RANGE):
 				if is_instance_valid(e) and not e.dead and not e.is_boss and global_position.distance_to(e.global_position) < game.PROVOKE_RANGE:
 					e.provoked_left = game.PROVOKE_TIME
+					_provoked.append(e)
 			game.spawn_burst(global_position, Color(1.0, 0.35, 0.25), game.PROVOKE_RANGE / 2.2)
+			# 仁王の鉄球：挑発をかけたらすぐ、挑発した敵全部へ鉄球を1個ずつ投げる
+			if provoke_ball and iron_ball:
+				for e in _provoked:
+					var pd: Vector2 = (e.global_position - global_position).normalized()
+					game.spawn_missile("ball", global_position + pd * 30.0, pd * 560.0, dmg() * 7.5, 24.0, 3.0, game.sp_src(record, "sp_iron_ball"))
+			_provoked.clear()
 		_count_cd -= delta
 		if _count_cd <= 0.0:
 			_count_cd = 0.25
@@ -114,9 +135,12 @@ func _process(delta: float) -> void:
 	if _target_valid():
 		desired = target.global_position
 		stop_dist = slash_radius * 0.6
+	else:
+		# 敵がいなければ、採掘場が空いていれば掘りに行く
+		desired = game.mine_spot(self, desired)
 	var to := desired - global_position
 	if to.length() > stop_dist:
-		position += to.normalized() * minf(move_speed * delta, to.length())
+		position += to.normalized() * minf(move_speed * game.mine_speed_mult(self) * delta, to.length())
 	position = game.clamp_to_map(position, radius)
 
 	var look: Node2D = game.nearest_enemy(global_position, slash_radius + 60.0)
@@ -131,29 +155,18 @@ func _process(delta: float) -> void:
 		_pending_slashes = extra_slashes
 		_followup_cd = 0.18
 	elif _pending_slashes > 0 and _followup_cd <= 0.0:
-		# 連続斬り：追加の斬撃
-		_pending_slashes = _pending_slashes - 1 if _try_slash(game.sp_src(record, "sp_multi_slash")) else 0
+		# 連続斬り：追加の斬撃（ふつうの斬撃が増えるだけなので、通常攻撃として数える）
+		_pending_slashes = _pending_slashes - 1 if _try_slash() else 0
 		_followup_cd = 0.18
-	if execute and _exec_cd <= 0.0:
-		var big := _toughest_enemy(220.0)
-		if big != null:
-			_exec_cd = 4.0
-			var d := (big.global_position - global_position).normalized()
-			facing = d
-			big.take_damage(dmg() * 6.0, d * 200.0, game.sp_src(record, "sp_execute"))
-			var fx := SlashScript.new()
-			fx.radius = 60.0
-			fx.arc = 0.6
-			fx.rotation = d.angle()
-			fx.position = big.global_position - d * 30.0
-			game.effects.add_child(fx)
-			game.spawn_burst(big.global_position, Color(1.0, 0.9, 0.6), 20.0)
+	if execute and _exec_cd <= 0.0 and not game.enemies_cache.is_empty():
+		_exec_cd = EXECUTE_INTERVAL
+		_fire_execute()
 	if iron_ball and _ball_cd <= 0.0:
 		var far: Node2D = game.nearest_enemy(global_position, 450.0)
 		if far != null:
 			_ball_cd = 5.0
 			var bd := (far.global_position - global_position).normalized()
-			game.spawn_missile("ball", global_position + bd * 30.0, bd * 560.0, dmg() * 1.5, 24.0, 3.0, game.sp_src(record, "sp_iron_ball"))
+			game.spawn_missile("ball", global_position + bd * 30.0, bd * 560.0, dmg() * 7.5, 24.0, 3.0, game.sp_src(record, "sp_iron_ball"))
 	if quake_level > 0 and _quake_cd <= 0.0 and game.nearest_enemy(global_position, 140.0) != null:
 		_quake()
 		_quake_cd = 5.0
@@ -196,7 +209,7 @@ func _try_slash(src: Dictionary = {}) -> bool:
 			continue
 		if slash_arc < TAU and absf(dir.angle_to(rel)) > slash_arc / 2.0 + 0.2:
 			continue
-		e.take_damage(dmg(), rel.normalized() * 420.0, src)
+		e.take_damage(dmg() * SLASH_RATIO, rel.normalized() * 420.0, src)
 	if lifesteal > 0.0:
 		game.heal_unit(self, max_hp, (record["dealt"] - dealt_before) * lifesteal, record, "sp_lifesteal")
 	# 斬撃で敵の弾もかき消す
@@ -213,39 +226,41 @@ func _try_slash(src: Dictionary = {}) -> bool:
 	return true
 
 
-## 近くで一番HPの多い敵
-func _toughest_enemy(max_dist: float) -> Node2D:
-	var best: Node2D = null
-	var best_hp := 0.0
-	for e in game.enemies_near(global_position, max_dist):
-		if not is_instance_valid(e) or e.dead:
-			continue
-		if global_position.distance_to(e.global_position) < max_dist and e.hp > best_hp:
-			best_hp = e.hp
-			best = e
-	return best
+## 一刀両断：今いる高さの横一列に、画面の左端から右端まで白い斬撃を走らせる
+func _fire_execute() -> void:
+	var w := SlashWaveScript.new()
+	w.game = game
+	w.position = Vector2(0.0, global_position.y)
+	w.damage = dmg() * SLASH_RATIO * EXECUTE_MULT
+	w.src = game.sp_src(record, "sp_execute")
+	game.effects.add_child(w)
 
 
 ## 地割れ：周りの敵に大ダメージ＋気絶
 func _quake() -> void:
 	var r := 150.0 + 50.0 * (quake_level - 1)
-	game.explode(global_position, r, dmg() * 0.6, game.sp_src(record, "sp_quake"), Color(0.65, 0.5, 0.3), 1.0, 380.0)
+	game.explode(global_position, r, dmg() * 3.0, game.sp_src(record, "sp_quake"), Color(0.65, 0.5, 0.3), 1.0, 380.0)
 	game.spawn_burst(global_position, Color(0.9, 0.8, 0.6), r / 1.6)
 
 
 ## 今の攻撃力（怒りの闘志の上乗せ込み）
 func dmg() -> float:
-	var provoke := 0.05 * _near_count if game.heavy_provoke else 0.0
+	var provoke := minf(PROVOKE_MAX, 0.05 * _near_count) if game.heavy_provoke else 0.0
 	return slash_damage * (1.0 + rage) * (1.0 + provoke)
 
 
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 	if dead or _invuln > 0.0:
 		return
+	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
+	amount += game.overtime_dmg_bonus()
+	# 5分までは、城と同じく受けるダメージが半分（設置物は半分にならない）
+	amount *= game.early_damage_mult()
 	if rage_enabled:
-		rage = minf(1.0, rage + 0.05)
+		rage = minf(RAGE_MAX, rage + 0.05)
 		_rage_timer = 2.0
 	record["taken"] += minf(amount, hp)
+	game.note_taken("heavy", minf(amount, hp))
 	hp -= amount
 	_hurt_flash = 0.15
 	_invuln = 0.2
@@ -274,7 +289,7 @@ func _draw() -> void:
 	draw_circle(Vector2(0, 9), radius, Color(0, 0, 0, 0.35))
 	if rage > 0.0:
 		# 怒りのオーラ（たまるほど大きく赤く）
-		draw_circle(Vector2.ZERO, radius + 6.0 + rage * 10.0, Color(1.0, 0.2, 0.1, 0.15 + rage * 0.25))
+		draw_circle(Vector2.ZERO, radius + 6.0 + rage / RAGE_MAX * 10.0, Color(1.0, 0.2, 0.1, 0.15 + rage / RAGE_MAX * 0.25))
 	var body := Color(0.45, 0.42, 0.55)
 	if _hurt_flash > 0.0:
 		body = Color(1, 1, 1)

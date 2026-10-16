@@ -5,12 +5,17 @@ extends Node2D
 const SlashScript := preload("res://scripts/slash_effect.gd")
 const BulletScript := preload("res://scripts/bullet.gd")
 const LightningScript := preload("res://scripts/lightning.gd")
+const MineFxScript := preload("res://scripts/mine_fx.gd")
 
 ## 必殺技の間隔（秒）
 const INTERVAL := 15.0
 ## 鉄壁の陣のドームの大きさと、続く時間
 const DOME_RADIUS := 300.0
 const DOME_TIME := 5.0
+## 剣の大嵐の威力（剣の何倍か。20倍の2倍）
+const STORM_MULT := 40.0
+## 鳥の大群の鳥の威力（ペットの攻撃力の何倍か。6倍の2倍）
+const FLOCK_MULT := 12.0
 
 var game: Node2D
 
@@ -18,6 +23,9 @@ var game: Node2D
 var storm := false
 ## 迎撃：鉄壁の陣（城をドームで包み、敵の弾を消す）
 var dome := false
+## 迎撃：拒馬の陣（鉄壁の陣のドームの中の敵に、拒馬の柵と同じ効果）
+var dome_spikes := false
+var _dome_spike_cd := 0.0
 ## 重装：大地砕き（敵の群れへ飛び込んで地面を叩き割る）
 var leap := false
 ## 築城：城壁の大号令（全部の壁が耐久10回復して、全部の壁が爆発する）
@@ -40,8 +48,10 @@ var ice_age := false
 var flock := false
 ## 近衛：百騎突撃（騎士の幻が横一列になってフィールドを駆け抜ける）
 var cavalry := false
-## 修理：大修繕（城のHP10%回復・味方を全回復。壁は直さない）
+## 修理：大修繕（城のHP5%回復・味方を全回復。壁は直さない）
 var overhaul := false
+## 採掘場：暴走トロッコ（右端から左端へトロッコが突進。はねた敵1体につき経験値+1）
+var trolley := false
 
 ## 技ごとの残り時間（同時に出ないように少しずつずらしておく）
 var _cds := {}
@@ -53,7 +63,7 @@ var _ice_ring := 0.0
 
 
 func _ready() -> void:
-	var names := ["storm", "dome", "leap", "wall_burst", "carpet", "sky_arrow", "thousand", "barrage", "meteor", "thunder_spear", "ice_age", "flock", "cavalry", "overhaul"]
+	var names := ["storm", "dome", "leap", "wall_burst", "carpet", "sky_arrow", "thousand", "barrage", "meteor", "thunder_spear", "ice_age", "flock", "cavalry", "overhaul", "trolley"]
 	for i in names.size():
 		_cds[names[i]] = 4.0 + i * 1.3
 
@@ -73,6 +83,11 @@ func _ready_to_fire(key: String, delta: float) -> bool:
 
 func _process(delta: float) -> void:
 	dome_left -= delta
+	if dome_spikes and dome_left > 0.0 and not game.guards.is_empty():
+		_dome_spike_cd -= delta
+		if _dome_spike_cd <= 0.0:
+			_dome_spike_cd = 0.5
+			_dome_spike_hit()
 	_flash_left -= delta
 	_ice_ring -= delta
 	if storm and _ready_to_fire("storm", delta):
@@ -104,6 +119,8 @@ func _process(delta: float) -> void:
 		_do_cavalry()
 	if overhaul and not game.repairers.is_empty() and _ready_to_fire("overhaul", delta):
 		_do_overhaul()
+	if trolley and not game.mine_sites.is_empty() and not game.enemies_cache.is_empty() and _ready_to_fire("trolley", delta):
+		_do_trolley()
 	queue_redraw()
 
 
@@ -123,7 +140,7 @@ func _do_storm() -> void:
 	for s in game.soldiers:
 		if s.dead:
 			continue
-		game.explode(s.global_position, 210.0, st.sword_damage * 5.0, game.sp_src(s.record, "sp_ult_storm"), Color(0.7, 0.9, 1.0), 0.0, 450.0)
+		game.explode(s.global_position, 210.0, st.sword_damage * STORM_MULT, game.sp_src(s.record, "sp_ult_storm"), Color(0.7, 0.9, 1.0), 0.0, 450.0)
 		for r in [210.0, 150.0]:
 			var fx := SlashScript.new()
 			fx.radius = r
@@ -131,6 +148,18 @@ func _do_storm() -> void:
 			fx.duration = 0.35
 			fx.position = s.global_position
 			game.effects.add_child(fx)
+
+
+## 拒馬の陣：ドームの中の敵に、拒馬の柵と同じダメージ（0.5秒ごとに槍の0.4倍）と足止め（20%遅く）
+func _dome_spike_hit() -> void:
+	var dmg: float = game.guard_stats.spear_damage * 0.8 * 0.5
+	var src: Dictionary = game.sp_src(game.guards[0].record, "sp_dome_spikes")
+	for e in game.enemies_near(game.castle.global_position, DOME_RADIUS):
+		if not is_instance_valid(e) or e.dead:
+			continue
+		if e.global_position.distance_to(game.castle.global_position) < DOME_RADIUS:
+			e.take_damage(dmg, Vector2.ZERO, src)
+			e.slow(0.6, 0.2)
 
 
 func _do_dome() -> void:
@@ -165,7 +194,7 @@ func _do_leap() -> void:
 
 func _do_wall_burst() -> void:
 	var walls: Node2D = game.walls
-	var dmg := 150.0 * _time_mult()
+	var dmg := 75.0 * _time_mult()
 	for w in walls.walls:
 		var before: float = w["hp"]
 		w["hp"] = minf(w["max"], w["hp"] + 10.0)
@@ -197,7 +226,8 @@ func _do_sky_arrow() -> void:
 		var b := BulletScript.new()
 		b.game = game
 		b.velocity = dir * 1500.0
-		b.damage = st.damage * 12.0
+		# 基本の威力の180倍（通常の矢の約86倍。前は36倍）
+		b.damage = st.damage * 180.0
 		b.pierce = 1000000
 		b.radius = 22.0
 		b.bolt = true
@@ -237,7 +267,7 @@ func _do_barrage() -> void:
 		var gi := i % guns
 		var from: Vector2 = castle.wpos() + castle._cannon_local_pos(gi)
 		var to := e.global_position + Vector2(randf_range(-40, 40), randf_range(-40, 40))
-		var s: Node2D = castle._fire_shell(from, to, castle.cannon_damage * 2.0, castle.cannon_radius, false, game.sp_src(castle._equip_record("cannon", "大砲", gi), "sp_ult_barrage"))
+		var s: Node2D = castle._fire_shell(from, to, castle.cannon_damage * 6.0, castle.cannon_radius, false, game.sp_src(castle._equip_record("cannon", "大砲", gi), "sp_ult_barrage"))
 		s.flight_time = 0.6 + i * 0.07
 
 
@@ -250,6 +280,7 @@ func _do_meteor() -> void:
 	var from: Vector2 = center.global_position + Vector2(-500, -600)
 	var s: Node2D = castle._fire_shell(from, center.global_position, castle.catapult_damage * 1.5, 260.0, true, game.sp_src(castle._equip_record("catapult", "投石器", 0), "sp_ult_meteor"))
 	s.meteor = true
+	s.stay_rock = castle.meteor_rock
 	s.flight_time = 1.8
 	s.fire_time = 5.0
 	s.fire_sp = ""
@@ -264,11 +295,22 @@ func _do_thunder_spear() -> void:
 		_cds["thunder_spear"] = 1.0
 		return
 	var rec: Dictionary = game.sp_src(castle._equip_record("ballista", "バリスタ", 0), "sp_ult_thunder")
+	var hits: Array = []
 	for e in _alive_enemies():
 		var rel: Vector2 = e.global_position - from
 		if rel.dot(dir) > 0.0 and absf(rel.dot(dir.orthogonal())) < 50.0 + e.radius:
-			e.stun(1.0)
-			e.take_damage(castle.ballista_damage * 6.0, dir * 300.0, rec)
+			hits.append(e)
+	# 破竹の雷槍（条件付き）：城に近い敵から順に当たり、当たるたびに威力 +10%（破竹の大矢と同じ）
+	if castle.thunder_momentum:
+		hits.sort_custom(func(a, b): return (a.global_position - from).dot(dir) < (b.global_position - from).dot(dir))
+	var dmg: float = castle.ballista_damage * 4.8
+	var dmg_max: float = dmg * 2.0
+	for e in hits:
+		e.stun(1.0)
+		e.take_damage(dmg, dir * 300.0, rec)
+		if castle.thunder_momentum:
+			# 最大で最初の威力の2倍（+100%）まで
+			dmg = minf(dmg * 1.1, dmg_max)
 	for k in 3:
 		var fx := LightningScript.new()
 		fx.points = PackedVector2Array([from, from + dir * 1800.0])
@@ -286,7 +328,7 @@ func _do_flock() -> void:
 			from = game.pet_fusion.global_position
 		for i in 6:
 			var m: Node2D = game.spawn_missile("homing", from,
-				Vector2.from_angle(TAU * i / 6.0) * 300.0, game.pet_damage * 3.0, 10.0, 6.0, game.sp_src(p.record, "sp_ult_flock"))
+				Vector2.from_angle(TAU * i / 6.0) * 300.0, game.pet_damage * FLOCK_MULT, 10.0, 6.0, game.sp_src(p.record, "sp_ult_flock"))
 			m.look = "bird"
 			# ペットと同じ色の鳥（ペットの踊り中は虹色）
 			m.bird_color = Color.from_hsv(randf(), 0.55, 1.0) if game.fun.pet_dance else Color(0.45, 0.95, 0.65)
@@ -305,18 +347,48 @@ func _do_cavalry() -> void:
 	var rect: Rect2 = game.MAP_RECT
 	var from_left := randf() < 0.5
 	var sgn := 1.0 if from_left else -1.0
-	var dmg: float = game.knight_damage() * 2.5
+	var dmg: float = game.knight_damage() * 37.5
 	for i in 8:
 		var y := clampf(low_y + (i - 3.5) * 34.0, rect.position.y + 20.0, rect.end.y - 20.0)
 		var x := (rect.position.x + 10.0 if from_left else rect.end.x - 10.0) - (i % 2) * 40.0 * sgn
-		game.spawn_missile("rider", Vector2(x, y), Vector2(950.0 * sgn, 0.0), dmg, 20.0, 1.8, game.sp_src(game.knights[0].record, "sp_ult_cavalry"))
+		var rider: Node2D = game.spawn_missile("rider", Vector2(x, y), Vector2(950.0 * sgn, 0.0), dmg, 20.0, 1.8, game.sp_src(game.knights[0].record, "sp_ult_cavalry"))
+		# 流星百騎：騎士の幻も、近衛の突進と同じ流れ星を残す（流れ星突撃として記録）
+		if game.knight_stats.cavalry_star:
+			rider.star_damage = game.knight_damage() * 3.0
+			rider.star_src = game.sp_src(game.knights[0].record, "sp_fun_star")
 	_flash(Color(1.0, 0.9, 0.5))
+
+
+## 暴走トロッコ：敵が一番多く並んでいる高さ（上下40以内の敵の数が一番多い所）を、右端から左端へ駆け抜ける
+func _do_trolley() -> void:
+	var alive := _alive_enemies()
+	if alive.is_empty():
+		_cds["trolley"] = 1.0
+		return
+	var best_y := 0.0
+	var best_n := -1
+	for e in alive:
+		var y: float = e.global_position.y
+		var n := 0
+		for o in alive:
+			if absf(o.global_position.y - y) < 40.0:
+				n += 1
+		if n > best_n:
+			best_n = n
+			best_y = y
+	var rect: Rect2 = game.MAP_RECT
+	var t := MineFxScript.new()
+	t.game = game
+	t.kind = "trolley"
+	t.position = Vector2(rect.end.x + 40.0, clampf(best_y, rect.position.y + 20.0, rect.end.y - 20.0))
+	game.effects.add_child(t)
+	_flash(Color(1.0, 0.85, 0.5))
 
 
 func _do_overhaul() -> void:
 	var castle: Node2D = game.castle
 	var rec: Dictionary = game.repairers[0].record if not game.repairers.is_empty() else {}
-	castle.heal(castle.max_hp * 0.10, rec, "sp_ult_overhaul")
+	castle.heal(castle.max_hp * 0.05, rec, "sp_ult_overhaul")
 	for s in game.soldiers:
 		if not s.dead:
 			game.heal_unit(s, game.stats.max_hp, INF, rec, "sp_ult_overhaul")
@@ -335,7 +407,7 @@ func _do_overhaul() -> void:
 func _do_ice_age() -> void:
 	var castle: Node2D = game.castle
 	var r: float = castle.frost_radius * 2.2
-	var dmg := 40.0 * _time_mult()
+	var dmg := 4.0 * _time_mult()
 	var rec: Dictionary = game.sp_src(castle._equip_record("frost", "氷結の結界", 0), "sp_ult_ice_age")
 	for e in _alive_enemies():
 		if castle.global_position.distance_to(e.global_position) < r:

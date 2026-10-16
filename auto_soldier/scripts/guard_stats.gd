@@ -24,7 +24,7 @@ var taunt := false
 var whirl := false
 ## 拒馬の柵（定期的に前に柵を置く）
 var spikes := false
-## はね返し盾（盾で防いだ弾を、来た方へはね返す）
+## 黄金の盾（15秒ごとに前へ黄金の盾を飛ばす。当たった敵の弾を消して全方位に撃つ）
 var reflect := false
 ## 捨て身の構え：HPが半分、盾で防いでも半分くらう。そのかわり槍が当たった敵が爆発（槍の3倍）
 var berserk := false

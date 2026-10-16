@@ -16,6 +16,10 @@ var rise_time := 0.5
 var damage := 0.0
 var radius := 60.0
 var src: Dictionary = {}
+## 花火爆裂矢：弾けた所に敵がいたら、爆裂矢の爆発も起こす
+var blast_damage := 0.0
+var blast_radius := 0.0
+var blast_src: Dictionary = {}
 
 const COLORS := [Color(1.0, 0.3, 0.3), Color(1.0, 0.8, 0.2), Color(0.4, 1.0, 0.4), Color(0.4, 0.7, 1.0), Color(1.0, 0.45, 1.0), Color(1, 1, 1)]
 
@@ -49,6 +53,8 @@ func _process(delta: float) -> void:
 		else:
 			_burst = true
 			position = end
+			if blast_damage > 0.0 and not game.enemies_near(end, radius).filter(func(e) -> bool: return is_instance_valid(e) and not e.dead and e.global_position.distance_to(end) < radius + e.radius).is_empty():
+				game.explode(end, blast_radius, blast_damage, blast_src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
 			if damage > 0.0:
 				game.explode(end, radius, damage, src, COLORS.pick_random(), 0.0, 150.0)
 			for i in 24:

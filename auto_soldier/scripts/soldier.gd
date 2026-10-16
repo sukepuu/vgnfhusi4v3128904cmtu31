@@ -10,6 +10,12 @@ const SlashScript := preload("res://scripts/slash_effect.gd")
 const RESPAWN_TIME := 10.0
 const DASH_SPEED := 1000.0
 const DASH_DURATION := 0.28
+## 影分身の弾の威力（射撃 × これ。前は1倍＝本体と同じ）
+const SHADOW_MULT := 2.0
+## 炸裂弾の爆発（弾の威力 × これ。前は0.275）
+const BURST_RATIO := 0.275 * 0.7
+## 触爆の爆発（射撃 × これ。前は3倍）
+const TOUCH_BLAST_MULT := 1.5
 const HELMET_COLORS := [
 	Color(0.25, 0.42, 0.25), Color(0.6, 0.25, 0.25), Color(0.55, 0.45, 0.15),
 	Color(0.35, 0.3, 0.6), Color(0.2, 0.5, 0.55)]
@@ -68,7 +74,7 @@ func _process(delta: float) -> void:
 		var f: Node2D = game.spawn_fun_fx("firework", global_position)
 		f.end = global_position + Vector2(randf_range(-60, 60), randf_range(-160, -110))
 		f.rise_time = 0.6
-		f.damage = st.sword_damage * 0.4
+		f.damage = st.sword_damage * 40.0
 		f.radius = 70.0
 		f.src = game.sp_src(record, "sp_fun_fireworks")
 	_last_kills = record["kills"]
@@ -87,7 +93,7 @@ func _process(delta: float) -> void:
 		_update_dash(delta)
 	else:
 		var dir := _compute_move_dir(delta)
-		velocity = velocity.lerp(dir * st.move_speed, clampf(8.0 * delta, 0.0, 1.0))
+		velocity = velocity.lerp(dir * st.move_speed * game.mine_speed_mult(self), clampf(8.0 * delta, 0.0, 1.0))
 		position += velocity * delta
 	position = game.clamp_to_map(position, radius)
 	_push_out_of_castle()
@@ -109,7 +115,7 @@ func _process(delta: float) -> void:
 	# ブーメラン：狙っている敵の方へ投げる（行きと帰りで貫く）
 	if st.boomerang and _boomerang_cd <= 0.0 and shoot_at != null:
 		_boomerang_cd = 3.5
-		var m: Node2D = game.spawn_missile("boomerang", global_position, aim_dir * 750.0, st.sword_damage * 1.3, 32.0, 4.0, game.sp_src(record, "sp_boomerang"))
+		var m: Node2D = game.spawn_missile("boomerang", global_position, aim_dir * 750.0, st.sword_damage * BOOMERANG_MULT, 32.0, 4.0, game.sp_src(record, "sp_boomerang"))
 		m.thrower = self
 	if _sword_cd <= 0.0 and _try_slash():
 		_sword_cd = st.sword_interval
@@ -129,7 +135,7 @@ func _touch_blast(st, delta: float) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < radius + e.radius + 4.0:
 			_touch_cd[e] = 1.0
-			game.explode(e.global_position, 75.0, st.bullet_damage * 3.0, game.sp_src(record, "sp_touch_blast"), Color(1.0, 0.5, 0.2), 0.0, 260.0)
+			game.explode(e.global_position, 75.0, st.bullet_damage * TOUCH_BLAST_MULT, game.sp_src(record, "sp_touch_blast"), Color(1.0, 0.5, 0.2), 0.0, 260.0)
 
 
 # ---------------------------------------------------------------- 狙う敵を決める
@@ -199,6 +205,8 @@ func _compute_move_dir(delta: float) -> Vector2:
 	else:
 		# 敵がいないときは城の前で待機
 		var home: Vector2 = game.castle.gate_position() + Vector2((index - 2) * 90.0, -110.0)
+		# 採掘場があって空いていれば、掘りに行く
+		home = game.mine_spot(self, home)
 		var to_home := home - global_position
 		if to_home.length() > 20.0:
 			dir += to_home.normalized() * minf(to_home.length() / 80.0, 1.0)
@@ -288,17 +296,17 @@ func _shoot() -> void:
 		b.src = record
 		if st.burst_level > 0:
 			b.explode_radius = 30.0 + 15.0 * st.burst_level
-			b.explode_ratio = 0.25 + 0.15 * st.burst_level
+			b.explode_ratio = BURST_RATIO
 			b.explode_src = game.sp_src(record, "sp_burst")
 		game.world.add_child(b)
-	# 影分身：横の分身からも同じ弾を撃つ（威力50%）
-	if st.shadow:
-		var from := global_position + _shadow_offset()
+	# 影分身：横の分身からも同じ弾を撃つ（威力は本体の弾の SHADOW_MULT 倍）
+	for so in _shadow_offsets():
+		var from: Vector2 = global_position + so
 		for k in st.shot_count:
 			var sb := BulletScript.new()
 			sb.game = game
 			sb.velocity = Vector2.from_angle(base + SPREAD * k) * st.bullet_speed
-			sb.damage = st.bullet_damage * 0.5
+			sb.damage = st.bullet_damage * SHADOW_MULT
 			sb.pierce = st.bullet_pierce
 			sb.radius = 5.0
 			sb.color = Color(0.7, 0.75, 1.0)
@@ -312,22 +320,46 @@ func _shadow_offset() -> Vector2:
 	return aim_dir.orthogonal() * 34.0
 
 
+## 影分身の位置（影分身なしなら空。影分身は1体）
+func _shadow_offsets() -> Array:
+	var st = game.stats
+	if not st.shadow:
+		return []
+	return [aim_dir.orthogonal() * 34.0]
+
+
+## 一斉射撃の1発の威力（射撃の何倍か。20倍の2倍）
+const VOLLEY_MULT := 40.0
+## ブーメランの威力（剣の何倍か。5.2倍の2倍）
+const BOOMERANG_MULT := 10.4
+## 剣気の衝撃波の威力（剣の何倍か。2倍の2倍）
+const SWORD_WAVE_MULT := 4.0
+
 ## 一斉射撃：全方位へ弾をばらまく
 func _volley() -> void:
 	var st = game.stats
 	var count: int = 6 + 6 * st.volley_level
+	_volley_from(global_position, count, st.bullet_damage * VOLLEY_MULT, Color(1.0, 0.75, 0.3), game.sp_src(record, "sp_volley"))
+	# 影一斉射撃：影分身からも一斉射撃（本体と同じ威力）
+	if st.shadow_volley:
+		for so in _shadow_offsets():
+			_volley_from(global_position + so, count, st.bullet_damage * VOLLEY_MULT, Color(0.7, 0.75, 1.0), game.sp_src(record, "sp_shadow_volley"))
+
+
+func _volley_from(center: Vector2, count: int, dmg: float, col: Color, src: Dictionary) -> void:
+	var st = game.stats
 	for i in count:
 		var dir := Vector2.from_angle(TAU * i / count)
 		var b := BulletScript.new()
 		b.game = game
 		b.velocity = dir * st.bullet_speed
-		b.damage = st.bullet_damage
+		b.damage = dmg
 		b.pierce = st.bullet_pierce
 		b.radius = 5.0
-		b.color = Color(1.0, 0.75, 0.3)
+		b.color = col
 		b.life = st.fire_range / st.bullet_speed + 0.2
-		b.position = global_position + dir * (radius + 6.0)
-		b.src = game.sp_src(record, "sp_volley")
+		b.position = center + dir * (radius + 6.0)
+		b.src = src
 		game.world.add_child(b)
 
 
@@ -359,7 +391,7 @@ func _try_slash() -> bool:
 		w.game = game
 		# 大きな三日月がゆっくり進む（届く距離は前と同じ）
 		w.velocity = facing * 260.0
-		w.damage = st.sword_damage
+		w.damage = st.sword_damage * SWORD_WAVE_MULT
 		w.pierce = 1000000
 		w.radius = 32.0
 		w.wave = true
@@ -407,7 +439,12 @@ func _update_dash(delta: float) -> void:
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 	if dead or _invuln > 0.0:
 		return
+	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
+	amount += game.overtime_dmg_bonus()
+	# 5分までは、城と同じく受けるダメージが半分（設置物は半分にならない）
+	amount *= game.early_damage_mult()
 	record["taken"] += minf(amount, hp)
+	game.note_taken("soldier", minf(amount, hp))
 	hp -= amount
 	_hurt_flash = 0.15
 	_invuln = 0.3
@@ -451,8 +488,7 @@ func _draw() -> void:
 			_dash_dir * (radius + 40.0) - _dash_dir.orthogonal() * 7.0]), Color(1.0, 0.95, 0.6))
 
 	# 影分身
-	if game.stats.shadow:
-		var so := _shadow_offset()
+	for so in _shadow_offsets():
 		draw_circle(so, radius * 0.9, Color(0.5, 0.55, 0.9, 0.35))
 		draw_line(so + aim_dir * 4.0, so + aim_dir * (radius + 10.0), Color(0.2, 0.2, 0.3, 0.4), 5.0)
 	var body := Color(0.3, 0.55, 1.0)

@@ -33,19 +33,23 @@ func _process(delta: float) -> void:
 		var half: Vector2 = castle.HALF
 		var side := randf_range(-1.0, 1.0)
 		_spot = castle.global_position + Vector2(side * (half.x + 14.0), randf_range(-half.y - 14.0, half.y * 0.5))
-	var to := _spot - position
+	# 城のHPが満タンで直す仕事がないときは、採掘場が空いていれば掘りに行く
+	var dest := _spot
+	if castle.hp >= castle.max_hp:
+		dest = game.mine_spot(self, _spot)
+	var to := dest - position
 	_working = to.length() < 6.0
 	if not _working:
-		position += to.normalized() * minf(110.0 * delta, to.length())
+		position += to.normalized() * minf(110.0 * game.mine_speed_mult(self) * delta, to.length())
 	# 城の回復（移動中も少しずつ）
 	if castle.hp < castle.max_hp:
 		# 緊急修理：城が危ないときは2倍の速さで直す
 		# 戦績の回復量は、ふつうの修理・背水の修繕で増えたぶん・緊急修理で増えたぶんに分けて記録
-		# 背水の修繕の上乗せ：城のHPが40%より多いときは+20/秒、40%以下のときは+2/秒だけ
+		# 背水の修繕の上乗せ：城のHPが40%より多いときは+20/秒、40%以下のときは+1/秒だけ
 		var base_rate: float = st.heal_per_sec - (20.0 if castle.overwork else 0.0)
 		var overwork_part := 0.0
 		if castle.overwork:
-			overwork_part = 20.0 if castle.hp > castle.max_hp * castle.OVERWORK_FLOOR else 2.0
+			overwork_part = 20.0 if castle.hp > castle.max_hp * castle.OVERWORK_FLOOR else 1.0
 		castle.heal(base_rate * delta, record)
 		if overwork_part > 0.0:
 			castle.heal(overwork_part * delta, record, "sp_overwork")

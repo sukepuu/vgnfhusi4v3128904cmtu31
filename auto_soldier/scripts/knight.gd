@@ -82,13 +82,15 @@ func _process(delta: float) -> void:
 			_chain_left = st.chain
 			_kill_chain_left = 5
 		elif d > DASH_START * 0.8:
-			position += facing * st.move_speed * delta
+			position += facing * st.move_speed * game.mine_speed_mult(self) * delta
 	else:
 		# 敵がいなければ城の前で待機
 		var home: Vector2 = game.castle.gate_position() + Vector2((index - 1) * 50.0, -60.0)
+		# 採掘場があって空いていれば、掘りに行く
+		home = game.mine_spot(self, home)
 		var to_home := home - position
 		if to_home.length() > 6.0:
-			position += to_home.normalized() * minf(st.move_speed * delta, to_home.length())
+			position += to_home.normalized() * minf(st.move_speed * game.mine_speed_mult(self) * delta, to_home.length())
 	position = game.clamp_to_map(position, radius)
 	queue_redraw()
 
@@ -110,7 +112,7 @@ func _lowest_enemy() -> Node2D:
 	return best
 
 
-## 今の突進のダメージを記録する特別強化（連続突撃・疾風怒濤で出た突進。ふつうの突進なら空）
+## 今の突進を出した特別強化（連続突撃・疾風怒濤。ふつうの突進なら空）。戦績は分けず通常攻撃として数える
 var _dash_sp := ""
 
 
@@ -135,43 +137,40 @@ func _update_dash(delta: float, st) -> void:
 			c.position = global_position + _dash_dir * (radius + c.radius + 4.0) + _dash_dir.orthogonal() * (k % 3 - 1) * 14.0
 			c.knock = Vector2.ZERO
 			k += 1
-	# 突進の威力（遊撃兵の射撃の2倍。剛突で上がる）
+	# 突進の威力（基本80。遊撃兵の強化は乗らない。剛突で上がる）
 	var dmg: float = game.knight_damage()
-	for e in game.enemies_near(global_position, radius + 50.0):
+	# 当たる幅（大槍で広がる）
+	var reach: float = (radius + 6.0) * st.hit_width
+	for e in game.enemies_near(global_position, reach + 50.0):
 		if not is_instance_valid(e) or e.dead or _dash_hit.has(e):
 			continue
-		if global_position.distance_to(e.global_position) < radius + e.radius + 6.0:
+		if global_position.distance_to(e.global_position) < reach + e.radius:
 			_dash_hit[e] = true
 			var hit_dmg := dmg
-			var executed := false
 			# とどめの一撃：弱った敵（ボス以外）は一撃で倒す
 			if st.execute and not e.is_boss and e.hp <= e.max_hp * 0.2 and e.hp + 1.0 > dmg:
 				hit_dmg = e.hp + 1.0
-				executed = true
 			if st.stun_hit:
 				e.stun(1.0)
+			# とどめの一撃・連続突撃・疾風怒濤は突進そのものを強くするだけなので、戦績は分けない
 			var hit_src: Dictionary = record
-			if executed:
-				hit_src = game.sp_src(record, "sp_knight_execute")
-			elif _dash_sp != "":
-				hit_src = game.sp_src(record, _dash_sp)
-			# 隠密兵は、当たったらダメージなしでその場で倒れる
-			if e.kind == "stealth":
+			# 隠密兵（エリート隠密兵も）は、当たったらダメージなしでその場で倒れる
+			if e.kind == "stealth" or e.kind == "elite_stealth":
 				e.instant_kill(hit_src)
 			else:
 				e.take_damage(hit_dmg, _dash_dir * 350.0, hit_src)
 			if e.dead:
 				_dash_killed = true
-			if st.carry and not e.is_boss and not e.dead and e.speed > 0.0:
+			if st.carry and not e.is_boss and not e.dead and e.speed > 0.0 and e._kb_mult() > 0.0:
 				_carried.append(e)
 			if st.heal_on_hit:
 				game.heal_unit(self, st.max_hp, 8.0, record, "sp_knight_heal")
-	# 流れ星突撃：通った跡に星が残って弾ける
+	# 流れ星突撃：通った跡に星が残って弾ける（1.4秒残ってから弾ける）
 	if st.star_trail:
 		_star_cd -= delta
 		if _star_cd <= 0.0:
 			_star_cd = 0.05
-			game.spawn_blast(global_position + Vector2(randf_range(-10, 10), randf_range(-10, 10)), 0.35, 34.0, dmg * 0.15, game.sp_src(record, "sp_fun_star"), Color(1.0, 0.95, 0.4), "star")
+			game.spawn_blast(global_position + Vector2(randf_range(-10, 10), randf_range(-10, 10)), 1.4, 34.0, dmg * 3.0, game.sp_src(record, "sp_fun_star"), Color(1.0, 0.95, 0.4), "star")
 	if _dash_left <= 0.0:
 		_dash_left = 0.0
 		# 運んでいた敵を、勢いよく放り出す（城の方へは飛ばさない）
@@ -181,7 +180,7 @@ func _update_dash(delta: float, st) -> void:
 		_carried.clear()
 		# 突撃の衝撃：止まった所で爆発
 		if st.quake:
-			game.explode(global_position, 90.0, dmg * 0.6, game.sp_src(record, "sp_dash_quake"), Color(1.0, 0.85, 0.4), 0.0, 300.0)
+			game.explode(global_position, 90.0, dmg * 1.5, game.sp_src(record, "sp_dash_quake"), Color(1.0, 0.85, 0.4), 0.0, 300.0)
 		# 疾風怒濤：敵を倒していたら、すぐ次の敵へ突進し直す（最大5連鎖）
 		if st.kill_chain and _dash_killed and _kill_chain_left > 0:
 			var nk := _nearest_unhit(450.0)
@@ -216,7 +215,12 @@ func _nearest_unhit(max_d: float) -> Node2D:
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 	if dead or _invuln > 0.0 or is_dashing():
 		return
+	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
+	amount += game.overtime_dmg_bonus()
+	# 5分までは、城と同じく受けるダメージが半分（設置物は半分にならない）
+	amount *= game.early_damage_mult()
 	record["taken"] += minf(amount, hp)
+	game.note_taken("knight", minf(amount, hp))
 	hp -= amount
 	_hurt_flash = 0.15
 	_invuln = 0.25

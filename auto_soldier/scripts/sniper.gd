@@ -1,7 +1,18 @@
 extends Node2D
+
 ## 狙撃部隊（最大3人）。迎撃部隊の後ろ（城のすぐ上）に立ち、弓で遠くの敵を狙い撃つ。
 ## 一番近い「遠距離型の敵」（弓兵・迫撃砲）を優先して狙う。いなければ一番近い敵。
 ## 作業員と同じく敵からは狙われない。ステータスは game.sniper_stats を全員で共有している。
+
+## 通常攻撃の矢の威力の倍率（基本の威力 × これ）
+const ARROW_MULT := 2.1
+## 爆裂矢の爆発の威力（矢の威力 × これ）
+## 爆裂矢の爆発は、もとの値（矢3倍×0.5）の1/19になるように調整（矢2.1倍に対して約0.0376倍）
+const BLAST_RATIO := 0.5 * 3.0 / 2.1 / 19.0
+## 跳弾矢：跳ねたあとの矢の威力の倍率（前は1倍）
+const RICOCHET_MULT := 5.0
+## 花火矢の花火の威力（基本の威力 × これ。前は7.2）
+const FIREWORK_MULT := 2.4
 
 const BulletScript := preload("res://scripts/bullet.gd")
 ## 遠距離型の敵の種類
@@ -34,10 +45,12 @@ func _process(delta: float) -> void:
 	var st = game.sniper_stats
 	_cd -= delta
 	_draw_t -= delta
-	var to := post_position() - position
-	if to.length() > 3.0:
-		position += to.normalized() * minf(200.0 * delta, to.length())
 	var target := _choose_target(st)
+	# 狙える敵がいなければ、採掘場が空いていれば掘りに行く（敵が射程に入ったら持ち場へ戻る）
+	var dest: Vector2 = post_position() if target != null else game.mine_spot(self, post_position())
+	var to := dest - position
+	if to.length() > 3.0:
+		position += to.normalized() * minf(200.0 * game.mine_speed_mult(self) * delta, to.length())
 	if target != null:
 		aim = (target.global_position - global_position).normalized()
 		if _cd <= 0.0:
@@ -79,7 +92,8 @@ func _shoot(target: Node2D, st) -> void:
 		var b := BulletScript.new()
 		b.game = game
 		b.velocity = dir * st.arrow_speed
-		var dmg: float = st.damage
+		# 通常攻撃の矢は、基本の威力の ARROW_MULT 倍（花火矢・天穿つ一矢は基本の威力から計算するので、この倍率は入らない）
+		var dmg: float = st.damage * ARROW_MULT
 		# 対砲兵狙撃：遠い敵ほど痛い（100離れるごとに +10%）
 		if st.counter_battery:
 			dmg *= 1.0 + dist / 1000.0
@@ -93,29 +107,39 @@ func _shoot(target: Node2D, st) -> void:
 		b.bolt = true
 		b.scale = Vector2(0.6, 0.6)
 		b.life = st.fire_range / st.arrow_speed + 0.3
-		b.src = game.sp_src(record, "sp_headshot") if b.crit else record
+		# 急所狙いは矢そのものを強くするだけなので、通常攻撃として数える
+		b.src = record
 		if st.bounces > 0:
 			b.bounce_src = game.sp_src(record, "sp_ricochet")
+			b.bounce_mult = RICOCHET_MULT
 		b.stun_on_hit = 1.0 if st.pin else 0.0
 		b.mark_on_hit = st.mark
 		b.bounces = st.bounces
 		b.bounce_target = target
 		if st.blast_arrow:
 			b.explode_radius = 70.0
-			b.explode_ratio = 3.0
+			# 爆発は矢の BLAST_RATIO 倍。急所狙いの4倍は爆発には乗らない
+			b.explode_ratio = BLAST_RATIO / 4.0 if b.crit else BLAST_RATIO
 			b.explode_src = game.sp_src(record, "sp_blast_arrow")
+			# 花火爆裂矢：爆裂矢が発動したとき、花火のエフェクトも出る
+			b.explode_firework = st.firework_blast
 		b.position = global_position + offset + dir * 12.0
 		game.world.add_child(b)
 	_draw_t = 0.15
-	# 花火矢：4回に1回、狙った敵の所へ花火を打ち込む
+	# 花火矢：毎回、狙った敵の所へ花火を打ち込む
 	_volleys += 1
-	if st.firework_arrow and _volleys % 4 == 0:
+	if st.firework_arrow:
 		var f: Node2D = game.spawn_fun_fx("firework", global_position)
 		f.end = target.global_position
 		f.rise_time = clampf(dist / 900.0, 0.2, 0.9)
-		f.damage = st.damage * 0.6
+		f.damage = st.damage * FIREWORK_MULT
 		f.radius = 80.0
 		f.src = game.sp_src(record, "sp_fun_firework_arrow")
+		# 花火爆裂矢：花火が敵に当たったときも爆裂矢が発動（ふつうの矢の爆発と同じ威力）
+		if st.firework_blast and st.blast_arrow:
+			f.blast_damage = st.damage * ARROW_MULT * BLAST_RATIO
+			f.blast_radius = 70.0
+			f.blast_src = game.sp_src(record, "sp_blast_arrow")
 
 
 func _draw() -> void:

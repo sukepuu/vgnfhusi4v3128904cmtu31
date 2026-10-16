@@ -9,9 +9,9 @@ var plant_time := 6.0
 # --- 罠
 ## 高性能火薬の倍率（工兵の攻撃すべてにかかる。爆弾・落とし穴の威力には直接かけてある）
 var power_mult := 1.0
-var bomb_damage := 200.0
+var bomb_damage := 160.0
 var bomb_radius := 110.0
-var pit_damage := 100.0
+var pit_damage := 80.0
 var pit_radius := 90.0
 ## 敵がこの距離まで近づいたら作動開始
 var trigger_radius := 60.0
@@ -31,3 +31,5 @@ var ap_mine := false
 var sentry := false
 ## かかし（罠と一緒に、敵の気を引くかかしを立てる）
 var scarecrow := false
+## 毒かかし（かかしが壊れると毒沼ができる）
+var scarecrow_poison := false

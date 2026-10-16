@@ -5,6 +5,9 @@ extends Node2D
 ## ステータスは game.guard_stats を全員で共有している。
 
 const BulletScript := preload("res://scripts/bullet.gd")
+const GoldenShieldScript := preload("res://scripts/golden_shield.gd")
+## 黄金の盾を飛ばす間隔（秒）
+const GOLDEN_SHIELD_EVERY := 15.0
 
 const RESPAWN_TIME := 12.0
 ## 城の中心からどこまで離れて戦うか
@@ -33,6 +36,7 @@ var _bash_cd := 0.0
 var _whirl_cd := 3.0
 var _spike_cd := 2.0
 var _giant_cd := 4.0
+var _golden_cd := 3.0
 ## 城へ飛んでくる敵の弾を受け止めに行っているとき、その弾
 var block_bullet: Node2D = null
 
@@ -56,6 +60,7 @@ func _process(delta: float) -> void:
 	_whirl_cd -= delta
 	_spike_cd -= delta
 	_giant_cd -= delta
+	_golden_cd -= delta
 	_thrust -= delta
 	_hurt_flash -= delta
 	_block_flash -= delta
@@ -79,11 +84,14 @@ func _process(delta: float) -> void:
 		block_bullet = _incoming_bullet(castle_pos)
 		if block_bullet != null:
 			desired = _block_point(block_bullet, castle_pos)
+		else:
+			# 弾を受け止める必要もなければ、採掘場が空いていれば掘りに行く
+			desired = game.mine_spot(self, desired)
 	if _target_valid():
 		block_bullet = null
 	var to := desired - global_position
 	if to.length() > 6.0:
-		position += to.normalized() * minf(st.move_speed * delta, to.length())
+		position += to.normalized() * minf(st.move_speed * game.mine_speed_mult(self) * delta, to.length())
 	# 仲間の迎撃部隊と重ならないように
 	for g in game.guards:
 		if g == self or g.dead:
@@ -94,7 +102,7 @@ func _process(delta: float) -> void:
 	position = game.clamp_to_map(position, radius)
 
 	# 盾を向ける方向：一番近い敵 → 狙っている敵 → 城の外側
-	var look: Node2D = game.nearest_enemy(global_position, st.spear_reach + 80.0)
+	var look: Node2D = game.nearest_enemy(global_position, st.spear_reach + 80.0, true)
 	if look == null and _target_valid():
 		look = target
 	var want: Vector2 = (look.global_position - global_position).normalized() if look != null else (global_position - castle_pos).normalized()
@@ -104,14 +112,18 @@ func _process(delta: float) -> void:
 	facing = Vector2.from_angle(rotate_toward(facing.angle(), want.angle(), 7.0 * delta))
 
 	# 大旋風槍
-	if st.whirl and _whirl_cd <= 0.0 and game.nearest_enemy(global_position, st.spear_reach) != null:
+	if st.whirl and _whirl_cd <= 0.0 and game.nearest_enemy(global_position, st.spear_reach, true) != null:
 		_whirl_cd = 6.0
 		game.explode(global_position, st.spear_reach * 1.2, st.spear_damage * 3.0, game.sp_src(record, "sp_whirl_spear"), Color(0.7, 1.0, 0.7), 0.0, 320.0)
 		game.spawn_burst(global_position, Color(1, 1, 1), st.spear_reach / 1.8)
 	# 拒馬の柵：敵が近いとき、盾の前に柵を置く
+	# 黄金の盾：15秒ごとに、今向いている方向へ黄金の盾を飛ばす
+	if st.reflect and _golden_cd <= 0.0:
+		_golden_cd = GOLDEN_SHIELD_EVERY
+		_throw_golden_shield()
 	# 神槍投擲：一番近い敵の方へ、ゆっくり進む巨大な槍を投げる
 	if st.giant_spear and _giant_cd <= 0.0:
-		var t: Node2D = game.nearest_enemy(global_position, 900.0)
+		var t: Node2D = game.nearest_enemy(global_position, 900.0, true)
 		if t != null:
 			_giant_cd = 8.0
 			var dir: Vector2 = (t.global_position - global_position).normalized()
@@ -126,7 +138,7 @@ func _process(delta: float) -> void:
 			b.position = global_position + dir * 20.0
 			b.src = game.sp_src(record, "sp_giant_spear")
 			game.world.add_child(b)
-	if st.spikes and _spike_cd <= 0.0 and game.nearest_enemy(global_position, 260.0) != null:
+	if st.spikes and _spike_cd <= 0.0 and game.nearest_enemy(global_position, 260.0, true) != null:
 		_spike_cd = 8.0
 		game.spawn_placed("spikes", global_position + facing * 70.0, st.spear_damage * 0.8, 33.0, 8.0, game.sp_src(record, "sp_spikes"))
 	if _spear_cd <= 0.0 and _try_thrust():
@@ -143,7 +155,8 @@ func _choose_target(castle_pos: Vector2) -> Node2D:
 	var best: Node2D = null
 	var best_score := INF
 	for e in game.enemies_cache:
-		if not is_instance_valid(e) or e.dead:
+		# 紫ひし形（archer）には反応しない（撃ってくる弾には盾を向ける）
+		if not is_instance_valid(e) or e.dead or e.kind == "archer":
 			continue
 		var d: float = e.global_position.distance_to(castle_pos)
 		if d > ALERT:
@@ -158,18 +171,16 @@ func _choose_target(castle_pos: Vector2) -> Node2D:
 	return best
 
 
-func _reflect(from_pos: Vector2, amount: float) -> void:
-	var dir := (from_pos - global_position).normalized()
-	var b := BulletScript.new()
-	b.game = game
-	b.velocity = dir * 600.0
-	b.damage = maxf(amount, 8.0) * 1.5
-	b.radius = 6.0
-	b.color = Color.from_hsv(randf(), 0.7, 1.0)
-	b.life = 1.0
-	b.position = global_position + dir * 20.0
-	b.src = game.sp_src(record, "sp_fun_reflect")
-	game.world.add_child(b)
+## 黄金の盾：今向いている方向へ、ゆっくり進む大きな黄金の盾を飛ばす
+func _throw_golden_shield() -> void:
+	var gs := GoldenShieldScript.new()
+	gs.game = game
+	gs.dir = facing
+	gs.half_arc = game.guard_stats.shield_arc / 2.0
+	gs.damage = game.guard_stats.spear_damage * 5.0
+	gs.src = game.sp_src(record, "sp_fun_reflect")
+	gs.position = global_position + facing * 20.0
+	game.world.add_child(gs)
 
 
 ## 城に当たりそうな敵の弾のうち、城に一番近いもの（ほかの迎撃兵が受け止めに行っている弾は除く）
@@ -240,15 +251,15 @@ func _try_thrust() -> bool:
 			var perp: float = absf(rel.dot(dir.orthogonal()))
 			if along > 0.0 and along < st.spear_reach + e.radius and perp < st.spear_width + e.radius:
 				hits[e] = dir
-	if hits.is_empty():
+	# 紫ひし形（archer）だけなら突かない（ほかの敵を突いたときに一緒に当たるのはそのまま）
+	if hits.is_empty() or hits.keys().all(func(h) -> bool: return h.kind == "archer"):
 		return false
 	for e in hits:
 		# 捨て身の構え：突いた敵が爆発
 		if st.berserk:
 			game.explode(e.global_position, 70.0, st.spear_damage * 3.0, game.sp_src(record, "sp_berserk_guard"), Color(1.0, 0.45, 0.3), 0.0, 260.0)
-		# 三叉槍で増えた向きの槍は、三叉槍のダメージとして記録
-		var hit_src: Dictionary = record if (hits[e] as Vector2).is_equal_approx(facing) else game.sp_src(record, "sp_trident")
-		e.take_damage(st.spear_damage, hits[e] * 260.0, hit_src)
+		# 三叉槍で増えた向きの槍も、ふつうの突きなので通常攻撃として数える
+		e.take_damage(st.spear_damage, hits[e] * 260.0, record)
 	_thrust = 0.18
 	return true
 
@@ -257,6 +268,10 @@ func _try_thrust() -> bool:
 func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 	if dead or _invuln > 0.0:
 		return
+	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
+	amount += game.overtime_dmg_bonus()
+	# 5分までは、城と同じく受けるダメージが半分（設置物は半分にならない）
+	amount *= game.early_damage_mult()
 	var blocked := false
 	if from_pos != Vector2.INF:
 		var dir := (from_pos - global_position).normalized()
@@ -265,9 +280,6 @@ func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 			# 盾で受けるとダメージは20%（大盾で減っていき、最大で0%。捨て身の構えなら50%）
 			var taken_ratio: float = 0.5 if game.guard_stats.berserk else game.guard_stats.shield_taken
 			record["blocked"] += amount * (1.0 - taken_ratio)
-			# はね返し盾：防いだ弾を来た方へ打ち返す
-			if game.guard_stats.reflect:
-				_reflect(from_pos, amount)
 			# 盾撃：防いだ瞬間に周りへ衝撃波
 			var bash: int = game.guard_stats.bash_level
 			if bash > 0 and _bash_cd <= 0.0:
@@ -279,6 +291,7 @@ func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 			if amount <= 0.0:
 				return
 	record["taken"] += minf(amount, hp)
+	game.note_taken("guard", minf(amount, hp))
 	hp -= amount
 	_hurt_flash = 0.15
 	# 盾で受けたときは無敵時間なし（続けて来る弾も盾で受け止められるように）

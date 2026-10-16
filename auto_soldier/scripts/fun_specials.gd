@@ -1,6 +1,6 @@
 extends Node2D
 ## おもしろ特別強化（あまり強くないけど、変で派手なやつ）のうち、一定時間ごとに出るもの。
-## そのほか（花火・はね返し盾・ビックリ箱・かかし・ビリヤード砲弾・牛投げ・虹の矢・流れ星）は
+## そのほか（花火・黄金の盾・ビックリ箱・かかし・ビリヤード砲弾・牛投げ・虹の矢・流れ星）は
 ## それぞれのスクリプトの中で処理している。
 
 const FunFx := preload("res://scripts/fun_fx.gd")
@@ -18,6 +18,8 @@ var snowball := false
 var pet_dance := false
 ## 修理：修理玉（20秒ごとに城の前へ玉を置く。10秒で回復した城のHPの20倍のダメージを、HPが一番多い敵へ撃つ）
 var repair_orb := false
+## 三連修理玉（修理玉を3方向に撃つ）
+var repair_orb_triple := false
 
 var _roar_cd := 5.0
 var _dove_cd := 3.0
@@ -49,7 +51,7 @@ func _process(delta: float) -> void:
 			for i in castle.tower_count:
 				var from: Vector2 = castle.wpos() + castle._tower_local_pos(i)
 				var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(randf_range(-PI * 0.8, -PI * 0.2)) * 260.0,
-					castle.tower_damage * 1.6, 10.0, 6.0, game.sp_src(castle._equip_record("tower", "矢倉", i), "sp_fun_doves"))
+					castle.tower_damage * 32.0, 10.0, 6.0, game.sp_src(castle._equip_record("tower", "矢倉", i), "sp_fun_doves"))
 				m.look = "bird"
 	if snowball and castle.frost_radius > 0.0:
 		_snow_cd -= delta
@@ -106,10 +108,11 @@ func _throw_snowball() -> void:
 	var b := BulletScript.new()
 	b.game = game
 	b.velocity = (e.global_position - from).normalized() * 480.0
-	b.damage = 12.0 * (1.0 + game.elapsed / 120.0)
+	b.damage = 120.0 * (1.0 + game.elapsed / 120.0)
 	b.radius = 7.0
 	b.color = Color(0.97, 0.98, 1.0)
 	b.stun_on_hit = 0.15
+	b.drop_snowman = game.castle.snowball_snowman
 	b.life = 1.6
 	b.position = from
 	b.src = game.sp_src(castle._equip_record("frost", "氷結の結界", 0), "sp_fun_snowball")
@@ -125,7 +128,7 @@ func _do_dance() -> void:
 			var fb := BulletScript.new()
 			fb.game = game
 			fb.velocity = dir * 420.0
-			fb.damage = game.pet_damage * f._n / 2.4
+			fb.damage = game.pet_damage * f._n / 2.4 * 20.0 * f.FUSION_BONUS
 			fb.radius = 8.0
 			fb.color = Color.from_hsv(float(i) / 24.0, 0.75, 1.0)
 			fb.life = 1.2
@@ -142,7 +145,7 @@ func _do_dance() -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 420.0
-			b.damage = game.pet_damage
+			b.damage = game.pet_damage * 20.0
 			b.radius = 5.0
 			b.color = Color.from_hsv(float(i) / 12.0, 0.75, 1.0)
 			b.life = 0.9
@@ -195,8 +198,8 @@ func _place_automaton() -> void:
 	var pos: Vector2 = castle.global_position + Vector2(0, -320)
 	if best != null:
 		pos = best.global_position + (castle.global_position - best.global_position).normalized() * 160.0
-	# からくり兵の火力（斬り・射撃・最後の爆発すべて）は爆弾の威力の0.6倍
-	var dmg: float = game.engineer_stats.bomb_damage * 0.6
+	# からくり兵の火力（斬り・射撃・最後の爆発すべて）は爆弾の威力の1.2倍
+	var dmg: float = game.engineer_stats.bomb_damage * 1.2
 	var life := 10.0
 	if _automaton_record.is_empty():
 		_automaton_record = game.new_record("engineer", "からくり兵")

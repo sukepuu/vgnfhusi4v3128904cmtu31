@@ -7,12 +7,14 @@ var damage := 10.0
 var pierce := 0
 var radius := 5.0
 var from_enemy := false
+## 敵の弾：撃った敵の名前（被害状況の記録用）
+var from_name := ""
 ## ボスの弾：味方でも壁でも、BOSS_HITS 回当たるまで突き抜けて飛ぶ（例：壁＋迎撃兵で消える。城に当たったら消える）
 var boss_pierce := false
 const BOSS_HITS := 2
 var _boss_hits_left := BOSS_HITS
 var _hit_walls := {}
-## 壁を素通りする（黒衣の大司教の号令で敵が撃つ、貫通無限の弾）
+## 壁を素通りする（黒衣の大司教が号令で撃つ、貫通無限の弾）
 var ignore_walls := false
 var color := Color(1, 1, 0.5)
 var life := 1.0
@@ -25,9 +27,14 @@ var explode_radius := 0.0
 var explode_ratio := 0.0
 ## 爆発・最初の大爆発だけ別の戦績カードに記録したいとき（特別強化の分け記録）。空なら src
 var explode_src: Dictionary = {}
+## 爆発したとき、花火のエフェクトも出す（花火爆裂矢）
+var explode_firework := false
 var first_blast_src: Dictionary = {}
 ## 跳ねたあとのダメージを記録する戦績カード（跳弾矢の分け記録）。空なら src のまま
 var bounce_src: Dictionary = {}
+## 跳弾矢：最初に跳ねたとき、矢の威力をこの倍率にする（跳ねたあとの命中と爆発が強くなる）
+var bounce_mult := 1.0
+var _bounced := false
 ## true なら剣気の衝撃波（三日月形に描く）
 var wave := false
 ## 炸裂大矢：最初に当たった敵の場所で大爆発（0なら無し）
@@ -35,12 +42,14 @@ var first_blast_radius := 0.0
 var first_blast_damage := 0.0
 ## 敵の弾が城に当たったときのダメージ倍率（ボスの弾幕は城には弱め）
 var castle_ratio := 1.0
+## ボスが撃った弾（序盤は城へのダメージが半分）
+var from_boss := false
+## キャラクター狙いの誘導弾：城には当たらず、すり抜ける
+var no_castle := false
 ## 徹甲榴弾：この敵だけを追いかけて当たる（ほかの敵はすり抜ける）。null なら普通の弾
 var only_target: Node2D = null
 ## この敵を追いかけて飛ぶ（当たり判定はほかの敵にもある）。当たったら追いかけるのをやめてまっすぐ飛ぶ
 var aim_target: Node2D = null
-## 追尾ペット弾：近くの敵の方へ少しずつ曲がる
-var homing := false
 ## 誘導砲兵の誘導弾：この味方を追いかける（倒れたらまっすぐ飛ぶ）
 var seek: Node2D = null
 ## 狙撃部隊の特別強化：当たった敵を動けなくする秒数・弱点看破・跳ねる回数・会心（見た目用）
@@ -56,6 +65,11 @@ var orb := false
 var spear := false
 ## 当たるたびに威力が増える割合（破竹の大矢：0.1 で +10%ずつ）
 var grow_on_hit := 0.0
+## 当たるたびに増えた倍率（撃ったときの威力の2倍＝+100%で止まる）
+const GROW_MAX := 2.0
+var _grow_mult := 1.0
+## 雪だるま合戦（結界の条件付き強化）：当たった所に雪だるまを置く
+var drop_snowman := false
 ## 虹の矢（バリスタのおもしろ強化）：虹色の尾＋当たった敵が混乱する秒数
 var rainbow := false
 var confuse_on_hit := 0.0
@@ -69,6 +83,16 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if not from_enemy:
+		_step(delta)
+		return
+	# 敵の弾が当たったダメージは、撃った敵のものとして被害状況に記録する
+	game.dmg_from = from_name
+	_step(delta)
+	game.dmg_from = ""
+
+
+func _step(delta: float) -> void:
 	if seek != null:
 		if is_instance_valid(seek) and not seek.dead:
 			var want := (seek.global_position - global_position).normalized() * velocity.length()
@@ -76,11 +100,6 @@ func _process(delta: float) -> void:
 			velocity = velocity.lerp(want, clampf(6.0 * delta, 0.0, 1.0)).normalized() * velocity.length()
 		else:
 			seek = null
-	if homing and not from_enemy:
-		var near: Node2D = game.nearest_enemy(global_position, 260.0)
-		if near != null:
-			var want := (near.global_position - global_position).normalized() * velocity.length()
-			velocity = velocity.lerp(want, clampf(5.0 * delta, 0.0, 1.0)).normalized() * velocity.length()
 	if only_target != null:
 		if is_instance_valid(only_target) and not only_target.dead:
 			# 狙った敵が動いても外れないように、まっすぐ追いかける
@@ -133,8 +152,9 @@ func _process(delta: float) -> void:
 					return
 			queue_free()
 			return
-		if game.castle.distance_to_point(global_position) < radius:
-			game.castle.take_damage(damage * castle_ratio)
+		if not no_castle and game.castle.distance_to_point(global_position) < radius:
+			if castle_ratio > 0.0:
+				game.castle.take_damage(damage * castle_ratio, from_boss)
 			queue_free()
 		return
 	for e in game.enemies_near(position, radius + 26.0):
@@ -157,17 +177,30 @@ func _process(delta: float) -> void:
 				first_blast_radius = 0.0
 			if explode_radius > 0.0:
 				game.explode(global_position, explode_radius, damage * explode_ratio, src if explode_src.is_empty() else explode_src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
+				if explode_firework:
+					var fw: Node2D = game.spawn_fun_fx("firework", global_position)
+					fw.rise_time = 0.01
 			_hit[e] = true
+			if drop_snowman:
+				drop_snowman = false
+				# 置きすぎないように、雪だるまは全部で18体まで
+				if game.get_tree().get_nodes_in_group("placed_snowman").size() < 18:
+					game.spawn_placed("snowman", global_position, 18.75 * (1.0 + game.elapsed / 120.0), 40.0, 10.0,
+						game.sp_src(game.castle._equip_record("frost", "氷結の結界", 0), "sp_snowman"))
 			if grow_on_hit > 0.0:
-				damage *= 1.0 + grow_on_hit
-			# 跳弾矢：狙った敵に当たったら、近くの別の敵へ跳ねる（威力は7割に）
+				var nm: float = minf(_grow_mult * (1.0 + grow_on_hit), GROW_MAX)
+				damage *= nm / _grow_mult
+				_grow_mult = nm
+			# 跳弾矢：狙った敵に当たったら、近くの別の敵へ跳ねる（跳ねたあとは bounce_mult 倍）
 			# 途中で当たったほかの敵は、ふつうに貫通するだけ
 			if bounces > 0 and is_instance_valid(bounce_target) and e == bounce_target:
 				var next := _bounce_target(e)
 				if next != null:
 					bounces -= 1
-					damage *= 0.7
 					bounce_target = next
+					if not _bounced:
+						_bounced = true
+						damage *= bounce_mult
 					if not bounce_src.is_empty():
 						src = bounce_src
 					velocity = (next.global_position - global_position).normalized() * velocity.length()

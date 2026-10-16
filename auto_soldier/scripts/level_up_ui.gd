@@ -62,7 +62,8 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int, special
 	_reroll_btn.disabled = rerolled
 	_reroll_btn.text = "リロール済み" if rerolled else "🎲 リロール（R）"
 	if special:
-		_title.text = "★ 特別強化 ★  Lv %d" % player_level
+		# player_level が 0 なら、黒衣の大司教を倒したぶんの特別強化
+		_title.text = "★ 特別強化 ★  大司教撃破" if player_level <= 0 else "★ 特別強化 ★  Lv %d" % player_level
 		_title.add_theme_color_override("font_color", Color(1.0, 0.55, 0.9))
 	else:
 		_title.text = "LEVEL UP!  Lv %d" % player_level

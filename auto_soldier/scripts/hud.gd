@@ -30,12 +30,15 @@ var _banner_left := 0.0
 var _auto_btn: Button
 var _auto_set_btn: Button
 var _debug_btn: Button
+var _changelog_btn: Button
 ## デバッグ用：オート選択のボタンを表示しているか（M キーで切り替え。ふだんは隠しておく）
 static var debug_auto_visible := false
 var _speed_btn: Button
 var _notice: Label
 var _notice_left := 0.0
 var _result_label: Label
+## ゲームオーバー画面の「前回のLvからリスタート」（オートセーブがあるときだけ出す）
+var _load_btn: Button
 
 
 func _ready() -> void:
@@ -228,10 +231,19 @@ func _ready() -> void:
 	_debug_btn.focus_mode = Control.FOCUS_NONE
 	_debug_btn.pressed.connect(func() -> void: game.open_debug())
 	root.add_child(_debug_btn)
+	# 更新内容ボタン（デバッグ設定ボタンの下。ほかのデバッグ用ボタンと一緒に、ふだんは隠して M キーで表示）
+	_changelog_btn = Button.new()
+	_changelog_btn.text = "更新内容"
+	_changelog_btn.add_theme_font_size_override("font_size", 16)
+	_changelog_btn.position = Vector2(16, 284)
+	_changelog_btn.size = Vector2(170, 34)
+	_changelog_btn.focus_mode = Control.FOCUS_NONE
+	_changelog_btn.pressed.connect(func() -> void:
+		if not game.level_up_ui.visible:
+			game.changelog_ui.open_panel())
+	root.add_child(_changelog_btn)
 	# オート選択まわりとデバッグ設定はデバッグ用。ふだんは隠しておく（M キーで表示）
-	_auto_btn.visible = debug_auto_visible
-	_auto_set_btn.visible = debug_auto_visible
-	_debug_btn.visible = debug_auto_visible
+	set_debug_visible(debug_auto_visible)
 
 	# 速度切り替えボタン（画面右下）
 	_speed_btn = Button.new()
@@ -437,8 +449,17 @@ func _build_game_over() -> void:
 	btn.text = "もう一度（R）"
 	btn.custom_minimum_size = Vector2(260, 56)
 	btn.add_theme_font_size_override("font_size", 22)
-	btn.pressed.connect(func() -> void: game.restart())
+	btn.pressed.connect(func() -> void: game.retry())
 	box.add_child(btn)
+
+	# 前回のLvからリスタート（もう一度の下）：レベルが上がったときのオートセーブを読み込んで、そこから続ける
+	_load_btn = Button.new()
+	_load_btn.text = "前回のLvからリスタート"
+	_load_btn.custom_minimum_size = Vector2(260, 44)
+	_load_btn.add_theme_font_size_override("font_size", 18)
+	_load_btn.add_theme_color_override("font_color", Color(0.55, 0.9, 1.0))
+	_load_btn.pressed.connect(func() -> void: game.restart_from_autosave())
+	box.add_child(_load_btn)
 
 	var stats_btn := Button.new()
 	stats_btn.text = "部隊戦績を見る"
@@ -462,27 +483,57 @@ func _build_game_over() -> void:
 	up_btn.pressed.connect(func() -> void: game.upgrades_ui.open_panel())
 	box.add_child(up_btn)
 
+	# 歴代記録（強化状態を見るの下）
+	var rec_btn := Button.new()
+	rec_btn.text = "歴代記録"
+	rec_btn.custom_minimum_size = Vector2(260, 44)
+	rec_btn.add_theme_font_size_override("font_size", 18)
+	rec_btn.add_theme_color_override("font_color", Color(1.0, 0.8, 0.5))
+	rec_btn.pressed.connect(func() -> void: game.records_ui.open_panel())
+	box.add_child(rec_btn)
+
+	# 被害状況確認（歴代記録の下）
+	var dmg_btn := Button.new()
+	dmg_btn.text = "被害状況確認"
+	dmg_btn.custom_minimum_size = Vector2(260, 44)
+	dmg_btn.add_theme_font_size_override("font_size", 18)
+	dmg_btn.add_theme_color_override("font_color", Color(1.0, 0.6, 0.55))
+	dmg_btn.pressed.connect(func() -> void: game.damage_ui.open_panel())
+	box.add_child(dmg_btn)
+
+
+## デバッグ用ボタン（オート選択・オート選択設定・デバッグ設定・更新内容）の表示・非表示
+func set_debug_visible(v: bool) -> void:
+	debug_auto_visible = v
+	_auto_btn.visible = v
+	_auto_set_btn.visible = v
+	_debug_btn.visible = v
+	_changelog_btn.visible = v
+
 
 func show_game_over() -> void:
 	refresh()
 	var t := int(game.elapsed)
 	_result_label.text = "城が落とされた…\n\n防衛時間 %02d:%02d\nレベル %d\n撃破数 %d" % [t / 60, t % 60, game.level, game.kills]
+	# オートセーブがあれば「前回のLvからリスタート（Lv○・mm:ss）」を出す
+	var save: Dictionary = game.AutosaveScript.peek()
+	_load_btn.visible = not save.is_empty()
+	if not save.is_empty():
+		var st := int(save.get("elapsed", 0.0))
+		_load_btn.text = "前回のLvからリスタート（Lv%d・%02d:%02d）" % [int(save.get("level", 1)), st / 60, st % 60]
 	_game_over.visible = true
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _game_over.visible and event is InputEventKey and event.pressed and event.keycode == KEY_R:
-		game.restart()
+		game.retry()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_A and not _game_over.visible and debug_auto_visible:
 		get_viewport().set_input_as_handled()
 		game.set_auto_pick(not game.auto_pick)
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_M:
 		# デバッグ用：オート選択のボタンを表示・非表示
 		get_viewport().set_input_as_handled()
-		debug_auto_visible = not debug_auto_visible
-		_auto_btn.visible = debug_auto_visible
-		_auto_set_btn.visible = debug_auto_visible
-		_debug_btn.visible = debug_auto_visible
+		set_debug_visible(not debug_auto_visible)
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F and not _game_over.visible:
 		get_viewport().set_input_as_handled()
 		game.toggle_speed()

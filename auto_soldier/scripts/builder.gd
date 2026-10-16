@@ -56,7 +56,8 @@ func _process(delta: float) -> void:
 					_move_to(post.global_position + POST_OFFSET, delta)
 					return
 			var home: Vector2 = game.castle.gate_position() + Vector2(60.0 + index * 30.0, 10.0)
-			_move_to(home, delta)
+			# 見張り櫓がなければ、採掘場が空いていれば掘りに行く
+			_move_to(game.mine_spot(self, home), delta)
 		"walking":
 			if _move_to(tower_spot if tower_job else _site(), delta):
 				state = "building"
@@ -66,7 +67,7 @@ func _process(delta: float) -> void:
 				# 見張り櫓は6秒で完成
 				progress += delta / 6.0
 				if progress >= 1.0:
-					game.spawn_placed("watchtower", tower_spot + Vector2(0, -26), 30.0, 0.0, 0.0, game.sp_src(record, "sp_watchtower"))
+					game.spawn_placed("watchtower", tower_spot + Vector2(0, -26), 480.0, 0.0, 0.0, game.sp_src(record, "sp_watchtower"))
 					tower_job = false
 					state = "idle"
 				queue_redraw()
@@ -156,7 +157,7 @@ func _move_to(p: Vector2, delta: float) -> bool:
 	if d < 4.0:
 		return true
 	_facing = to / d
-	position += _facing * minf(SPEED * delta, d)
+	position += _facing * minf(SPEED * game.mine_speed_mult(self) * delta, d)
 	return false
 
 

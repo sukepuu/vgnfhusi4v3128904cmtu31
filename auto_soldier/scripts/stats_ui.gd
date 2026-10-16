@@ -71,6 +71,8 @@ func _ready() -> void:
 
 	for u in Upgrades.SPECIAL:
 		_sp_names[u["id"]] = u["name"]
+	# 特別強化ではない内訳の名前
+	_sp_names["robot_true_cool"] = "真・ファイナルモード・クールタイムロボ"
 
 	var close := Button.new()
 	close.text = "閉じる（Tab）"
@@ -224,6 +226,8 @@ func _note(r: Dictionary) -> String:
 		parts.append("仕掛けた罠 %d個" % r["traps"])
 	if r["wall_fixed"] > 0:
 		parts.append("直した壁 %d回分" % r["wall_fixed"])
+	if int(r.get("xp", 0)) > 0:
+		parts.append("獲得経験値 %s" % _fmt(r["xp"]))
 	return "  ".join(parts)
 
 

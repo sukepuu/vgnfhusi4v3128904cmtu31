@@ -13,7 +13,7 @@ const CAT_COLOR := {
 	"soldier": Color(0.6, 0.85, 1.0), "pet": Color(0.55, 1.0, 0.75), "guard": Color(0.6, 1.0, 0.65),
 	"sniper": Color(0.75, 0.95, 0.45), "knight": Color(1.0, 0.82, 0.4), "repair": Color(0.55, 0.75, 1.0),
 	"heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), "builder": Color(1.0, 0.88, 0.45),
-	"archer": Color(0.9, 0.7, 0.5), "archer_pet": Color(0.7, 0.9, 0.6),
+	"archer": Color(1.0, 0.55, 0.8), "archer_pet": Color(1.0, 0.7, 0.9),
 	"castle": Color(1.0, 0.7, 0.45)}
 const COL_WIDTHS := [250, 115, 65, 115, 115, 190]
 

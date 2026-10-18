@@ -347,10 +347,10 @@ const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城"
 	"heavy": "重装", "engineer": "工兵", "repair": "修理", "archer": "弓兵", "archer_pet": "弓兵ペット", "castle": "城"}
 const CAT_COLOR := {
 	"pet": Color(0.55, 1.0, 0.75), "knight": Color(1.0, 0.82, 0.4), "repair": Color(0.55, 0.75, 1.0),
-	"sniper": Color(0.75, 0.95, 0.45), "archer": Color(0.9, 0.7, 0.5), "archer_pet": Color(0.7, 0.9, 0.6),
+	"sniper": Color(0.75, 0.95, 0.45), "archer": Color(1.0, 0.55, 0.8), "archer_pet": Color(1.0, 0.7, 0.9),
 	"soldier": Color(0.6, 0.85, 1.0), "builder": Color(1.0, 0.88, 0.45),
 	"guard": Color(0.6, 1.0, 0.65), "heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), 
-	"castle": Color(1.0, 0.7, 0.45), "rapid": Color(1.0, 0.6, 0.3)}
+	"castle": Color(1.0, 0.7, 0.45), "rapid": Color(1.0, 0.7, 0.45)}
 
 
 ## オート選択設定などで使う「部隊・兵装」の一覧（表示名, キー）

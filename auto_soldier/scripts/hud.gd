@@ -448,70 +448,82 @@ func _build_game_over() -> void:
 	_result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_result_label)
 
+	# ボタンは2列：左は遊び直す（もう一度・リスタート）、右は記録を見る
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 24)
+	cols.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(cols)
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 12)
+	cols.add_child(left)
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 12)
+	cols.add_child(right)
+
 	var btn := Button.new()
 	btn.text = "もう一度（R）"
-	btn.custom_minimum_size = Vector2(260, 56)
+	btn.custom_minimum_size = Vector2(340, 56)
 	btn.add_theme_font_size_override("font_size", 22)
 	btn.pressed.connect(func() -> void: game.retry())
-	box.add_child(btn)
+	left.add_child(btn)
 
 	# 前回のLvからリスタート（もう一度の下）：レベルが上がったときのオートセーブを読み込んで、そこから続ける
 	_load_btn = Button.new()
 	_load_btn.text = "前回のLvからリスタート"
-	_load_btn.custom_minimum_size = Vector2(260, 44)
+	_load_btn.custom_minimum_size = Vector2(340, 44)
 	_load_btn.add_theme_font_size_override("font_size", 18)
 	_load_btn.add_theme_color_override("font_color", Color(0.55, 0.9, 1.0))
 	_load_btn.pressed.connect(func() -> void: game.restart_from_autosave())
-	box.add_child(_load_btn)
+	left.add_child(_load_btn)
 
 	# 11Lv前（保持している一番古いセーブ）から再開
 	_load_old_btn = Button.new()
 	_load_old_btn.text = "11Lv前から再開"
-	_load_old_btn.custom_minimum_size = Vector2(260, 44)
+	_load_old_btn.custom_minimum_size = Vector2(340, 44)
 	_load_old_btn.add_theme_font_size_override("font_size", 18)
 	_load_old_btn.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	_load_old_btn.pressed.connect(_on_load_old_pressed)
-	box.add_child(_load_old_btn)
+	left.add_child(_load_old_btn)
 
 	var stats_btn := Button.new()
 	stats_btn.text = "部隊戦績を見る"
-	stats_btn.custom_minimum_size = Vector2(260, 44)
+	stats_btn.custom_minimum_size = Vector2(340, 44)
 	stats_btn.add_theme_font_size_override("font_size", 18)
 	stats_btn.pressed.connect(func() -> void: game.stats_ui.open_panel())
-	box.add_child(stats_btn)
+	right.add_child(stats_btn)
 
 	var sum_btn := Button.new()
 	sum_btn.text = "戦績まとめ"
-	sum_btn.custom_minimum_size = Vector2(260, 44)
+	sum_btn.custom_minimum_size = Vector2(340, 44)
 	sum_btn.add_theme_font_size_override("font_size", 18)
 	sum_btn.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
 	sum_btn.pressed.connect(func() -> void: game.summary_ui.open_panel())
-	box.add_child(sum_btn)
+	right.add_child(sum_btn)
 
 	var up_btn := Button.new()
 	up_btn.text = "強化状態を見る"
-	up_btn.custom_minimum_size = Vector2(260, 44)
+	up_btn.custom_minimum_size = Vector2(340, 44)
 	up_btn.add_theme_font_size_override("font_size", 18)
 	up_btn.pressed.connect(func() -> void: game.upgrades_ui.open_panel())
-	box.add_child(up_btn)
+	right.add_child(up_btn)
 
 	# 歴代記録（強化状態を見るの下）
 	var rec_btn := Button.new()
 	rec_btn.text = "歴代記録"
-	rec_btn.custom_minimum_size = Vector2(260, 44)
+	rec_btn.custom_minimum_size = Vector2(340, 44)
 	rec_btn.add_theme_font_size_override("font_size", 18)
 	rec_btn.add_theme_color_override("font_color", Color(1.0, 0.8, 0.5))
 	rec_btn.pressed.connect(func() -> void: game.records_ui.open_panel())
-	box.add_child(rec_btn)
+	right.add_child(rec_btn)
 
 	# 被害状況確認（歴代記録の下）
 	var dmg_btn := Button.new()
 	dmg_btn.text = "被害状況確認"
-	dmg_btn.custom_minimum_size = Vector2(260, 44)
+	dmg_btn.custom_minimum_size = Vector2(340, 44)
 	dmg_btn.add_theme_font_size_override("font_size", 18)
 	dmg_btn.add_theme_color_override("font_color", Color(1.0, 0.6, 0.55))
 	dmg_btn.pressed.connect(func() -> void: game.damage_ui.open_panel())
-	box.add_child(dmg_btn)
+	right.add_child(dmg_btn)
 
 
 ## デバッグ用ボタン（オート選択・オート選択設定・デバッグ設定・更新内容）の表示・非表示

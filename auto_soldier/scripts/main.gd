@@ -55,7 +55,7 @@ const BISHOP_BONUS_LEVEL := 0
 
 ## フィールドの範囲。城は一番下の中央に置く
 const MAP_RECT := Rect2(-700, -780, 1400, 840)
-const MAX_ENEMIES := 500
+const MAX_ENEMIES := 300
 const MAX_SOLDIERS := 5
 const MAX_GUARDS := 3
 const MAX_BUILDERS := 3

@@ -315,7 +315,7 @@ auto_soldier/
 
 ## 調整しやすい値
 
-- 難易度：`main.gd` の `SPAWN_BASE` / `SPAWN_GROWTH` / `SPAWN_MAX`（出現ペース。今は5分で上限）、`MAX_ENEMIES`（フィールドの敵がこの数以上いるあいだは、ふだんの出現が止まる。今は500体。50秒ごとの大群は止まらない）、`HP_EARLY_PER_MIN` / `HP_SWITCH_MIN` / `HP_ACCEL` / `HP_ACCEL_UP_FROM` / `HP_ACCEL_UP_STEP`（ふつうの敵のHP倍率の上がり方）、`HP_POINTS` / `HP_LATE_ACCEL`（ボスのHP倍率のもとにする目安表）
+- 難易度：`main.gd` の `SPAWN_BASE` / `SPAWN_GROWTH` / `SPAWN_MAX`（出現ペース。今は5分で上限）、`MAX_ENEMIES`（フィールドの敵がこの数以上いるあいだは、ふだんの出現が止まる。今は300体。50秒ごとの大群は止まらない）、`HP_EARLY_PER_MIN` / `HP_SWITCH_MIN` / `HP_ACCEL` / `HP_ACCEL_UP_FROM` / `HP_ACCEL_UP_STEP`（ふつうの敵のHP倍率の上がり方）、`HP_POINTS` / `HP_LATE_ACCEL`（ボスのHP倍率のもとにする目安表）
 - 必要経験値：`main.gd` の `xp_needed()`（`(4 + 3×Lv + Lv²÷7) ÷ 1.44`）
 - 城のHP：`castle.gd` の `max_hp`
 - 遊撃部隊の初期ステータス：`soldier_stats.gd`

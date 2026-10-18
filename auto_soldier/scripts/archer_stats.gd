@@ -3,7 +3,7 @@ extends RefCounted
 
 var max_hp := 80.0
 ## 矢1本のダメージ
-var damage := 30.0
+var damage := 45.0
 ## 矢を放つ間隔（秒）
 var interval := 0.8
 ## 一度に放つ矢の数

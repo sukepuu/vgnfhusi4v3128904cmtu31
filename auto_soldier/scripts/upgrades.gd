@@ -276,7 +276,7 @@ const SPECIAL := [
 	{"id": "sp_rage", "cat": "heavy", "special": true, "name": "怒りの闘志", "desc": "ダメージを受けるたびに重装兵の与ダメージ +5%（最大+40%）。2秒ダメージを受けないと元に戻る", "max": 1, "req": "heavy"},
 	{"id": "sp_counter_wall", "cat": "builder", "special": true, "name": "反撃壁", "desc": "敵の弾が壁に当たると、その場所から近くの敵へ弾を撃ち返す", "max": 1, "req": "builder"},
 	{"id": "sp_automaton", "cat": "engineer", "special": true, "name": "巨大からくり兵", "desc": "20秒ごとに、ボスの2倍の大きさのからくり兵を置く（10秒で消える）。ゆっくり歩き、広い全方位斬り1回→別々の2か所へ大きな弾（10体貫通）の高速連射をくり返す。消えるときに超広範囲の大爆発", "max": 1, "req": "engineer"},
-	{"id": "sp_tower_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂矢", "desc": "矢倉の矢が当たった敵が爆発し、周りの敵に矢倉の基本の威力の1/8のダメージ", "max": 1, "req": "tower"},
+	{"id": "sp_tower_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂矢", "desc": "矢倉の矢が当たった敵が爆発し、周りの敵に矢の1/8のダメージ", "max": 1, "req": "tower"},
 	{"id": "sp_homing_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂追尾火矢", "desc": "追尾火矢が当たった敵にも、爆裂矢の爆発が起きるようになる\n「矢倉・爆裂矢」と「矢倉・追尾火矢」を取得している場合のみ出現", "max": 1, "req": "tower", "req_all": ["sp_tower_blast", "sp_homing"]},
 	{"id": "sp_stay_rock", "cat": "castle", "special": true, "name": "投石器・居座り岩", "desc": "着弾地点に大岩が5秒間残り、上にいる敵にダメージを与え続け、移動速度 -30%", "max": 1, "req": "catapult"},
 	{"id": "sp_mega_bolt", "cat": "castle", "special": true, "name": "バリスタ・巨大弩砲", "desc": "8秒ごとに、3倍の大きさ・基本の威力の7.2倍の矢を、HPが一番多い敵へゆっくり（速さ1/3）撃つ", "max": 1, "req": "ballista"},
@@ -518,7 +518,7 @@ static func _update_pet_damage(game: Node2D) -> void:
 	game.pet_damage = 12.0 * (1.0 + 0.2 * int(lv.get("pet_fang", 0))) * pow(1.2, maxi(0, int(lv.get("pet", 0)) - 1))
 	for p in game.pets:
 		p.damage = game.pet_damage
-	game.archer_pet_damage = 32.0 * (1.0 + 0.2 * int(lv.get("archer_pet_fang", 0))) * pow(1.2, maxi(0, int(lv.get("archer_pet", 0)) - 1))
+	game.archer_pet_damage = 16.0 * (1.0 + 0.2 * int(lv.get("archer_pet_fang", 0))) * pow(1.2, maxi(0, int(lv.get("archer_pet", 0)) - 1))
 	for p in game.archer_pets:
 		p.damage = game.archer_pet_damage
 
@@ -526,8 +526,8 @@ static func _update_pet_damage(game: Node2D) -> void:
 ## 矢倉・バリスタの基本の威力を、強化のレベルから計算し直す（強弓矢倉・強化弩の+20%と、徹甲矢・大型弩の倍率の両方が乗るように）
 static func _update_castle_damage(game: Node2D) -> void:
 	var lv: Dictionary = game.upgrade_levels
-	game.castle.tower_damage = 192.0 * (1.0 + 0.2 * int(lv.get("tower_dmg", 0))) * (1.3 if int(lv.get("sp_tower_ap", 0)) > 0 else 1.0)
-	game.castle.ballista_damage = 274.56 * (1.0 + 0.2 * int(lv.get("ballista_dmg", 0))) * (1.5 if int(lv.get("sp_big_bolt", 0)) > 0 else 1.0)
+	game.castle.tower_damage = 134.4 * (1.0 + 0.2 * int(lv.get("tower_dmg", 0))) * (1.3 if int(lv.get("sp_tower_ap", 0)) > 0 else 1.0)
+	game.castle.ballista_damage = 549.12 * (1.0 + 0.2 * int(lv.get("ballista_dmg", 0))) * (1.5 if int(lv.get("sp_big_bolt", 0)) > 0 else 1.0)
 
 
 static func apply(id: String, new_level: int, game: Node2D) -> void:
@@ -609,7 +609,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"cannon_multi":
 			castle.cannon_shots += 1
 		"catapult_dmg":
-			castle.catapult_damage = 134.4 * (1.0 + 0.2 * new_level)
+			castle.catapult_damage = 268.8 * (1.0 + 0.2 * new_level)
 		"catapult_rate":
 			castle.catapult_interval = maxf(1.0, 9.0 * (1.0 - 0.1 * new_level))
 		"catapult_range":
@@ -986,7 +986,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"archer_multi":
 			game.archer_stats.shots += 1
 		"archer_dmg":
-			game.archer_stats.damage = 30.0 * (1.0 + 0.2 * new_level)
+			game.archer_stats.damage = 45.0 * (1.0 + 0.2 * new_level)
 		"archer_pierce":
 			game.archer_stats.pierce += 1
 		"archer_size":

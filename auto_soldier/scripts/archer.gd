@@ -8,9 +8,7 @@ const ArcherFxScript := preload("res://scripts/archer_fx.gd")
 
 const RESPAWN_TIME := 10.0
 const MOVE_SPEED := 140.0
-## 通常攻撃（ふつうの矢・反撃の矢）の威力の倍率。特別強化にはかからない
-const NORMAL_MULT := 1.5
-## 特別強化の威力（矢1本の基本の威力 × これ）
+## 特別強化の威力（矢1本の威力 × これ）
 const RAIN_MULT := 30.0
 const ORB_MULT := 7.5
 const TORNADO_ARROW_MULT := 200.0
@@ -175,7 +173,7 @@ func _shoot(target: Node2D) -> void:
 	var st = game.archer_stats
 	for k in st.shots:
 		var dir := aim.rotated((k - (st.shots - 1) / 2.0) * 0.15)
-		var b := _make_arrow(dir, st.damage * NORMAL_MULT, record)
+		var b := _make_arrow(dir, st.damage, record)
 		b.pierce = st.pierce
 		b.radius = 5.0 * st.arrow_scale
 		b.scale = Vector2(0.5, 0.5) * st.arrow_scale

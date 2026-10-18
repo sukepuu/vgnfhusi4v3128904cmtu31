@@ -37,8 +37,6 @@ const CHARGE_MULT := 32.0
 ## 体当たりペットの威力（ペットの攻撃力の何倍か。6倍の2倍）。体当たり弓兵ペットはその3倍
 const BODY_MULT := 12.0
 const ARCHER_BODY_MULT := 36.0
-## 弓兵ペットの通常攻撃（斬撃）の威力の倍率（攻撃力 × これ。特別強化にはかからない）
-const ARCHER_SLASH_MULT := 0.5
 ## 爆裂突撃ペット：突進が当たった敵の位置で小爆発（突進の70%）
 const CHARGE_BURST_RADIUS := 50.0
 const CHARGE_BURST_RATIO := 0.7
@@ -224,7 +222,7 @@ func _due(every: float) -> bool:
 func _do_slash() -> void:
 	var radius: float = attack_range
 	var arc: float = game.stats.sword_arc
-	var dmg := damage * ARCHER_SLASH_MULT
+	var dmg := damage
 	if game.archer_pet_giant:
 		radius *= 1.3
 		dmg *= GIANT_MULT
@@ -239,8 +237,7 @@ func _do_slash() -> void:
 		e.take_damage(dmg, to.normalized() * 380.0, record)
 		# 爆裂ペット斬撃：当たった敵の所で小爆発（斬撃の35%）
 		if game.archer_pet_burst:
-			# 爆発は特別強化なので、通常攻撃の倍率（ARCHER_SLASH_MULT）はかけない
-			game.explode(e.global_position, 45.0, dmg / ARCHER_SLASH_MULT * BURST_RATIO, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
+			game.explode(e.global_position, 45.0, dmg * BURST_RATIO, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
 	var fx := SlashScript.new()
 	fx.radius = radius
 	fx.arc = arc

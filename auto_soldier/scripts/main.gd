@@ -172,7 +172,7 @@ var archer_pets: Array = []
 var pets_per_archer := 0
 ## ペットの攻撃力（あとから付くペットにも反映）
 var pet_damage := 12.0
-var archer_pet_damage := 32.0
+var archer_pet_damage := 16.0
 ## ペットの射撃間隔・射程（全ペット共通）
 var pet_interval := 0.8
 var archer_pet_interval := 0.75

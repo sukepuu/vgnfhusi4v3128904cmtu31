@@ -31,11 +31,7 @@ const OVERWORK_FLOOR := 0.4
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0
 var tower_interval := 0.9
-var tower_damage := 192.0
-## 通常攻撃だけにかける倍率（特別強化は tower_damage などの基本の威力から計算するので、これはかからない）
-const TOWER_NORMAL_MULT := 0.7
-const CATAPULT_NORMAL_MULT := 2.0
-const BALLISTA_NORMAL_MULT := 2.0
+var tower_damage := 134.4
 var tower_range := 520.0
 var _tower_cds: Array = [0.0, 0.3, 0.6, 0.15]
 var _tower_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
@@ -62,7 +58,7 @@ var _cannon_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP]
 var catapult_level := 0
 var catapult_interval := 9.0
 ## 投石器の基本の威力（前の67.2の2倍）。通常の岩も特別強化も、ぜんぶここから計算する
-var catapult_damage := 134.4
+var catapult_damage := 268.8
 var catapult_radius := 150.0
 var _catapult_cds: Array = [2.0, 5.0, 8.0]
 var _catapult_swings: Array = [0.0, 0.0, 0.0]
@@ -99,7 +95,7 @@ var _rapid_aims: Array = [Vector2.UP, Vector2.UP]
 var _rapid_flash: Array = [0.0, 0.0]
 var ballista_interval := 4.0
 ## バリスタの基本の威力（前の96の2倍）。通常の矢も特別強化も、ぜんぶここから計算する
-var ballista_damage := 274.56
+var ballista_damage := 549.12
 var _ballista_cds: Array = [1.0, 2.3, 3.6, 4.9]
 var _ballista_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
 var _ballista_recoil: Array = [0.0, 0.0, 0.0, 0.0]
@@ -395,11 +391,11 @@ func _update_towers(delta: float) -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 760.0
-			b.damage = tower_damage * power * TOWER_NORMAL_MULT
+			b.damage = tower_damage * power
 			# 連射・執念の矢・会心の一矢は戦績を分けず、通常攻撃として数える
 			# 会心の一矢：25%でダメージ3倍
 			if tower_crit and randf() < 0.25:
-				b.damage = tower_damage * power * TOWER_NORMAL_MULT * 3.0
+				b.damage = tower_damage * power * 3.0
 				b.radius = 6.0
 			b.pierce = tower_pierce
 			b.radius = 4.0
@@ -417,8 +413,7 @@ func _update_towers(delta: float) -> void:
 			if tower_blast:
 				b.explode_radius = 70.0
 				# 爆裂矢：矢の1/8（前は1/16）
-				# 爆発は矢倉の基本の威力の1/8（通常攻撃の倍率はかけない）
-				b.explode_ratio = 0.125 / TOWER_NORMAL_MULT
+				b.explode_ratio = 0.125
 				b.explode_src = game.sp_src(b.src, "sp_tower_blast")
 			b.life = tower_range / 760.0 + 0.2
 			b.position = from
@@ -490,9 +485,7 @@ func _update_catapult(delta: float) -> void:
 			var off := Vector2.ZERO
 			if catapult_shots > 1:
 				off = Vector2(randf_range(-50, 50), randf_range(-40, 40))
-			var s := _fire_shell(from, best.global_position + off, catapult_damage * CATAPULT_NORMAL_MULT, catapult_radius, true, _equip_record("catapult", "投石器", i))
-			# 分裂岩・居座り岩・牛投げは、通常攻撃の倍率をかけない基本の威力から計算する
-			s.special_base = catapult_damage
+			var s := _fire_shell(from, best.global_position + off, catapult_damage, catapult_radius, true, _equip_record("catapult", "投石器", i))
 			if split_level > 0:
 				s.split_count = 2 + 2 * split_level
 			if direct_hit:
@@ -650,8 +643,7 @@ func _update_ballista(delta: float) -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 1000.0
-			# 通常攻撃の矢は ballista_damage の BALLISTA_NORMAL_MULT 倍（特別強化は ballista_damage から計算するので、これはかからない）
-			b.damage = ballista_damage * BALLISTA_NORMAL_MULT
+			b.damage = ballista_damage
 			b.pierce = 1000000
 			b.radius = 7.0
 			if big_bolt:
@@ -678,7 +670,7 @@ func _update_ballista(delta: float) -> void:
 			if bolt_blast_level > 0:
 				b.explode_radius = 40.0 + 15.0 * bolt_blast_level
 				# 矢の威力（1.3倍）に対する割合。爆発のダメージは前の80%になるように 0.8/1.3 をかける
-				b.explode_ratio = (0.15 + 0.15 * bolt_blast_level) * 0.5 * 0.8 / 1.3 / BALLISTA_NORMAL_MULT
+				b.explode_ratio = (0.15 + 0.15 * bolt_blast_level) * 0.5 * 0.8 / 1.3
 				b.explode_src = game.sp_src(b.src, "sp_ballista_blast")
 			game.world.add_child(b)
 		_ballista_cds[i] = ballista_interval

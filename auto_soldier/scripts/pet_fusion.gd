@@ -298,7 +298,8 @@ func _slash_update(delta: float) -> void:
 			continue
 		e.take_damage(dmg, to.normalized() * 380.0, record)
 		if game.archer_pet_burst:
-			game.explode(e.global_position, 45.0 + 3.0 * _n, dmg * PetScript.BURST_RATIO * FUSION_BURST_MULT, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
+			# 爆発は特別強化なので、特大斬撃の倍率（ARCHER_SLASH_MULT）はかけない
+			game.explode(e.global_position, 45.0 + 3.0 * _n, dmg / ARCHER_SLASH_MULT * PetScript.BURST_RATIO * FUSION_BURST_MULT, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
 	var fx := SlashScript.new()
 	fx.radius = radius
 	fx.arc = arc

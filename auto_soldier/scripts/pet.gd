@@ -239,7 +239,8 @@ func _do_slash() -> void:
 		e.take_damage(dmg, to.normalized() * 380.0, record)
 		# 爆裂ペット斬撃：当たった敵の所で小爆発（斬撃の35%）
 		if game.archer_pet_burst:
-			game.explode(e.global_position, 45.0, dmg * BURST_RATIO, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
+			# 爆発は特別強化なので、通常攻撃の倍率（ARCHER_SLASH_MULT）はかけない
+			game.explode(e.global_position, 45.0, dmg / ARCHER_SLASH_MULT * BURST_RATIO, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
 	var fx := SlashScript.new()
 	fx.radius = radius
 	fx.arc = arc

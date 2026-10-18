@@ -105,7 +105,7 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		return
 	var st = game.archer_stats
-	_cd -= delta
+	_cd -= delta * game.atk_speed_mult(record)
 	if game.archer_rain and _due(RAIN_EVERY):
 		_arrow_rain()
 	if game.archer_ult and _due(ORB_EVERY):

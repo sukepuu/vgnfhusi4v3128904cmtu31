@@ -17,7 +17,7 @@ const SaveSlotsPopup := preload("res://scripts/save_slots_popup.gd")
 const UNIT_IDS := {"soldier": "recruit", "pet": "pet", "guard": "guard", "sniper": "sniper", "knight": "knight", "heavy": "heavy",
 	"engineer": "engineer", "builder": "builder", "repair": "repairer", "tower": "tower", "cannon": "cannon",
 	"catapult": "catapult", "ballista": "ballista", "frost": "frost", "mine_site": "mine_site",
-	"archer": "archer", "archer_pet": "archer_pet", "drummer": "drummer", "rapid": "rapid"}
+	"archer": "archer", "archer_pet": "archer_pet", "drummer": "drummer", "drum_pet": "drum_pet", "rapid": "rapid"}
 
 var game: Node2D
 var _was_paused := false

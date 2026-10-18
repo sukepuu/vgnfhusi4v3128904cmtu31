@@ -122,7 +122,7 @@ func _check_hits() -> void:
 				game.explode(global_position, 55.0, damage * 0.5, src, Color(1.0, 0.5, 0.15), 0.0, 120.0)
 				if blast_ratio > 0.0:
 					game.explode(global_position, 70.0, damage * blast_ratio, blast_src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
-				if (look == "bird" or look == "blade") and is_instance_valid(e) and not e.dead:
+				if (look == "bird" or look == "blade" or look == "note") and is_instance_valid(e) and not e.dead:
 					# 鳩・刃：敵が生き残っていたらくっついて、1秒ごとに2回つつく（斬る）
 					_stuck_on = e
 					_pecks_left = 2
@@ -233,6 +233,14 @@ func _draw() -> void:
 				draw_circle(Vector2(-radius * 0.3, -radius * 0.3), radius * 0.3, Color(0.55, 0.55, 0.6))
 		"homing":
 			var dir := velocity.normalized()
+			if look == "note":
+				# 鼓舞ペットの音符：丸い玉に棒と旗（くっついている間は弾むように揺れる）
+				var hop := absf(sin(_t * 12.0)) * 4.0 if _stuck_on != null else 0.0
+				var col := Color.from_hsv(fmod(_t * 0.5, 1.0), 0.5, 1.0)
+				draw_circle(Vector2(-3, 3 - hop), 5.0, col)
+				draw_line(Vector2(1.5, 3 - hop), Vector2(1.5, -10 - hop), col, 2.0)
+				draw_line(Vector2(1.5, -10 - hop), Vector2(7, -6 - hop), col, 2.5)
+				return
 			if look == "blade":
 				# 弓兵ペットの刃：くるくる回る三日月（くっついている間は斬りつけるように速く回る）
 				var spin := _t * (30.0 if _stuck_on != null else 14.0)

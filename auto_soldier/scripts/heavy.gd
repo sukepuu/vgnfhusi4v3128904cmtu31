@@ -85,7 +85,7 @@ func _process(delta: float) -> void:
 			_respawn()
 		queue_redraw()
 		return
-	_slash_cd -= delta
+	_slash_cd -= delta * game.atk_speed_mult(record)
 	_followup_cd -= delta
 	_quake_cd -= delta
 	_exec_cd -= delta

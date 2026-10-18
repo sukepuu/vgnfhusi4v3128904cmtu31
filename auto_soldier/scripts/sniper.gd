@@ -42,7 +42,7 @@ func post_position() -> Vector2:
 
 func _process(delta: float) -> void:
 	var st = game.sniper_stats
-	_cd -= delta
+	_cd -= delta * game.atk_speed_mult(record)
 	_draw_t -= delta
 	var target := _choose_target(st)
 	# 狙える敵がいなければ、採掘場が空いていれば掘りに行く（敵が射程に入ったら持ち場へ戻る）

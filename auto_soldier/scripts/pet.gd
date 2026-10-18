@@ -3,6 +3,8 @@ extends Node2D
 ## 遊撃ペット（archer = false）：担当の遊撃兵のまわりを回り、近くの敵を自動で撃つ。「遊撃ペット」を取るたびに、全遊撃兵に1匹ずつ付く。
 ## 弓兵ペット（archer = true）：担当の弓兵のまわりを回り、弓兵の近くまで来た敵へ飛んでいって、遊撃兵の剣と同じ扇形の斬撃で斬る。
 ##   「弓兵ペット」を取るたびに、全弓兵に1匹ずつ付く。強化・特別強化は game の archer_pet_* を使う（遊撃ペットとは別）。
+## 鼓舞ペット（drum = true）：担当の鼓舞兵のまわりを回り、口にくわえた笛を吹いて自分のまわりの敵にまとめてダメージを与え、
+##   範囲内の味方の攻撃速度を上げる。強化・特別強化は game の drum_pet_* を使う。
 
 const BulletScript := preload("res://scripts/bullet.gd")
 const SlashScript := preload("res://scripts/slash_effect.gd")
@@ -13,6 +15,8 @@ var owner_soldier: Node2D
 var index := 0
 ## 弓兵ペットか（main.gd の _fill_archer_pets で true にする）
 var archer := false
+## 鼓舞ペットか（main.gd の _fill_drum_pets で true にする）
+var drum := false
 var damage := 3.0
 ## 通常攻撃（ペット弾）の威力の倍率。特別強化のダメージにはかからない
 ## 通常弾の威力（以前は基本の4倍だったが、基本値に吸収）
@@ -55,9 +59,11 @@ var _trail: Array = []
 func _ready() -> void:
 	if archer:
 		record = game.new_record("archer_pet", "弓兵%dのペット%d" % [owner_soldier.index + 1, index + 1])
+	elif drum:
+		record = game.new_record("drum_pet", "鼓舞兵%dのペット%d" % [owner_soldier.index + 1, index + 1])
 	else:
 		record = game.new_record("pet", "遊撃兵%dのペット%d" % [owner_soldier.index + 1, index + 1])
-	for key in [FROST_EVERY, DANCE_EVERY, FLOCK_EVERY]:
+	for key in [FROST_EVERY, DANCE_EVERY, FLOCK_EVERY, DRUM_DANCE_EVERY, DRUM_PARADE_EVERY]:
 		_ticks[key] = floori(game.elapsed / key)
 	# あとから来たペットも、次の区切りでほかのペットといっしょに突進する
 	_charge_tick = charge_cycle(game)
@@ -74,7 +80,7 @@ func _process(delta: float) -> void:
 	var center: Vector2 = game.castle.gate_position() if owner_soldier.dead else owner_soldier.position
 	# 同じ兵士のペット同士は等間隔に並んで回る
 	# （回る角度はゲーム全体の時間で決める。ペットごとの時間だと、あとから来たペットとずれてしまう）
-	var n: int = maxi(game.pets_per_archer if archer else game.pets_per_soldier, 1)
+	var n: int = maxi(game.pets_per_archer if archer else (game.pets_per_drummer if drum else game.pets_per_soldier), 1)
 	var ang: float = game.elapsed * 1.6 + TAU * index / n
 	var target_pos: Vector2 = center + Vector2.from_angle(ang) * 60.0
 	# 突撃ペット（合体中で隠れているあいだは突進しない）
@@ -86,9 +92,13 @@ func _process(delta: float) -> void:
 		_charge_tick = charge_cycle(game)
 
 	# ペットの強化は種類ごとに全ペット共通（game のペット用の値を使う）
-	interval = game.archer_pet_interval if archer else game.pet_interval
-	attack_range = game.archer_pet_range if archer else game.pet_range
+	interval = game.archer_pet_interval if archer else (game.drum_pet_interval if drum else game.pet_interval)
+	attack_range = game.archer_pet_range if archer else (game.drum_pet_radius if drum else game.pet_range)
 	scale = Vector2(1.7, 1.7) if _giant() else Vector2.ONE
+	if drum:
+		_update_drum_pet(delta, target_pos)
+		queue_redraw()
+		return
 	if archer:
 		_update_archer_pet(delta, target_pos)
 		queue_redraw()
@@ -101,7 +111,7 @@ func _process(delta: float) -> void:
 	# 体当たりペット：触れた敵にペットの BODY_MULT（12）倍ダメージ（同じ敵は0.5秒に1回）
 	if game.pet_body:
 		_body_slam(delta)
-	_cd -= delta
+	_cd -= delta * game.atk_speed_mult(record)
 	# 突進中・戻り中は撃たない
 	if _cd <= 0.0 and _charge_state == 0:
 		var target := _nearest_enemy()
@@ -115,16 +125,137 @@ func _process(delta: float) -> void:
 
 
 func _charge_on() -> bool:
-	return game.archer_pet_charge if archer else game.pet_charge
+	return game.archer_pet_charge if archer else (game.drum_pet_charge if drum else game.pet_charge)
 
 
 func _giant() -> bool:
-	return game.archer_pet_giant if archer else game.pet_giant
+	return game.archer_pet_giant if archer else (game.drum_pet_giant if drum else game.pet_giant)
 
 
 ## このペットの攻撃力（突撃・体当たりの元になる値）
 func _base_damage() -> float:
-	return game.archer_pet_damage if archer else game.pet_damage
+	return game.archer_pet_damage if archer else (game.drum_pet_damage if drum else game.pet_damage)
+
+
+# ---------------------------------------------------------------- 鼓舞ペット
+
+## 鼓舞ペットの突撃・体当たりの威力（笛の威力 × これ）
+const DRUM_CHARGE_MULT := 1.0
+const DRUM_BODY_MULT := 0.2
+## 巨大鼓舞ペット：範囲・威力
+const DRUM_GIANT_RADIUS := 1.3
+const DRUM_GIANT_DAMAGE := 1.4
+## 攻撃速度アップ（ふつう / 高揚の笛）
+const DRUM_BUFF_TIME := 4.0
+const DRUM_BOOST_BONUS := 0.2
+const DRUM_BOOST_TIME := 8.0
+## 凍える笛：遅くする秒数・割合
+const DRUM_SLOW_TIME := 3.0
+const DRUM_SLOW_RATIO := 0.4
+## 癒しの笛：1回で味方が回復する量
+const DRUM_HEAL := 10.0
+## 連吹き：二吹き目までの時間・威力
+const DRUM_DOUBLE_DELAY := 0.3
+const DRUM_DOUBLE_RATIO := 0.5
+## 鼓舞ペットの舞：間隔・音符の数・威力
+const DRUM_DANCE_EVERY := 5.0
+const DRUM_DANCE_NOTES := 12
+const DRUM_DANCE_RATIO := 0.3
+## 必殺・鼓笛隊：間隔・音符の数・威力
+const DRUM_PARADE_EVERY := 15.0
+const DRUM_PARADE_NOTES := 6
+const DRUM_PARADE_RATIO := 0.3
+var _drum_double_left := -1.0
+var _beat_fx := 0.0
+var _beat_r := 0.0
+
+
+func _update_drum_pet(delta: float, home: Vector2) -> void:
+	_beat_fx -= delta
+	if _charge_state == 0:
+		position = position.lerp(home, 1.0 - exp(-10.0 * delta))
+	if game.drum_pet_body:
+		_body_slam(delta)
+	if game.drum_pet_dance and _due(DRUM_DANCE_EVERY):
+		_note_ring()
+	if game.drum_pet_parade and _due(DRUM_PARADE_EVERY):
+		_note_parade()
+	if _drum_double_left > 0.0:
+		_drum_double_left -= delta
+		if _drum_double_left <= 0.0:
+			_drum_beat(DRUM_DOUBLE_RATIO, game.sp_src(record, "sp_drum_pet_double"))
+	_cd -= delta * game.atk_speed_mult(record)
+	# 突進中・戻り中は吹かない。範囲に敵がいるときだけ吹く
+	if _cd <= 0.0 and _charge_state == 0 and _enemy_in_range(_drum_radius()):
+		_cd = interval
+		_drum_beat(1.0, record)
+		if game.drum_pet_double:
+			_drum_double_left = DRUM_DOUBLE_DELAY
+
+
+func _drum_radius() -> float:
+	return attack_range * (DRUM_GIANT_RADIUS if game.drum_pet_giant else 1.0)
+
+
+func _drum_damage() -> float:
+	return damage * (DRUM_GIANT_DAMAGE if game.drum_pet_giant else 1.0)
+
+
+func _enemy_in_range(r: float) -> bool:
+	for e in game.enemies_near(global_position, r + 30.0):
+		if is_instance_valid(e) and not e.dead and global_position.distance_to(e.global_position) <= r + e.radius:
+			return true
+	return false
+
+
+## 笛を1回吹く：自分を中心に範囲の敵へダメージ、範囲の味方に攻撃速度アップ（凍える笛・癒しの笛も）
+func _drum_beat(ratio: float, src: Dictionary) -> void:
+	var r := _drum_radius()
+	drum_pet_area(game, global_position, r, _drum_damage() * ratio, src, record, owner_soldier)
+	_beat_fx = 0.3
+	_beat_r = r
+
+
+## 鼓舞ペットの笛（合体ペットからも使う）：pos を中心に r の範囲の敵へ dmg、味方に攻撃速度アップ
+static func drum_pet_area(g: Node2D, pos: Vector2, r: float, dmg: float, src: Dictionary, rec: Dictionary, from: Node2D) -> void:
+	for e in g.enemies_near(pos, r + 30.0):
+		if not is_instance_valid(e) or e.dead:
+			continue
+		if pos.distance_to(e.global_position) > r + e.radius:
+			continue
+		if g.drum_pet_slow:
+			e.slow(DRUM_SLOW_TIME, DRUM_SLOW_RATIO)
+		e.take_damage(dmg, Vector2.ZERO, src)
+	var bonus: float = DRUM_BOOST_BONUS if g.drum_pet_boost else g.ATK_BUFF_BONUS
+	var time: float = DRUM_BOOST_TIME if g.drum_pet_boost else DRUM_BUFF_TIME
+	g.drum_buff_area(pos, r, time, from, bonus, true)
+	if g.drum_pet_heal:
+		g.drum_heal_area(pos, r, DRUM_HEAL, rec, "sp_drum_pet_heal")
+
+
+## 鼓舞ペットの舞：全方位へ音符を飛ばす
+func _note_ring() -> void:
+	for i in DRUM_DANCE_NOTES:
+		var dir := Vector2.from_angle(TAU * i / DRUM_DANCE_NOTES + _t)
+		var b := BulletScript.new()
+		b.game = game
+		b.position = global_position
+		b.velocity = dir * 380.0
+		b.damage = _drum_damage() * DRUM_DANCE_RATIO
+		b.radius = 8.0
+		b.pierce = 1
+		b.color = Color.from_hsv(float(i) / DRUM_DANCE_NOTES, 0.6, 1.0)
+		b.life = 1.2
+		b.src = game.sp_src(record, "sp_drum_pet_dance")
+		game.world.add_child(b)
+
+
+## 必殺・鼓笛隊：敵を追いかけてくっつく音符
+func _note_parade() -> void:
+	for i in DRUM_PARADE_NOTES:
+		var m: Node2D = game.spawn_missile("homing", global_position,
+			Vector2.from_angle(TAU * i / DRUM_PARADE_NOTES) * 320.0, _drum_damage() * DRUM_PARADE_RATIO, 10.0, 6.0, game.sp_src(record, "sp_ult_drum_parade"))
+		m.look = "note"
 
 
 # ---------------------------------------------------------------- 弓兵ペット
@@ -169,7 +300,7 @@ func _update_archer_pet(delta: float, home: Vector2) -> void:
 	var leash_center: Vector2 = home if owner_soldier.dead else owner_soldier.global_position
 	var target := _slash_target if _slash_target_ok(leash_center) else _nearest_enemy_near(leash_center)
 	_slash_target = target
-	_cd -= delta
+	_cd -= delta * game.atk_speed_mult(record)
 	_slash_gap -= delta
 	if target == null:
 		_slashes_left = 0
@@ -368,9 +499,9 @@ func _push_trail() -> void:
 ## 突進中に触れた敵に1回ずつダメージ（爆裂突撃ペットなら、当たった所で小爆発）
 func _charge_hit() -> void:
 	var r := 9.0 * scale.x
-	var charge_sp := "sp_archer_pet_charge" if archer else "sp_pet_charge"
+	var charge_sp := "sp_archer_pet_charge" if archer else ("sp_drum_pet_charge" if drum else "sp_pet_charge")
 	var burst_sp := "sp_archer_pet_charge_burst" if archer else "sp_pet_charge_burst"
-	var burst_on: bool = game.archer_pet_charge_burst if archer else game.pet_charge_burst
+	var burst_on: bool = game.archer_pet_charge_burst if archer else (false if drum else game.pet_charge_burst)
 	for e in game.enemies_near(global_position, r + 60.0):
 		if not is_instance_valid(e) or e.dead:
 			continue
@@ -379,7 +510,7 @@ func _charge_hit() -> void:
 			continue
 		if global_position.distance_to(e.global_position) < r + e.radius + 3.0:
 			_charge_hits[id] = true
-			var dmg: float = _base_damage() * CHARGE_MULT
+			var dmg: float = _base_damage() * (DRUM_CHARGE_MULT if drum else CHARGE_MULT)
 			var hit_pos: Vector2 = e.global_position
 			e.take_damage(dmg, _aim * 260.0, game.sp_src(record, charge_sp))
 			if burst_on:
@@ -418,7 +549,9 @@ func _body_slam(delta: float) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < r + e.radius + 3.0:
 			_slam_cd[e] = 0.5
-			e.take_damage(_base_damage() * (ARCHER_BODY_MULT if archer else BODY_MULT), (e.global_position - global_position).normalized() * 200.0, game.sp_src(record, "sp_archer_pet_body" if archer else "sp_pet_body"))
+			var body_mult: float = ARCHER_BODY_MULT if archer else (DRUM_BODY_MULT if drum else BODY_MULT)
+			var body_sp := "sp_archer_pet_body" if archer else ("sp_drum_pet_body" if drum else "sp_pet_body")
+			e.take_damage(_base_damage() * body_mult, (e.global_position - global_position).normalized() * 200.0, game.sp_src(record, body_sp))
 
 
 func _nearest_enemy() -> Node2D:
@@ -442,14 +575,18 @@ func _draw() -> void:
 		for i in range(1, _trail.size()):
 			var a: float = float(i) / _trail.size()
 			draw_line(to_local(_trail[i - 1]), to_local(_trail[i]), Color(col, 0.6 * a), 3.0 + 7.0 * a)
+	# 鼓舞ペット：笛を吹いた直後、範囲いっぱいまで広がる輪
+	if drum and _beat_fx > 0.0:
+		var k := clampf(1.0 - _beat_fx / 0.3, 0.0, 1.0)
+		draw_arc(Vector2.ZERO, _beat_r * (0.3 + 0.7 * k), 0.0, TAU, 40, Color(1.0, 0.75, 0.55, 0.7 * (1.0 - k) + 0.1), 3.0)
 	var bob := sin(_t * 6.0) * 2.0
 	draw_circle(Vector2(0, 10), 7.0, Color(0, 0, 0, 0.25))
 	var c := Vector2(0, bob)
-	# 踊り（遊撃ペットは「ペットの踊り」、弓兵ペットは「弓兵ペットの舞」）
-	var dancing: bool = game.archer_pet_dance if archer else game.fun.pet_dance
-	# 弓兵ペットは紫っぽい色
-	var body_col := Color(0.8, 0.65, 1.0) if archer else Color(0.45, 0.95, 0.65)
-	var wing_col := Color(0.6, 0.45, 0.85) if archer else Color(0.3, 0.75, 0.5)
+	# 踊り（遊撃ペットは「ペットの踊り」、弓兵ペットは「弓兵ペットの舞」、鼓舞ペットは「鼓舞ペットの舞」）
+	var dancing: bool = game.archer_pet_dance if archer else (game.drum_pet_dance if drum else game.fun.pet_dance)
+	# 弓兵ペットは紫っぽい色、鼓舞ペットは赤っぽい色
+	var body_col := Color(0.8, 0.65, 1.0) if archer else (Color(1.0, 0.6, 0.5) if drum else Color(0.45, 0.95, 0.65))
+	var wing_col := Color(0.6, 0.45, 0.85) if archer else (Color(0.85, 0.38, 0.32) if drum else Color(0.3, 0.75, 0.5))
 	if dancing:
 		# ペットの踊り：虹色に光りながら、その場でくるくる回る
 		var hue := fmod(_t * 0.8 + index * 0.3, 1.0)
@@ -466,4 +603,11 @@ func _draw() -> void:
 	draw_circle(c + _aim * 4.0 + Vector2(-2, -2), 1.8, Color(0.1, 0.1, 0.1))
 	draw_circle(c + _aim * 4.0 + Vector2(2, -2), 1.8, Color(0.1, 0.1, 0.1))
 	draw_colored_polygon(PackedVector2Array([c + _aim * 12.0, c + _aim * 7.0 + _aim.orthogonal() * 3.0, c + _aim * 7.0 - _aim.orthogonal() * 3.0]), Color(1.0, 0.8, 0.3))
+	if drum:
+		# 口にくわえた笛（銀色の細い管。吹いた直後は先が光る）
+		var tip := c + _aim * 20.0 + _aim.orthogonal() * 2.0
+		draw_line(c + _aim * 10.0, tip, Color(0.82, 0.84, 0.88), 3.0)
+		draw_circle(c + _aim * 13.0, 2.2, Color(0.6, 0.62, 0.68))
+		if _beat_fx > 0.1:
+			draw_circle(tip, 3.0, Color(1.0, 0.95, 0.6, 0.9))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

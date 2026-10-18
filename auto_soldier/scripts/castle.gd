@@ -364,7 +364,7 @@ func _tower_local_pos(i: int) -> Vector2:
 
 func _update_towers(delta: float) -> void:
 	for i in tower_count:
-		_tower_cds[i] -= delta
+		_tower_cds[i] -= delta * game.atk_speed_mult(_equip_record("tower", "矢倉", i))
 		if _tower_cds[i] > 0.0:
 			continue
 		var from := wpos() + _tower_local_pos(i)
@@ -423,7 +423,7 @@ func _update_towers(delta: float) -> void:
 
 func _update_cannon(delta: float) -> void:
 	for i in mini(cannon_level, MAX_GUNS):
-		_cannon_cds[i] -= delta
+		_cannon_cds[i] -= delta * game.atk_speed_mult(_equip_record("cannon", "大砲", i))
 		if _cannon_cds[i] > 0.0:
 			continue
 		var best := _densest_enemy(cannon_range, cannon_radius)
@@ -473,7 +473,7 @@ func _update_cannon(delta: float) -> void:
 func _update_catapult(delta: float) -> void:
 	for i in mini(catapult_level, MAX_GUNS):
 		_catapult_swings[i] -= delta
-		_catapult_cds[i] -= delta
+		_catapult_cds[i] -= delta * game.atk_speed_mult(_equip_record("catapult", "投石器", i))
 		if _catapult_cds[i] > 0.0:
 			continue
 		var best := _densest_enemy(2000.0, catapult_radius)
@@ -550,7 +550,7 @@ func _update_rapid(delta: float) -> void:
 		if _rapid_ult_active > 0.0:
 			_rapid_ult_active -= delta
 	for i in mini(rapid_level, 2):
-		_rapid_cds[i] -= delta
+		_rapid_cds[i] -= delta * game.atk_speed_mult(_equip_record("rapid", "連射砲", i))
 		_rapid_flash[i] -= delta
 		if rapid_overheat:
 			if game.elapsed - _rapid_last_fire[i] > 1.0:
@@ -626,7 +626,7 @@ func _update_rapid(delta: float) -> void:
 func _update_ballista(delta: float) -> void:
 	for i in mini(ballista_level, MAX_BALLISTAS):
 		_ballista_recoil[i] -= delta
-		_ballista_cds[i] -= delta
+		_ballista_cds[i] -= delta * game.atk_speed_mult(_equip_record("ballista", "バリスタ", i))
 		if _ballista_cds[i] > 0.0:
 			continue
 		var from := wpos() + _ballista_local_pos(i)

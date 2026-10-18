@@ -55,7 +55,7 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		return
 	var st = game.knight_stats
-	_cd -= delta
+	_cd -= delta * game.atk_speed_mult(record)
 	_retarget_cd -= delta
 	_hurt_flash -= delta
 	_invuln -= delta

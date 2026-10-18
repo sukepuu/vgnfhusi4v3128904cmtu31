@@ -90,7 +90,7 @@ func _process(delta: float) -> void:
 		position += (to.normalized() + sway).normalized() * minf(st.move_speed * delta, to.length())
 	position = game.clamp_to_map(position, 20.0)
 	# 太鼓を叩く
-	_cd -= delta
+	_cd -= delta * game.atk_speed_mult(record)
 	if _cd <= 0.0:
 		_cd = st.interval
 		_beat(st.damage, st.radius, record)

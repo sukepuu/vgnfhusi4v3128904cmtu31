@@ -64,7 +64,9 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		return
 	var st = game.stats
-	_fire_cd -= delta
+	# 鼓舞ペットのバフ中は攻撃の待ち時間が早く減る
+	var atk: float = game.atk_speed_mult(record)
+	_fire_cd -= delta * atk
 	_volley_cd -= delta
 	_boomerang_cd -= delta
 	if st.touch_blast:
@@ -78,8 +80,8 @@ func _process(delta: float) -> void:
 		f.radius = 70.0
 		f.src = game.sp_src(record, "sp_fun_fireworks")
 	_last_kills = record["kills"]
-	_sword_cd -= delta
-	_dash_cd -= delta
+	_sword_cd -= delta * atk
+	_dash_cd -= delta * atk
 	_hurt_flash -= delta
 	_invuln -= delta
 	_retarget_cd -= delta

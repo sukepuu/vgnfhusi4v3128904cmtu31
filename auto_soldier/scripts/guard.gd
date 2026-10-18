@@ -55,7 +55,7 @@ func _process(delta: float) -> void:
 		return
 	var st = game.guard_stats
 	var castle_pos: Vector2 = game.castle.global_position
-	_spear_cd -= delta
+	_spear_cd -= delta * game.atk_speed_mult(record)
 	_bash_cd -= delta
 	_whirl_cd -= delta
 	_spike_cd -= delta

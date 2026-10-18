@@ -324,8 +324,8 @@ func _do_flock() -> void:
 	for p in game.pets:
 		# 合体中は巨大ペットの体から飛び立つ
 		var from: Vector2 = p.global_position
-		if not p.visible and game.pet_fusion != null:
-			from = game.pet_fusion.global_position
+		if not p.visible and game.soldier_pet_fusion() != null:
+			from = game.soldier_pet_fusion().global_position
 		for i in 6:
 			var m: Node2D = game.spawn_missile("homing", from,
 				Vector2.from_angle(TAU * i / 6.0) * 300.0, game.pet_damage * FLOCK_MULT, 10.0, 6.0, game.sp_src(p.record, "sp_ult_flock"))

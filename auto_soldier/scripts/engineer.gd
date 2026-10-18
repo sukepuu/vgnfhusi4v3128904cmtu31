@@ -40,7 +40,7 @@ func _process(delta: float) -> void:
 				state = "planting"
 				progress = 0.0
 		"planting":
-			progress += delta / game.engineer_stats.plant_time
+			progress += delta * game.atk_speed_mult(record) / game.engineer_stats.plant_time
 			if progress >= 1.0:
 				_place_trap()
 				next_kind = "pit" if next_kind == "bomb" else "bomb"

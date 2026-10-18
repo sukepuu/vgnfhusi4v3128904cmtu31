@@ -147,6 +147,24 @@ var drum_ult := false
 var drum_resonance := false
 var drum_morale := false
 var drum_place := false
+## 鼓舞ペット（鼓舞兵1人あたり pets_per_drummer 匹）。範囲攻撃・攻撃速度のバフ。威力・間隔・範囲は鼓舞兵の基本の80%から
+var drum_pets: Array = []
+var pets_per_drummer := 0
+var drum_pet_damage := 215.04
+var drum_pet_interval := 7.2
+var drum_pet_radius := 120.0
+var drum_pet_giant := false
+var drum_pet_charge := false
+var drum_pet_body := false
+var drum_pet_slow := false
+var drum_pet_heal := false
+var drum_pet_dance := false
+var drum_pet_double := false
+var drum_pet_boost := false
+var drum_pet_parade := false
+var drum_pet_fusion := false
+## 合体合体合体ペットを取ったか（取ったら、ほかの3つの合体ペットは合体しなくなる）
+var triple_fusion_on := false
 var archer_stats := ArcherStats.new()
 const MAX_ARCHERS := 3
 const MAX_SNIPERS := 3
@@ -755,34 +773,39 @@ func add_sniper() -> void:
 ## バフ中の味方の攻撃（特別強化の攻撃も）は、かかっている中で一番大きいバフの量だけ与ダメージが増える（ふつうは +DRUM_BUFF_BONUS）
 var _drum_buff := {}
 const DRUM_BUFF_BONUS := 0.1
+## 鼓舞ペットのバフ（攻撃速度）：形は _drum_buff と同じ。バフ中の味方は、攻撃の待ち時間が（1 + バフの量）倍の速さで減る
+var _atk_buff := {}
+const ATK_BUFF_BONUS := 0.1
 
 
 ## 鼓舞兵が太鼓を叩いたとき：pos から r 以内の味方（兵士・ペット・ほかの鼓舞兵・城の兵装）に seconds 秒のバフ（量 bonus）。
 ## バフをかけた味方の数を返す（城と城の兵装はまとめて1と数える）
-func drum_buff_area(pos: Vector2, r: float, seconds: float, from: Node2D, bonus: float = DRUM_BUFF_BONUS) -> int:
+## atk = true なら与ダメージではなく攻撃速度のバフ（鼓舞ペット）
+func drum_buff_area(pos: Vector2, r: float, seconds: float, from: Node2D, bonus: float = DRUM_BUFF_BONUS, atk: bool = false) -> int:
+	var store: Dictionary = _atk_buff if atk else _drum_buff
 	var until := elapsed + seconds
 	var count := 0
 	for u in _drum_allies():
 		if u == from:
 			continue
 		if pos.distance_to(u.global_position) <= r and "record" in u:
-			_set_drum_buff(u.record, bonus, until)
+			_set_drum_buff(store, u.record, bonus, until)
 			count += 1
 	# 城が範囲に入っていたら、城と城の兵装（矢倉・大砲など）にも
 	if castle.distance_to_point(pos) <= r:
-		_set_drum_buff(castle.record, bonus, until)
+		_set_drum_buff(store, castle.record, bonus, until)
 		for rec in castle._equip_records.values():
-			_set_drum_buff(rec, bonus, until)
+			_set_drum_buff(store, rec, bonus, until)
 		count += 1
 	return count
 
 
 ## 鼓舞のバフ・回復の対象になる味方（生きていて、見えているもの）
 func _drum_allies() -> Array:
-	var units: Array = soldiers + guards + builders + engineers + snipers + knights + repairers + pets + archers + archer_pets + drummers
+	var units: Array = soldiers + guards + builders + engineers + snipers + knights + repairers + pets + archers + archer_pets + drummers + drum_pets
 	if heavy != null:
 		units.append(heavy)
-	for f in [pet_fusion, archer_fusion]:
+	for f in [pet_fusion, archer_fusion, drum_fusion, triple_fusion]:
 		if f != null and is_instance_valid(f) and f.merged():
 			units.append(f)
 	return units.filter(func(u) -> bool: return is_instance_valid(u) and u.visible and not ("dead" in u and u.dead))
@@ -799,18 +822,27 @@ func drum_heal_area(pos: Vector2, r: float, amount: float, rec: Dictionary, sp_i
 				heal_unit(u, entry[1], amount, rec, sp_id)
 
 
-func _set_drum_buff(rec: Dictionary, bonus: float, until: float) -> void:
+func _set_drum_buff(store: Dictionary, rec: Dictionary, bonus: float, until: float) -> void:
 	if rec.is_empty() or not rec.has("idx"):
 		return
-	var tiers: Dictionary = _drum_buff.get_or_add(rec["idx"], {})
+	var tiers: Dictionary = store.get_or_add(rec["idx"], {})
 	tiers[bonus] = maxf(float(tiers.get(bonus, 0.0)), until)
 
 
 ## 攻撃した味方（src＝戦績カード。特別強化のカードなら元の兵士のカード）が鼓舞のバフ中なら 1 + バフの量、そうでなければ 1.0
 func drum_buff_mult(src: Dictionary) -> float:
-	if src.is_empty() or _drum_buff.is_empty():
+	return _buff_mult(_drum_buff, src)
+
+
+## 攻撃速度の倍率（鼓舞ペットのバフ中なら 1 + バフの量）。攻撃の待ち時間を delta × これ だけ減らす
+func atk_speed_mult(rec: Dictionary) -> float:
+	return _buff_mult(_atk_buff, rec)
+
+
+func _buff_mult(store: Dictionary, src: Dictionary) -> float:
+	if src.is_empty() or store.is_empty():
 		return 1.0
-	var tiers = _drum_buff.get(src.get("rec_idx", src.get("idx", -1)))
+	var tiers = store.get(src.get("rec_idx", src.get("idx", -1)))
 	if tiers == null:
 		return 1.0
 	var best := 0.0
@@ -829,6 +861,35 @@ func add_drummer() -> void:
 	d.position = castle.gate_position() + Vector2(randf_range(-40, 40), -30)
 	world.add_child(d)
 	drummers.append(d)
+	# あとから増えた鼓舞兵にも、鼓舞ペットを付ける
+	_fill_drum_pets()
+
+
+## 全鼓舞兵に鼓舞ペットを1匹ずつ追加する
+func add_drum_pet() -> void:
+	if pets_per_drummer >= MAX_PETS:
+		return
+	pets_per_drummer += 1
+	_fill_drum_pets()
+
+
+func _fill_drum_pets() -> void:
+	for d in drummers:
+		var have := 0
+		for p in drum_pets:
+			if p.owner_soldier == d:
+				have += 1
+		while have < pets_per_drummer:
+			var p := PetScript.new()
+			p.game = self
+			p.owner_soldier = d
+			p.index = have
+			p.drum = true
+			p.damage = drum_pet_damage
+			p.position = d.position
+			world.add_child(p)
+			drum_pets.append(p)
+			have += 1
 
 
 func add_archer() -> void:
@@ -964,6 +1025,39 @@ func start_pet_fusion() -> void:
 
 ## 弓兵ペット大合体（弓兵ペットの特別強化）を始める
 var archer_fusion: Node2D = null
+
+
+## 遊撃ペットが入っている合体ペット（合体合体合体ペットが合体中ならそれ、なければ遊撃ペット大合体。どちらもなければ null）
+func soldier_pet_fusion() -> Node2D:
+	if triple_fusion != null and is_instance_valid(triple_fusion) and triple_fusion.merged():
+		return triple_fusion
+	return pet_fusion
+
+
+## 鼓舞ペット大合体・合体合体合体ペット
+var drum_fusion: Node2D = null
+var triple_fusion: Node2D = null
+
+
+func start_drum_pet_fusion() -> void:
+	drum_pet_fusion = true
+	if drum_fusion != null:
+		return
+	drum_fusion = PetFusionScript.new()
+	drum_fusion.game = self
+	drum_fusion.drum = true
+	world.add_child(drum_fusion)
+
+
+## 合体合体合体ペット：遊撃・弓兵・鼓舞の3つの合体ペットを止めて、3種類のペットが全部合体する巨大ペットにする
+func start_triple_fusion() -> void:
+	triple_fusion_on = true
+	if triple_fusion != null:
+		return
+	triple_fusion = PetFusionScript.new()
+	triple_fusion.game = self
+	triple_fusion.triple = true
+	world.add_child(triple_fusion)
 
 
 func start_archer_pet_fusion() -> void:

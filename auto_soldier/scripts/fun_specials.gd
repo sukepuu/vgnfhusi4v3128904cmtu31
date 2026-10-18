@@ -121,7 +121,7 @@ func _throw_snowball() -> void:
 
 func _do_dance() -> void:
 	# 合体中は、巨大ペットが全方位へ24発（合体した数ぶんの威力。ペットの攻撃力1.2倍のぶんは打ち消す）
-	var f: Node2D = game.pet_fusion
+	var f: Node2D = game.soldier_pet_fusion()
 	if f != null and f.merged():
 		for i in 24:
 			var dir := Vector2.from_angle(TAU * i / 24.0 + f._t)
@@ -156,7 +156,7 @@ func _do_dance() -> void:
 
 ## 凍える羽根：全ペットが、近くの敵を追いかける凍結弾を1発ずつ撃つ（狙う敵はなるべくばらけさせる）
 func _frost_volley() -> void:
-	var f: Node2D = game.pet_fusion
+	var f: Node2D = game.soldier_pet_fusion()
 	var used := {}
 	for p in game.pets:
 		# 合体中は巨大ペットの体から撃つ

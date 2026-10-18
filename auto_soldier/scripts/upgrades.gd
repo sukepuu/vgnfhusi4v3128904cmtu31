@@ -74,6 +74,12 @@ const LIST := [
 	{"id": "drum_rate", "cat": "drummer", "name": "早打ち", "desc": "太鼓を叩く間隔 -10%", "max": 5, "req": "drummer"},
 	{"id": "drum_range", "cat": "drummer", "name": "響く太鼓", "desc": "太鼓が届く範囲 +15%", "max": 5, "req": "drummer"},
 	{"id": "drum_speed", "cat": "drummer", "name": "軽い足取り", "desc": "鼓舞兵の歩く速さ +20%", "max": 3, "req": "drummer"},
+	# 【鼓舞ペット】
+	{"id": "drum_pet", "cat": "drum_pet", "name": "鼓舞ペット", "desc": "全鼓舞兵にペットが1匹ずつ付く。笛を吹いて自分のまわりの敵にまとめてダメージを与え、範囲内の味方の攻撃速度を4秒間 +10%（あとから増えた鼓舞兵にも付く）",
+		"desc_up": "全鼓舞兵にペットがもう1匹ずつ付く、全鼓舞ペットの攻撃力 +20%", "max": 4, "req": "drummer"},
+	{"id": "drum_pet_dmg", "cat": "drum_pet", "name": "力強い笛", "desc": "鼓舞ペットのダメージ +20%", "max": 5, "req": "drum_pet"},
+	{"id": "drum_pet_rate", "cat": "drum_pet", "name": "早吹き", "desc": "鼓舞ペットが笛を吹く間隔 -10%", "max": 5, "req": "drum_pet"},
+	{"id": "drum_pet_range", "cat": "drum_pet", "name": "響く笛", "desc": "鼓舞ペットの笛が届く範囲 +15%", "max": 5, "req": "drum_pet"},
 	{"id": "sniper_rate", "cat": "sniper", "name": "早撃ち", "desc": "狙撃兵が矢を放つ間隔 -10%", "max": 5, "req": "sniper"},
 	{"id": "sniper_multi", "cat": "sniper", "name": "多連矢", "desc": "一度に放つ矢 +1本", "max": 3, "req": "sniper"},
 	{"id": "sniper_dmg", "cat": "sniper", "name": "強弓", "desc": "矢の威力 +20%", "max": 5, "req": "sniper"},
@@ -227,6 +233,17 @@ const SPECIAL := [
 	{"id": "sp_drum_wave", "cat": "drummer", "special": true, "name": "響きの波", "desc": "太鼓を叩くたびに、全方位へ8つの衝撃波を飛ばす（太鼓の30%の威力・2体貫通）", "max": 1, "req": "drummer"},
 	{"id": "sp_drum_push", "cat": "drummer", "special": true, "name": "押し返しの太鼓", "desc": "太鼓を叩いた範囲の敵を外へ押し出す（ボスには効かない）", "max": 1, "req": "drummer"},
 	{"id": "sp_drum_heal", "cat": "drummer", "special": true, "name": "癒しの調べ", "desc": "太鼓を叩くたびに、城のHPが3、太鼓の範囲内の味方のHPが20回復する", "max": 1, "req": "drummer"},
+	{"id": "sp_drum_pet_giant", "cat": "drum_pet", "special": true, "name": "巨大鼓舞ペット", "desc": "鼓舞ペットが大きくなり、笛の範囲 +30%・威力 +40%", "max": 1, "req": "drum_pet"},
+	{"id": "sp_drum_pet_charge", "cat": "drum_pet", "special": true, "name": "突撃鼓舞ペット", "desc": "6秒ごとに、鼓舞ペットが鼓舞兵から離れてHPが一番高い敵へ高速で突進する。突進中に触れた敵に1回ずつダメージ（笛と同じ威力）。戻るときはダメージなし", "max": 1, "req": "drum_pet"},
+	{"id": "sp_drum_pet_body", "cat": "drum_pet", "special": true, "name": "体当たり鼓舞ペット", "desc": "鼓舞ペットに触れた敵に、笛の威力の20%のダメージ（同じ敵には0.5秒に1回）", "max": 1, "req": "drum_pet"},
+	{"id": "sp_drum_pet_slow", "cat": "drum_pet", "special": true, "name": "凍える笛", "desc": "鼓舞ペットの笛が当たった敵の移動速度を3秒間 -40%", "max": 1, "req": "drum_pet"},
+	{"id": "sp_drum_pet_heal", "cat": "drum_pet", "special": true, "name": "癒しの笛", "desc": "鼓舞ペットが笛を吹くたびに、範囲内の味方のHPが10回復する", "max": 1, "req": "drum_pet"},
+	{"id": "sp_drum_pet_dance", "cat": "drum_pet", "special": true, "name": "鼓舞ペットの舞", "desc": "鼓舞ペットが虹色に光りながらくるくる回り、5秒ごとに全方位へ音符を12個飛ばす（笛の威力の30%）", "max": 1, "req": "drum_pet"},
+	{"id": "sp_drum_pet_double", "cat": "drum_pet", "special": true, "name": "連吹き", "desc": "鼓舞ペットが笛を吹いた少しあとに、もう一度吹く（半分の威力。攻撃速度アップもかかる）", "max": 1, "req": "drum_pet"},
+	{"id": "sp_drum_pet_boost", "cat": "drum_pet", "special": true, "name": "高揚の笛", "desc": "鼓舞ペットの攻撃速度アップが +20%・8秒間になる", "max": 1, "req": "drum_pet"},
+	{"id": "sp_ult_drum_parade", "cat": "drum_pet", "special": true, "name": "必殺・鼓笛隊", "desc": "15秒ごとに、鼓舞ペット1匹につき6つの音符を飛ばす。音符は敵を追いかけ、当たった敵にくっついて2回鳴る（笛の威力の30%）", "max": 1, "req": "drum_pet"},
+	{"id": "sp_drum_pet_fusion", "cat": "drum_pet", "special": true, "name": "鼓舞ペット大合体", "desc": "20秒ごとに、全鼓舞ペットが合体して10秒間巨大ペットになる。立ち止まって特大の笛（範囲攻撃＋攻撃速度アップ）を連発→まっすぐ高速突進をくり返す。\n合体したペットが多いほど強く大きくなり、強化の効果も乗る", "max": 1, "req": "drum_pet"},
+	{"id": "sp_triple_fusion", "cat": "pet", "special": true, "name": "合体合体合体ペット", "desc": "遊撃ペット・弓兵ペット・鼓舞ペットの大合体を止めるかわりに、5秒後に3種類のペットが全部合体した巨大ペットが現れる。3種類の合体ペットの攻撃を同時に行う。20秒たつと分かれて、20秒後にまた合体する\n「遊撃ペット大合体」「弓兵ペット大合体」「鼓舞ペット大合体」を全部取得している場合のみ出現", "max": 1, "req": "sp_drum_pet_fusion", "req_all": ["sp_pet_fusion", "sp_archer_pet_fusion", "sp_drum_pet_fusion"]},
 	{"id": "sp_drum_resonance", "cat": "drummer", "special": true, "name": "共鳴の太鼓", "desc": "ほかの鼓舞兵の太鼓の範囲内で太鼓を叩くと、与えるダメージ・味方の与ダメージアップの量・その効果時間が3倍になる", "max": 1, "req": "drummer"},
 	{"id": "sp_drum_morale", "cat": "drummer", "special": true, "name": "士気の鼓動", "desc": "太鼓を叩いたとき、与ダメージアップをかけた味方の数 × 20%、その太鼓のダメージが上がる（最大 +200%）", "max": 1, "req": "drummer"},
 	{"id": "sp_drum_place", "cat": "drummer", "special": true, "name": "置き太鼓", "desc": "太鼓を叩くたびに、その場所に太鼓を置く。置いた太鼓は4秒後に1回鳴って（同じ範囲にダメージと与ダメージアップ）消える", "max": 1, "req": "drummer"},
@@ -361,11 +378,11 @@ const SPECIAL := [
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",
-	"heavy": "重装", "engineer": "工兵", "repair": "修理", "archer": "弓兵", "archer_pet": "弓兵ペット", "drummer": "鼓舞", "castle": "城"}
+	"heavy": "重装", "engineer": "工兵", "repair": "修理", "archer": "弓兵", "archer_pet": "弓兵ペット", "drummer": "鼓舞", "drum_pet": "鼓舞ペット", "castle": "城"}
 const CAT_COLOR := {
 	"pet": Color(0.55, 1.0, 0.75), "knight": Color(1.0, 0.82, 0.4), "repair": Color(0.55, 0.75, 1.0),
 	"sniper": Color(0.75, 0.95, 0.45), "archer": Color(1.0, 0.55, 0.8), "archer_pet": Color(1.0, 0.7, 0.9),
-	"drummer": Color(1.0, 0.45, 0.4),
+	"drummer": Color(1.0, 0.45, 0.4), "drum_pet": Color(1.0, 0.68, 0.55),
 	"soldier": Color(0.6, 0.85, 1.0), "builder": Color(1.0, 0.88, 0.45),
 	"guard": Color(0.6, 1.0, 0.65), "heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), 
 	"castle": Color(1.0, 0.7, 0.45), "rapid": Color(1.0, 0.7, 0.45)}
@@ -375,7 +392,7 @@ const CAT_COLOR := {
 const GROUPS := [
 	["遊撃", "soldier"], ["ペット", "pet"], ["迎撃", "guard"], ["狙撃", "sniper"], ["近衛", "knight"],
 	["重装", "heavy"], ["工兵", "engineer"], ["築城", "builder"], ["修理", "repair"],
-	["弓兵", "archer"], ["弓兵ペット", "archer_pet"], ["鼓舞", "drummer"],
+	["弓兵", "archer"], ["弓兵ペット", "archer_pet"], ["鼓舞", "drummer"], ["鼓舞ペット", "drum_pet"],
 	["矢倉", "tower"], ["大砲", "cannon"], ["投石器", "catapult"], ["バリスタ", "ballista"], ["連射砲", "rapid"],
 	["氷結の結界", "frost"], ["採掘場", "mine_site"], ["城（本体）", "castle"]]
 ## 城の通常強化がどの兵装のものか
@@ -539,6 +556,9 @@ static func _update_pet_damage(game: Node2D) -> void:
 	game.archer_pet_damage = 16.0 * (1.0 + 0.2 * int(lv.get("archer_pet_fang", 0))) * pow(1.2, maxi(0, int(lv.get("archer_pet", 0)) - 1))
 	for p in game.archer_pets:
 		p.damage = game.archer_pet_damage
+	game.drum_pet_damage = 215.04 * (1.0 + 0.2 * int(lv.get("drum_pet_dmg", 0))) * pow(1.2, maxi(0, int(lv.get("drum_pet", 0)) - 1))
+	for p in game.drum_pets:
+		p.damage = game.drum_pet_damage
 
 
 ## 矢倉・バリスタの基本の威力を、強化のレベルから計算し直す（強弓矢倉・強化弩の+20%と、徹甲矢・大型弩の倍率の両方が乗るように）
@@ -1036,6 +1056,38 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.drum_ult = true
 		"sp_drum_resonance":
 			game.drum_resonance = true
+		# ---- 鼓舞ペット
+		"drum_pet":
+			game.add_drum_pet()
+			_update_pet_damage(game)
+		"drum_pet_dmg":
+			_update_pet_damage(game)
+		"drum_pet_rate":
+			game.drum_pet_interval = maxf(1.0, 7.2 * (1.0 - 0.1 * new_level))
+		"drum_pet_range":
+			game.drum_pet_radius = 120.0 * (1.0 + 0.15 * new_level)
+		"sp_drum_pet_giant":
+			game.drum_pet_giant = true
+		"sp_drum_pet_charge":
+			game.drum_pet_charge = true
+		"sp_drum_pet_body":
+			game.drum_pet_body = true
+		"sp_drum_pet_slow":
+			game.drum_pet_slow = true
+		"sp_drum_pet_heal":
+			game.drum_pet_heal = true
+		"sp_drum_pet_dance":
+			game.drum_pet_dance = true
+		"sp_drum_pet_double":
+			game.drum_pet_double = true
+		"sp_drum_pet_boost":
+			game.drum_pet_boost = true
+		"sp_ult_drum_parade":
+			game.drum_pet_parade = true
+		"sp_drum_pet_fusion":
+			game.start_drum_pet_fusion()
+		"sp_triple_fusion":
+			game.start_triple_fusion()
 		"sp_drum_morale":
 			game.drum_morale = true
 		"sp_drum_place":

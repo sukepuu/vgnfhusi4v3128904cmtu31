@@ -3,11 +3,14 @@ extends Node2D
 
 const MissileScript := preload("res://scripts/missile.gd")
 const TrapScript := preload("res://scripts/trap.gd")
+const ArcherFxScript := preload("res://scripts/archer_fx.gd")
 
 var game: Node2D
 var start := Vector2.ZERO
 var target := Vector2.ZERO
 var damage := 40.0
+## 特別強化（分裂岩・居座り岩・牛投げ・ビリヤード）の元にする威力（0以下なら damage）
+var special_base := 0.0
 var blast_radius := 90.0
 var flight_time := 0.7
 ## true なら投石器の岩（大きく、高く飛ぶ）
@@ -41,6 +44,8 @@ var cow := false
 var stay_rock := false
 ## 大砲・置き土産：着弾地点に置く爆弾の威力（0なら置かない）
 var leave_bomb := 0.0
+## 吸引砲：着弾地点に0.5秒間、まわりの敵（ボス以外）を吸い寄せる
+var suction := false
 ## 投石器・鉄塊投げ：鉄塊の見た目。chase の敵を追いかけて落ち、その敵に direct_bonus のダメージ
 var iron := false
 var chase: Node2D = null
@@ -85,12 +90,14 @@ func _explode() -> void:
 			near.take_damage(direct_bonus, Vector2.ZERO, src if iron else game.sp_src(src, "sp_direct_hit"))
 			if boulder and game.castle.treasure_shoot and randf() < 0.05:
 				game.add_xp(1)
-	if game.castle.suction and not boulder:
-		for e in game.enemies_near(target, blast_radius + 80.0):
-			if is_instance_valid(e) and not e.dead:
-				var pull: Vector2 = target - e.global_position
-				if pull.length() > 10.0:
-					e.position += pull.normalized() * minf(40.0, pull.length() * 0.3)
+	if suction:
+		var v := ArcherFxScript.new()
+		v.game = game
+		v.kind = "tornado"
+		v.radius = blast_radius + 80.0
+		v.duration = 0.5
+		v.position = target
+		game.effects.add_child(v)
 	var col := Color(0.75, 0.65, 0.5) if boulder else Color(1.0, 0.6, 0.2)
 	game.spawn_burst(target, col, blast_radius / 2.2)
 	if meteor:
@@ -99,7 +106,7 @@ func _explode() -> void:
 	if bounces > 0:
 		# ビリヤード：同じ向きにポーンと跳ねて、もう一度小さく爆発
 		var dir := (target - start).normalized()
-		var s: Node2D = game.castle._fire_shell(target, game.clamp_to_map(target + dir * 150.0, 20.0), damage * bounce_ratio, blast_radius * 0.75, false, game.sp_src(src, "sp_fun_billiard"))
+		var s: Node2D = game.castle._fire_shell(target, game.clamp_to_map(target + dir * 150.0, 20.0), _sbase() * bounce_ratio, blast_radius * 0.75, false, game.sp_src(src, "sp_fun_billiard"))
 		s.flight_time = 0.45
 		s.bounce_ratio = 0.5
 		s.bounces = bounces - 1
@@ -109,7 +116,7 @@ func _explode() -> void:
 			s.mine_damage = mine_damage
 	if cow:
 		# 着地した牛が、6秒間近くの敵へ何度も突進する（岩の1.5倍。投石器の基本の威力が2倍になったので、前の2倍）
-		game.spawn_missile("cow", target, Vector2.ZERO, damage * 1.5, 66.0 * 0.7, 6.0, game.sp_src(src, "sp_fun_cow"))
+		game.spawn_missile("cow", target, Vector2.ZERO, _sbase() * 1.5, 66.0 * 0.7, 6.0, game.sp_src(src, "sp_fun_cow"))
 	if fire_time > 0.0:
 		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), src if fire_sp == "" else game.sp_src(src, fire_sp))
 	for i in mines:
@@ -129,14 +136,14 @@ func _explode() -> void:
 		b.position = target
 		game.ground.add_child(b)
 	if stay_rock:
-		game.spawn_placed("boulder", target, damage * 0.6, blast_radius * 0.6, 5.0, game.sp_src(src, "sp_stay_rock"))
+		game.spawn_placed("boulder", target, _sbase() * 0.6, blast_radius * 0.6, 5.0, game.sp_src(src, "sp_stay_rock"))
 	if roll_damage > 0.0:
 		var away: Vector2 = (target - game.castle.global_position).normalized()
 		var m: Node2D = game.spawn_missile("ball", target, away.rotated(randf_range(-0.3, 0.3)) * 420.0, roll_damage, 30.0, 3.0, game.sp_src(src, "sp_rolling"))
 		m.look = "rock"
 	for i in split_count:
 		var p := target + Vector2.from_angle(TAU * i / split_count + randf() * 0.5) * randf_range(blast_radius * 0.8, blast_radius * 1.2)
-		game.spawn_blast(p, 0.3 + 0.08 * i, 70.0, damage * 1.2, game.sp_src(src, "sp_split_rock"), Color(0.75, 0.65, 0.5), "rock")
+		game.spawn_blast(p, 0.3 + 0.08 * i, 70.0, _sbase() * 1.2, game.sp_src(src, "sp_split_rock"), Color(0.75, 0.65, 0.5), "rock")
 	queue_free()
 
 
@@ -181,3 +188,7 @@ func _draw() -> void:
 	draw_circle(Vector2.ZERO, 7.0, Color(0, 0, 0, 0.3))
 	draw_circle(Vector2(0, -_height), 8.0, Color(0.15, 0.15, 0.18))
 	draw_circle(Vector2(-2, -_height - 2), 3.0, Color(0.5, 0.5, 0.55))
+
+
+func _sbase() -> float:
+	return special_base if special_base > 0.0 else damage

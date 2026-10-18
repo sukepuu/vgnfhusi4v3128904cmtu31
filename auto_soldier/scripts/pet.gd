@@ -34,8 +34,11 @@ const CHARGE_RETURN_SPEED := 700.0
 const CHARGE_MAX_TIME := 1.2
 ## 突撃ペットの突進の威力（ペットの攻撃力の何倍か。16倍の2倍）
 const CHARGE_MULT := 32.0
-## 体当たりペットの威力（ペットの攻撃力の何倍か。6倍の2倍）
+## 体当たりペットの威力（ペットの攻撃力の何倍か。6倍の2倍）。体当たり弓兵ペットはその3倍
 const BODY_MULT := 12.0
+const ARCHER_BODY_MULT := 36.0
+## 弓兵ペットの通常攻撃（斬撃）の威力の倍率（攻撃力 × これ。特別強化にはかからない）
+const ARCHER_SLASH_MULT := 0.5
 ## 爆裂突撃ペット：突進が当たった敵の位置で小爆発（突進の70%）
 const CHARGE_BURST_RADIUS := 50.0
 const CHARGE_BURST_RATIO := 0.7
@@ -221,7 +224,7 @@ func _due(every: float) -> bool:
 func _do_slash() -> void:
 	var radius: float = attack_range
 	var arc: float = game.stats.sword_arc
-	var dmg := damage
+	var dmg := damage * ARCHER_SLASH_MULT
 	if game.archer_pet_giant:
 		radius *= 1.3
 		dmg *= GIANT_MULT
@@ -417,7 +420,7 @@ func _body_slam(delta: float) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < r + e.radius + 3.0:
 			_slam_cd[e] = 0.5
-			e.take_damage(_base_damage() * BODY_MULT, (e.global_position - global_position).normalized() * 200.0, game.sp_src(record, "sp_archer_pet_body" if archer else "sp_pet_body"))
+			e.take_damage(_base_damage() * (ARCHER_BODY_MULT if archer else BODY_MULT), (e.global_position - global_position).normalized() * 200.0, game.sp_src(record, "sp_archer_pet_body" if archer else "sp_pet_body"))
 
 
 func _nearest_enemy() -> Node2D:

@@ -821,12 +821,10 @@ func no_castle_push(v: Vector2) -> Vector2:
 
 
 ## 攻撃で押される強さの倍率。大型は吹き飛びにくい
-## 破城の魔王・分裂の魔獣は重いので押されにくい（ふつうの敵の4割）。砲台要塞・迫撃砲・誘導砲兵・鉄甲兵は押されない
+## ボス（大司教・分裂の魔獣の分かれた体も）・迫撃砲・誘導砲兵・鉄甲兵は押されない
 func _kb_mult() -> float:
-	if kind == "boss2" or kind == "mortar" or kind == "seeker" or kind == "boss4" or kind == "ironclad":
+	if is_boss or kind == "mortar" or kind == "seeker" or kind == "ironclad":
 		return 0.0
-	if is_boss:
-		return 0.4
 	return 0.3 if kind == "brute" else 1.0
 
 
@@ -845,8 +843,10 @@ func slow(seconds: float, ratio: float) -> void:
 
 
 func stun(seconds: float) -> void:
-	# ボスはほとんど気絶しない
-	stun_left = maxf(stun_left, seconds * (0.15 if is_boss else 1.0))
+	# ボスは気絶しない（凍結も気絶のしくみなので効かない）
+	if is_boss:
+		return
+	stun_left = maxf(stun_left, seconds)
 	knock = Vector2.ZERO
 
 

@@ -8,16 +8,18 @@ const ArcherFxScript := preload("res://scripts/archer_fx.gd")
 
 const RESPAWN_TIME := 10.0
 const MOVE_SPEED := 140.0
-## 特別強化の威力（矢1本の威力 × これ）
-const RAIN_MULT := 0.3
-const ORB_MULT := 0.5
-const TORNADO_ARROW_MULT := 1.0
-const GIANT_TORNADO_MULT := 3.0
+## 通常攻撃（ふつうの矢・反撃の矢）の威力の倍率。特別強化にはかからない
+const NORMAL_MULT := 1.5
+## 特別強化の威力（矢1本の基本の威力 × これ）
+const RAIN_MULT := 30.0
+const ORB_MULT := 7.5
+const TORNADO_ARROW_MULT := 200.0
+const GIANT_TORNADO_MULT := 60.0
 ## 特別強化の間隔（秒）。全弓兵が同じタイミングで撃つように、ゲームの経過時間の区切りで数える
 const RAIN_EVERY := 8.0
 const ORB_EVERY := 15.0
 const TORNADO_EVERY := 10.0
-const GIANT_TORNADO_EVERY := 40.0
+const GIANT_TORNADO_EVERY := 30.0
 const GIANT_TORNADO_RADIUS := 230.0
 
 var game: Node2D
@@ -173,7 +175,7 @@ func _shoot(target: Node2D) -> void:
 	var st = game.archer_stats
 	for k in st.shots:
 		var dir := aim.rotated((k - (st.shots - 1) / 2.0) * 0.15)
-		var b := _make_arrow(dir, st.damage, record)
+		var b := _make_arrow(dir, st.damage * NORMAL_MULT, record)
 		b.pierce = st.pierce
 		b.radius = 5.0 * st.arrow_scale
 		b.scale = Vector2(0.5, 0.5) * st.arrow_scale
@@ -214,7 +216,7 @@ func _fire_tornado_arrow() -> void:
 	game.world.add_child(b)
 
 
-## 必殺・巨大竜巻：フィールドの真ん中に出す
+## 巨大竜巻：フィールドの真ん中に出す
 func _giant_tornado() -> void:
 	var fx := ArcherFxScript.new()
 	fx.game = game

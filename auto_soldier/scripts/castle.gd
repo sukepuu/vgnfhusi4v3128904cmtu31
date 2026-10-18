@@ -32,6 +32,10 @@ const OVERWORK_FLOOR := 0.4
 var tower_count := 0
 var tower_interval := 0.9
 var tower_damage := 192.0
+## 通常攻撃だけにかける倍率（特別強化は tower_damage などの基本の威力から計算するので、これはかからない）
+const TOWER_NORMAL_MULT := 0.7
+const CATAPULT_NORMAL_MULT := 2.0
+const BALLISTA_NORMAL_MULT := 2.0
 var tower_range := 520.0
 var _tower_cds: Array = [0.0, 0.3, 0.6, 0.15]
 var _tower_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
@@ -47,6 +51,11 @@ var cannon_damage := 104.0
 var cannon_radius := 90.0
 var cannon_range := 650.0
 var _cannon_cds: Array = [1.0, 2.3, 3.6]
+## 大砲1門ずつの撃った回数（焼夷弾・機雷散布・置き土産は3回に1回、吸引砲は5回に1回）
+var _cannon_shot_counts: Array = [0, 0, 0]
+## 焼夷弾・機雷散布・置き土産・吸引砲が何回に1回出るか
+const CANNON_EXTRA_EVERY := 3
+const SUCTION_EVERY := 5
 var _cannon_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP]
 
 # --- 投石器（大砲より範囲が広いが、発射間隔が長い）。最大3台
@@ -60,7 +69,7 @@ var _catapult_swings: Array = [0.0, 0.0, 0.0]
 # --- バリスタ（矢倉より発射間隔が長いが、高威力・射程無限・貫通無限）。最大3基
 var ballista_level := 0
 var rapid_level := 0
-var rapid_damage := 12.5
+var rapid_damage := 100.0
 var rapid_interval := 0.125
 var rapid_shots := 1
 var rapid_pierce := 0
@@ -81,6 +90,10 @@ var _rapid_reload_cd := [0.0, 0.0]
 var _rapid_ult_cd := 0.0
 var _rapid_ult_active := 0.0
 var _rapid_cds: Array = [0.0, 0.0]
+## 連射砲1基ずつの撃った回数（犠牲は5回に1回、気絶弾は10回に1回）
+var _rapid_fired: Array = [0, 0]
+const RAPID_SACRIFICE_EVERY := 5
+const RAPID_STUN_EVERY := 10
 ## 連射砲の向き・撃った直後の光（見た目用）
 var _rapid_aims: Array = [Vector2.UP, Vector2.UP]
 var _rapid_flash: Array = [0.0, 0.0]
@@ -382,11 +395,11 @@ func _update_towers(delta: float) -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 760.0
-			b.damage = tower_damage * power
+			b.damage = tower_damage * power * TOWER_NORMAL_MULT
 			# 連射・執念の矢・会心の一矢は戦績を分けず、通常攻撃として数える
 			# 会心の一矢：25%でダメージ3倍
 			if tower_crit and randf() < 0.25:
-				b.damage = tower_damage * power * 3.0
+				b.damage = tower_damage * power * TOWER_NORMAL_MULT * 3.0
 				b.radius = 6.0
 			b.pierce = tower_pierce
 			b.radius = 4.0
@@ -404,7 +417,8 @@ func _update_towers(delta: float) -> void:
 			if tower_blast:
 				b.explode_radius = 70.0
 				# 爆裂矢：矢の1/8（前は1/16）
-				b.explode_ratio = 0.125
+				# 爆発は矢倉の基本の威力の1/8（通常攻撃の倍率はかけない）
+				b.explode_ratio = 0.125 / TOWER_NORMAL_MULT
 				b.explode_src = game.sp_src(b.src, "sp_tower_blast")
 			b.life = tower_range / 760.0 + 0.2
 			b.position = from
@@ -423,22 +437,27 @@ func _update_cannon(delta: float) -> void:
 		var from := wpos() + _cannon_local_pos(i)
 		_cannon_aims[i] = (best.global_position - from).normalized()
 		var rec := _equip_record("cannon", "大砲", i)
+		_cannon_shot_counts[i] += 1
+		var extra_turn: bool = _cannon_shot_counts[i] % CANNON_EXTRA_EVERY == 0
 		var shells: Array = []
 		for k in cannon_shots:
 			var off := Vector2.ZERO
 			if cannon_shots > 1:
 				off = Vector2(randf_range(-40, 40), randf_range(-30, 30))
 			shells.append(_fire_shell(from, best.global_position + off, cannon_damage, cannon_radius, false, rec))
-		# 置き土産：着弾地点に爆弾を置く
-		if cannon_bomb:
-			shells[0].leave_bomb = cannon_damage * 1.5
+		# 置き土産：3回に1回、着弾地点に爆弾を置く（大砲の4.5倍）
+		if cannon_bomb and extra_turn:
+			shells[0].leave_bomb = cannon_damage * 4.5
+		# 吸引砲：5回に1回、着弾地点に0.5秒間まわりの敵を吸い寄せる
+		if suction and _cannon_shot_counts[i] % SUCTION_EVERY == 0:
+			shells[0].suction = true
 		# ビリヤード砲弾：着弾後に2回跳ねる
 		if billiard:
 			shells[0].bounces = 2
-		# 機雷散布：本命の砲弾が着弾地点に機雷をばらまく
-		if cannon_mines:
+		# 機雷散布：3回に1回、本命の砲弾が着弾地点に機雷をばらまく（1個 大砲の3.6倍）
+		if cannon_mines and extra_turn:
 			shells[0].mines = 3
-			shells[0].mine_damage = cannon_damage * 1.2
+			shells[0].mine_damage = cannon_damage * 3.6
 		# 二連砲：もう1発、別の密集地へ撃つ（見つからなければ同じ所の近く）
 		if double_cannon:
 			var second := _densest_enemy(cannon_range, cannon_radius)
@@ -448,11 +467,11 @@ func _update_cannon(delta: float) -> void:
 		for k in scatter_level * 2:
 			var off := Vector2.from_angle(randf() * TAU) * randf_range(60.0, 110.0)
 			shells.append(_fire_shell(from, best.global_position + off, cannon_damage * 0.7, cannon_radius * 0.8, false, game.sp_src(rec, "sp_scatter")))
-		# 焼夷弾：着弾地点が燃える
-		if fire_level > 0:
+		# 焼夷弾：3回に1回、着弾地点が燃える（毎秒 大砲の0.45倍）
+		if fire_level > 0 and extra_turn:
 			for s in shells:
 				s.fire_time = 4.0 + 2.0 * (fire_level - 1)
-				s.fire_dps = cannon_damage * 0.15 * fire_level
+				s.fire_dps = cannon_damage * 0.45 * fire_level
 		_cannon_cds[i] = cannon_interval
 
 
@@ -471,7 +490,9 @@ func _update_catapult(delta: float) -> void:
 			var off := Vector2.ZERO
 			if catapult_shots > 1:
 				off = Vector2(randf_range(-50, 50), randf_range(-40, 40))
-			var s := _fire_shell(from, best.global_position + off, catapult_damage, catapult_radius, true, _equip_record("catapult", "投石器", i))
+			var s := _fire_shell(from, best.global_position + off, catapult_damage * CATAPULT_NORMAL_MULT, catapult_radius, true, _equip_record("catapult", "投石器", i))
+			# 分裂岩・居座り岩・牛投げは、通常攻撃の倍率をかけない基本の威力から計算する
+			s.special_base = catapult_damage
 			if split_level > 0:
 				s.split_count = 2 + 2 * split_level
 			if direct_hit:
@@ -561,8 +582,10 @@ func _update_rapid(delta: float) -> void:
 			_rapid_heat[i] = minf(0.5, _rapid_heat[i] + 0.02)
 			_rapid_last_fire[i] = game.elapsed
 			mult *= 1.0 + _rapid_heat[i]
+		_rapid_fired[i] += 1
+		# 犠牲：5回撃つたびに城のHP -1（HP1より下にはしない）。ダメージはいつも+100%
 		if rapid_sacrifice:
-			if hp > 1.0:
+			if _rapid_fired[i] % RAPID_SACRIFICE_EVERY == 0 and hp > 1.0:
 				hp -= 1.0
 			mult *= 2.0
 		if rapid_swarm:
@@ -596,7 +619,8 @@ func _update_rapid(delta: float) -> void:
 			b.src = _equip_record("rapid", "連射砲", i)
 			b.life = 1.2
 			b.position = from
-			if rapid_stun:
+			# 気絶弾：10回に1回の弾だけ、当たった敵を0.5秒気絶させる
+			if rapid_stun and _rapid_fired[i] % RAPID_STUN_EVERY == 0:
 				b.stun_on_hit = 0.5
 			if rapid_hp_scale:
 				b.hp_scale = true
@@ -626,8 +650,8 @@ func _update_ballista(delta: float) -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 1000.0
-			# 通常攻撃の矢は ballista_damage の1.3倍（特別強化は ballista_damage から計算するので、これはかからない）
-			b.damage = ballista_damage
+			# 通常攻撃の矢は ballista_damage の BALLISTA_NORMAL_MULT 倍（特別強化は ballista_damage から計算するので、これはかからない）
+			b.damage = ballista_damage * BALLISTA_NORMAL_MULT
 			b.pierce = 1000000
 			b.radius = 7.0
 			if big_bolt:
@@ -654,7 +678,7 @@ func _update_ballista(delta: float) -> void:
 			if bolt_blast_level > 0:
 				b.explode_radius = 40.0 + 15.0 * bolt_blast_level
 				# 矢の威力（1.3倍）に対する割合。爆発のダメージは前の80%になるように 0.8/1.3 をかける
-				b.explode_ratio = (0.15 + 0.15 * bolt_blast_level) * 0.5 * 0.8 / 1.3
+				b.explode_ratio = (0.15 + 0.15 * bolt_blast_level) * 0.5 * 0.8 / 1.3 / BALLISTA_NORMAL_MULT
 				b.explode_src = game.sp_src(b.src, "sp_ballista_blast")
 			game.world.add_child(b)
 		_ballista_cds[i] = ballista_interval
@@ -710,7 +734,7 @@ func _update_new_specials(delta: float) -> void:
 				if t == null:
 					break
 				var p: Vector2 = t.global_position + Vector2(randf_range(-30, 30), randf_range(-30, 30))
-				game.spawn_blast(p, 0.8, 120.0, tower_damage * 4.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_arrow_rain"), Color(1.0, 0.55, 0.2), "arrow")
+				game.spawn_blast(p, 0.8, 120.0, tower_damage * 8.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_arrow_rain"), Color(1.0, 0.55, 0.2), "arrow")
 				_recent_shots.append({"pos": p, "area": 120.0, "until": _t + 1.2})
 	if ap_shell and cannon_level > 0:
 		_ap_cd -= delta
@@ -726,13 +750,13 @@ func _update_new_specials(delta: float) -> void:
 				var b := BulletScript.new()
 				b.game = game
 				b.velocity = dir * 1100.0
-				b.damage = cannon_damage * 80.0
+				b.damage = cannon_damage * 160.0
 				b.radius = 10.0
 				b.color = Color(1.0, 0.45, 0.2)
 				b.life = 2.0
 				b.only_target = big
 				b.first_blast_radius = 50.0
-				b.first_blast_damage = cannon_damage * 10.0
+				b.first_blast_damage = cannon_damage * 20.0
 				b.position = from
 				b.src = game.sp_src(_equip_record("cannon", "大砲", i), "sp_ap_shell")
 				game.world.add_child(b)

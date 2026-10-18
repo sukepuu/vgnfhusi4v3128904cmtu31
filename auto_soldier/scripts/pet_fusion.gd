@@ -132,6 +132,8 @@ const FUSION_SCALE := 0.1874
 const FUSION_BONUS := 1.875
 ## 合体中の爆裂ペット弾の爆発の倍率（ふつうのペットの爆発の割合 × これ。80%）
 const FUSION_BURST_MULT := 0.8
+## 合体弓兵ペットの特大斬撃の威力の倍率
+const ARCHER_SLASH_MULT := 1.0 / 9.0
 
 
 ## 合体ペットの強さの倍率（弾1発 = ペットの攻撃力 × これ）
@@ -284,8 +286,8 @@ func _slash_update(delta: float) -> void:
 	var dir: Vector2 = (aim.global_position - global_position).normalized()
 	var arc: float = game.stats.sword_arc
 	var radius: float = reach * (1.3 if game.archer_pet_giant else 1.0)
-	# 連続斬撃のぶん、1回の斬撃が強くなる
-	var dmg: float = game.archer_pet_damage * _power() * game.archer_pet_shots * (1.4 if game.archer_pet_giant else 1.0)
+	# 連続斬撃のぶん、1回の斬撃が強くなる。合体弓兵ペットの斬撃は ARCHER_SLASH_MULT（1/9）倍
+	var dmg: float = game.archer_pet_damage * _power() * game.archer_pet_shots * (1.4 if game.archer_pet_giant else 1.0) * ARCHER_SLASH_MULT
 	for e in game.enemies_near(global_position, radius + 30.0):
 		if not is_instance_valid(e) or e.dead:
 			continue

@@ -1,8 +1,8 @@
 extends Node2D
 ## 弓兵の特別強化で出るもの。kind で中身が変わる。
-##   "orb"     … 必殺・連珠の玉。ゆっくりまっすぐ進み、1秒ごとに全方位へ8発の矢（貫通1）を放つ。玉そのものは敵に当たらない
+##   "orb"     … 必殺・連珠の玉。ゆっくりまっすぐ進み、0.5秒ごとに全方位へ16発の矢（貫通1）を放つ。玉そのものは敵に当たらない
 ##   "tornado" … 竜巻（竜巻矢が当たった所にできる）。duration 秒のあいだ、まわりの敵を中心へ吸い寄せる
-##   "giant"   … 必殺・巨大竜巻。出たときに範囲の敵へダメージを与えて外へ押し出し、しばらく渦を巻いて消える
+##   "giant"   … 巨大竜巻。出たときに範囲の敵へダメージを与えて外へ押し出し、しばらく渦を巻いて消える
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
@@ -15,11 +15,12 @@ var radius := 120.0
 var duration := 1.0
 
 var _t := 0.0
-var _orb_cd := 1.0
+var _orb_cd := ORB_EVERY
 
 ## 連珠の玉
 const ORB_LIFE := 6.0
-const ORB_ARROWS := 8
+const ORB_ARROWS := 16
+const ORB_EVERY := 0.5
 ## 竜巻の吸い寄せる強さ（1秒あたりに動かす距離）
 const PULL_SPEED := 160.0
 ## 巨大竜巻の押し出しの強さ
@@ -43,14 +44,14 @@ func _process(delta: float) -> void:
 			position += velocity * delta
 			_orb_cd -= delta
 			if _orb_cd <= 0.0:
-				_orb_cd = 1.0
+				_orb_cd = ORB_EVERY
 				_orb_volley()
 		"tornado":
 			_pull(delta)
 	queue_redraw()
 
 
-## 玉から全方位へ8発の矢
+## 玉から全方位へ16発の矢
 func _orb_volley() -> void:
 	for i in ORB_ARROWS:
 		var dir := Vector2.from_angle(TAU * i / ORB_ARROWS + _t)

@@ -144,6 +144,9 @@ var drum_wave := false
 var drum_push := false
 var drum_heal := false
 var drum_ult := false
+var drum_resonance := false
+var drum_morale := false
+var drum_place := false
 var archer_stats := ArcherStats.new()
 const MAX_ARCHERS := 3
 const MAX_SNIPERS := 3
@@ -748,52 +751,73 @@ func add_sniper() -> void:
 	snipers.append(s)
 
 
-## 鼓舞のバフ：戦績カードの番号（idx）→ バフが切れる時刻（elapsed）。
-## バフ中の味方の攻撃（特別強化の攻撃も）は与ダメージ +DRUM_BUFF_BONUS
+## 鼓舞のバフ：戦績カードの番号（idx）→ {バフの量: 切れる時刻（elapsed）}。
+## バフ中の味方の攻撃（特別強化の攻撃も）は、かかっている中で一番大きいバフの量だけ与ダメージが増える（ふつうは +DRUM_BUFF_BONUS）
 var _drum_buff := {}
 const DRUM_BUFF_BONUS := 0.1
 
 
-## 鼓舞兵が太鼓を叩いたとき：pos から r 以内の味方（兵士・ペット・ほかの鼓舞兵・城の兵装）に seconds 秒のバフ
-func drum_buff_area(pos: Vector2, r: float, seconds: float, from: Node2D) -> void:
+## 鼓舞兵が太鼓を叩いたとき：pos から r 以内の味方（兵士・ペット・ほかの鼓舞兵・城の兵装）に seconds 秒のバフ（量 bonus）。
+## バフをかけた味方の数を返す（城と城の兵装はまとめて1と数える）
+func drum_buff_area(pos: Vector2, r: float, seconds: float, from: Node2D, bonus: float = DRUM_BUFF_BONUS) -> int:
 	var until := elapsed + seconds
+	var count := 0
+	for u in _drum_allies():
+		if u == from:
+			continue
+		if pos.distance_to(u.global_position) <= r and "record" in u:
+			_set_drum_buff(u.record, bonus, until)
+			count += 1
+	# 城が範囲に入っていたら、城と城の兵装（矢倉・大砲など）にも
+	if castle.distance_to_point(pos) <= r:
+		_set_drum_buff(castle.record, bonus, until)
+		for rec in castle._equip_records.values():
+			_set_drum_buff(rec, bonus, until)
+		count += 1
+	return count
+
+
+## 鼓舞のバフ・回復の対象になる味方（生きていて、見えているもの）
+func _drum_allies() -> Array:
 	var units: Array = soldiers + guards + builders + engineers + snipers + knights + repairers + pets + archers + archer_pets + drummers
 	if heavy != null:
 		units.append(heavy)
 	for f in [pet_fusion, archer_fusion]:
 		if f != null and is_instance_valid(f) and f.merged():
 			units.append(f)
-	for u in units:
-		if u == from or not is_instance_valid(u) or not u.visible or ("dead" in u and u.dead):
-			continue
-		if pos.distance_to(u.global_position) <= r and "record" in u:
-			_set_drum_buff(u.record, until)
-	# 城が範囲に入っていたら、城と城の兵装（矢倉・大砲など）にも
-	if castle.distance_to_point(pos) <= r:
-		_set_drum_buff(castle.record, until)
-		for rec in castle._equip_records.values():
-			_set_drum_buff(rec, until)
+	return units.filter(func(u) -> bool: return is_instance_valid(u) and u.visible and not ("dead" in u and u.dead))
 
 
-func _set_drum_buff(rec: Dictionary, until: float) -> void:
+## 癒しの調べ：pos から r 以内の、HPのある味方（遊撃・迎撃・近衛・重装・弓兵）を amount 回復
+func drum_heal_area(pos: Vector2, r: float, amount: float, rec: Dictionary, sp_id: String) -> void:
+	var lists := [[soldiers, stats.max_hp], [guards, guard_stats.max_hp], [knights, knight_stats.max_hp], [archers, archer_stats.max_hp]]
+	if heavy != null:
+		lists.append([[heavy], heavy.max_hp])
+	for entry in lists:
+		for u in entry[0]:
+			if is_instance_valid(u) and not u.dead and pos.distance_to(u.global_position) <= r:
+				heal_unit(u, entry[1], amount, rec, sp_id)
+
+
+func _set_drum_buff(rec: Dictionary, bonus: float, until: float) -> void:
 	if rec.is_empty() or not rec.has("idx"):
 		return
-	_drum_buff[rec["idx"]] = maxf(float(_drum_buff.get(rec["idx"], 0.0)), until)
+	var tiers: Dictionary = _drum_buff.get_or_add(rec["idx"], {})
+	tiers[bonus] = maxf(float(tiers.get(bonus, 0.0)), until)
 
 
-## 攻撃した味方（src＝戦績カード。特別強化のカードなら元の兵士のカード）が鼓舞のバフ中なら 1.1、そうでなければ 1.0
+## 攻撃した味方（src＝戦績カード。特別強化のカードなら元の兵士のカード）が鼓舞のバフ中なら 1 + バフの量、そうでなければ 1.0
 func drum_buff_mult(src: Dictionary) -> float:
 	if src.is_empty() or _drum_buff.is_empty():
 		return 1.0
-	var idx = src.get("rec_idx", src.get("idx", -1))
-	if float(_drum_buff.get(idx, -1.0)) > elapsed:
-		return 1.0 + DRUM_BUFF_BONUS
-	return 1.0
-
-
-## 鼓舞のバフ中か（見た目用）
-func drum_buffed(rec: Dictionary) -> bool:
-	return drum_buff_mult(rec) > 1.0
+	var tiers = _drum_buff.get(src.get("rec_idx", src.get("idx", -1)))
+	if tiers == null:
+		return 1.0
+	var best := 0.0
+	for bonus in tiers:
+		if float(tiers[bonus]) > elapsed:
+			best = maxf(best, float(bonus))
+	return 1.0 + best
 
 
 func add_drummer() -> void:

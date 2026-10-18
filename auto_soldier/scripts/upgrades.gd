@@ -226,8 +226,11 @@ const SPECIAL := [
 	{"id": "sp_drum_double", "cat": "drummer", "special": true, "name": "二度打ち", "desc": "太鼓を叩いた少しあとに、もう一度叩く（半分の威力）", "max": 1, "req": "drummer"},
 	{"id": "sp_drum_wave", "cat": "drummer", "special": true, "name": "響きの波", "desc": "太鼓を叩くたびに、全方位へ8つの衝撃波を飛ばす（太鼓の30%の威力・2体貫通）", "max": 1, "req": "drummer"},
 	{"id": "sp_drum_push", "cat": "drummer", "special": true, "name": "押し返しの太鼓", "desc": "太鼓を叩いた範囲の敵を外へ押し出す（ボスには効かない）", "max": 1, "req": "drummer"},
-	{"id": "sp_drum_heal", "cat": "drummer", "special": true, "name": "癒しの調べ", "desc": "太鼓を叩くたびに、城のHPが10回復する", "max": 1, "req": "drummer"},
-	{"id": "sp_ult_drum", "cat": "drummer", "special": true, "name": "必殺・大太鼓", "desc": "20秒ごとに、全鼓舞兵がいっせいに特大の一打。太鼓の3倍の範囲に5倍のダメージ＋1秒気絶", "max": 1, "req": "drummer"},
+	{"id": "sp_drum_heal", "cat": "drummer", "special": true, "name": "癒しの調べ", "desc": "太鼓を叩くたびに、城のHPが3、太鼓の範囲内の味方のHPが20回復する", "max": 1, "req": "drummer"},
+	{"id": "sp_drum_resonance", "cat": "drummer", "special": true, "name": "共鳴の太鼓", "desc": "ほかの鼓舞兵の太鼓の範囲内で太鼓を叩くと、与えるダメージ・味方の与ダメージアップの量・その効果時間が3倍になる", "max": 1, "req": "drummer"},
+	{"id": "sp_drum_morale", "cat": "drummer", "special": true, "name": "士気の鼓動", "desc": "太鼓を叩いたとき、与ダメージアップをかけた味方の数 × 20%、その太鼓のダメージが上がる（最大 +200%）", "max": 1, "req": "drummer"},
+	{"id": "sp_drum_place", "cat": "drummer", "special": true, "name": "置き太鼓", "desc": "太鼓を叩くたびに、その場所に太鼓を置く。置いた太鼓は4秒後に1回鳴って（同じ範囲にダメージと与ダメージアップ）消える", "max": 1, "req": "drummer"},
+	{"id": "sp_ult_drum", "cat": "drummer", "special": true, "name": "必殺・大太鼓", "desc": "15秒ごとに、全鼓舞兵がいっせいに特大の一打。太鼓の3倍の範囲に5倍のダメージ＋1秒気絶", "max": 1, "req": "drummer"},
 	{"id": "sp_archer_giant_tornado", "cat": "archer", "special": true, "name": "巨大竜巻", "desc": "30秒に1回、フィールド中央に巨大な竜巻を発生させ、発生地点にいる敵にダメージを与え押し出す", "max": 1, "req": "archer"},
 	{"id": "sp_rapid_overheat", "cat": "castle", "special": true, "name": "連射砲・過熱", "desc": "撃ち続けるほど威力が上がる（最大+50%）。1秒撃たないとリセット", "max": 1, "req": "rapid"},
 	{"id": "sp_rapid_stun", "cat": "castle", "special": true, "name": "連射砲・気絶弾", "desc": "10発に1回、命中した敵を気絶させ、0.5秒行動を止める（ボスには効かない）", "max": 1, "req": "rapid"},
@@ -1031,6 +1034,12 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.drum_heal = true
 		"sp_ult_drum":
 			game.drum_ult = true
+		"sp_drum_resonance":
+			game.drum_resonance = true
+		"sp_drum_morale":
+			game.drum_morale = true
+		"sp_drum_place":
+			game.drum_place = true
 		"sniper_rate":
 			game.sniper_stats.interval = maxf(0.2, 1.6 * (1.0 - 0.1 * new_level))
 		"sniper_multi":

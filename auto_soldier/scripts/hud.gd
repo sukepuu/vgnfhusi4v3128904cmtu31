@@ -385,7 +385,8 @@ func refresh() -> void:
 	_hp_bar.value = castle.hp
 	_hp_label.text = "城 HP %d / %d" % [ceili(castle.hp), int(castle.max_hp)]
 	var lines_r := PackedStringArray()
-	lines_r.append("遊撃 %d / %d" % [_alive(game.soldiers), game.soldiers.size()])
+	if not game.soldiers.is_empty():
+		lines_r.append("遊撃 %d / %d" % [_alive(game.soldiers), game.soldiers.size()])
 	if not game.guards.is_empty():
 		lines_r.append("迎撃 %d / %d" % [_alive(game.guards), game.guards.size()])
 	if not game.snipers.is_empty():

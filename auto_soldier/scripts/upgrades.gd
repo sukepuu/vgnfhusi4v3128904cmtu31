@@ -9,19 +9,20 @@ extends RefCounted
 
 const LIST := [
 	# ---- 遊撃部隊
-	{"id": "recruit", "cat": "soldier", "name": "遊撃兵を増員", "desc": "遊撃部隊の兵士が1人増える（最大5人）", "max": 3, "weight": 1.5},
-	{"id": "multishot", "cat": "soldier", "name": "射撃数+1", "desc": "一度に撃つ弾が1発増える", "max": 5},
-	{"id": "firerate", "cat": "soldier", "name": "速射", "desc": "射撃の間隔 -10%", "max": 5},
-	{"id": "bullet_dmg", "cat": "soldier", "name": "強化弾", "desc": "射撃ダメージ +20%", "max": 5},
-	{"id": "pierce", "cat": "soldier", "name": "貫通弾", "desc": "弾が敵をもう1体貫通する", "max": 3},
-	{"id": "sword_dmg", "cat": "soldier", "name": "剣術", "desc": "斬撃ダメージ +20%", "max": 5},
-	{"id": "sword_range", "cat": "soldier", "name": "大振り", "desc": "斬撃の範囲 +20%", "max": 4},
-	{"id": "whirlwind", "cat": "soldier", "name": "回転斬り", "desc": "斬撃が全方位360度になる", "max": 1},
+	{"id": "recruit", "cat": "soldier", "name": "遊撃部隊", "desc": "射撃と剣で戦う遊撃兵が加わる",
+		"desc_up": "遊撃兵が1人増える（最大5人）", "max": 5, "weight": 0.5},
+	{"id": "multishot", "cat": "soldier", "name": "射撃数+1", "desc": "一度に撃つ弾が1発増える", "max": 5, "req": "recruit"},
+	{"id": "firerate", "cat": "soldier", "name": "速射", "desc": "射撃の間隔 -10%", "max": 5, "req": "recruit"},
+	{"id": "bullet_dmg", "cat": "soldier", "name": "強化弾", "desc": "射撃ダメージ +20%", "max": 5, "req": "recruit"},
+	{"id": "pierce", "cat": "soldier", "name": "貫通弾", "desc": "弾が敵をもう1体貫通する", "max": 3, "req": "recruit"},
+	{"id": "sword_dmg", "cat": "soldier", "name": "剣術", "desc": "斬撃ダメージ +20%", "max": 5, "req": "recruit"},
+	{"id": "sword_range", "cat": "soldier", "name": "大振り", "desc": "斬撃の範囲 +20%", "max": 4, "req": "recruit"},
+	{"id": "whirlwind", "cat": "soldier", "name": "回転斬り", "desc": "斬撃が全方位360度になる", "max": 1, "req": "recruit"},
 	{"id": "dash", "cat": "soldier", "name": "突進突き", "desc": "4秒ごとに敵へ突進して貫く（突進中は無敵）",
-		"desc_up": "突進の間隔 -10%、威力 +30%", "max": 4},
+		"desc_up": "突進の間隔 -10%、威力 +30%", "max": 4, "req": "recruit"},
 	{"id": "pet", "cat": "soldier", "name": "遊撃ペット", "desc": "全遊撃兵にペットが1匹ずつ付き、自動で射撃してくれる（あとから増えた遊撃兵にも付く）",
-		"desc_up": "全遊撃兵にペットがもう1匹ずつ付く、全ペットの攻撃力 +20%", "max": 4},
-	{"id": "soldier_hp", "cat": "soldier", "name": "鍛錬", "desc": "遊撃兵の最大HP +25、全員HP全回復", "max": 4},
+		"desc_up": "全遊撃兵にペットがもう1匹ずつ付く、全ペットの攻撃力 +20%", "max": 4, "req": "recruit"},
+	{"id": "soldier_hp", "cat": "soldier", "name": "鍛錬", "desc": "遊撃兵の最大HP +25、全員HP全回復", "max": 4, "req": "recruit"},
 	# ---- 築城部隊
 	{"id": "builder", "cat": "builder", "name": "築城部隊", "desc": "城の上側180度を囲むように、20秒ごとに壁を1枚建てる（壁1枚で敵の攻撃を10発防ぐ）",
 		"desc_up": "築城部隊の作業員が1人増える（最大3人、それぞれ別の場所に壁を建てる）", "max": 3, "weight": 0.5},
@@ -131,12 +132,12 @@ const LIST := [
 ## req = この強化（部隊・設備）を持っていないと出ない（なければ誰でも）
 const SPECIAL := [
 	# ---- 遊撃部隊
-	{"id": "sp_burst", "cat": "soldier", "special": true, "name": "炸裂弾", "desc": "遊撃兵の弾が当たると小爆発する（威力19.25%）", "max": 1},
-	{"id": "sp_volley", "cat": "soldier", "special": true, "name": "一斉射撃", "desc": "6秒ごとに全方位へ18発の弾をばらまく（射撃の40倍の威力）", "max": 1},
-	{"id": "sp_sword_wave", "cat": "soldier", "special": true, "name": "剣気", "desc": "斬撃と一緒に、敵を貫く大きな三日月形の衝撃波がゆっくり飛ぶ（剣の4倍の威力）", "max": 1},
-	{"id": "sp_shadow", "cat": "soldier", "special": true, "name": "影分身", "desc": "遊撃兵の横に半透明の分身が現れ、一緒に弾を撃つ（威力200%）", "max": 1},
-	{"id": "sp_shadow_volley", "cat": "soldier", "special": true, "name": "影一斉射撃", "desc": "影分身からも一斉射撃が発射されるようになる（影分身の一斉射撃も同じ威力）\n「影分身」と「一斉射撃」を取得している場合のみ出現", "max": 1, "req_all": ["sp_shadow", "sp_volley"]},
-	{"id": "sp_boomerang", "cat": "soldier", "special": true, "name": "ブーメラン", "desc": "3.5秒ごとに大きなブーメランを投げる。行きと帰りで敵を貫く（剣の10.4倍の威力）", "max": 1},
+	{"id": "sp_burst", "cat": "soldier", "special": true, "name": "炸裂弾", "desc": "遊撃兵の弾が当たると小爆発する（威力19.25%）", "max": 1, "req": "recruit"},
+	{"id": "sp_volley", "cat": "soldier", "special": true, "name": "一斉射撃", "desc": "6秒ごとに全方位へ18発の弾をばらまく（射撃の40倍の威力）", "max": 1, "req": "recruit"},
+	{"id": "sp_sword_wave", "cat": "soldier", "special": true, "name": "剣気", "desc": "斬撃と一緒に、敵を貫く大きな三日月形の衝撃波がゆっくり飛ぶ（剣の4倍の威力）", "max": 1, "req": "recruit"},
+	{"id": "sp_shadow", "cat": "soldier", "special": true, "name": "影分身", "desc": "遊撃兵の横に半透明の分身が現れ、一緒に弾を撃つ（威力200%）", "max": 1, "req": "recruit"},
+	{"id": "sp_shadow_volley", "cat": "soldier", "special": true, "name": "影一斉射撃", "desc": "影分身からも一斉射撃が発射されるようになる（影分身の一斉射撃も同じ威力）\n「影分身」と「一斉射撃」を取得している場合のみ出現", "max": 1, "req_all": ["sp_shadow", "sp_volley"], "req": "recruit"},
+	{"id": "sp_boomerang", "cat": "soldier", "special": true, "name": "ブーメラン", "desc": "3.5秒ごとに大きなブーメランを投げる。行きと帰りで敵を貫く（剣の10.4倍の威力）", "max": 1, "req": "recruit"},
 	# ---- 迎撃部隊
 	{"id": "sp_bash", "cat": "guard", "special": true, "name": "盾撃", "desc": "盾で攻撃を防ぐたびに、周りの敵へ衝撃波（槍の1.3倍の威力）", "max": 1, "req": "guard"},
 	{"id": "sp_trident", "cat": "guard", "special": true, "name": "三叉槍", "desc": "槍の突きが3方向に出る", "max": 1, "req": "guard"},
@@ -245,7 +246,7 @@ const SPECIAL := [
 	{"id": "sp_maintenance", "cat": "repair", "special": true, "name": "設備点検", "desc": "城の設備（矢倉・大砲・投石器・バリスタ）の発射間隔 -15%", "max": 1, "req": "repairer"},
 	{"id": "sp_wall_fix", "cat": "repair", "special": true, "name": "壁職人", "desc": "修理兵が城と一緒に壁も直す（1人につき4秒ごとに1発分）", "max": 1, "req": "repairer"},
 	# ---- おもしろ強化（あまり強くないけど、変で派手なやつ）
-	{"id": "sp_fun_fireworks", "cat": "soldier", "special": true, "name": "勝利の花火", "desc": "遊撃兵が敵を倒すと、30%で花火が打ち上がる（弾けた所に剣の40倍のダメージ）", "max": 1},
+	{"id": "sp_fun_fireworks", "cat": "soldier", "special": true, "name": "勝利の花火", "desc": "遊撃兵が敵を倒すと、30%で花火が打ち上がる（弾けた所に剣の40倍のダメージ）", "max": 1, "req": "recruit"},
 	{"id": "sp_fun_reflect", "cat": "guard", "special": true, "name": "黄金の盾", "desc": "15秒ごとに、迎撃兵が向いている方向へ大きな黄金の盾を飛ばす（ゆっくり進む・盾の2倍の大きさ）。黄金の盾に当たった敵の弾は消え、そのたびに黄金の盾から全方位へ弾を撃つ（槍の5倍の威力）", "max": 1, "req": "guard"},
 	{"id": "sp_fun_firework_arrow", "cat": "sniper", "special": true, "name": "花火矢", "desc": "毎回、矢と一緒に花火も撃ち込む", "max": 1, "req": "sniper"},
 	{"id": "sp_fun_roar", "cat": "heavy", "special": true, "name": "雄叫び", "desc": "10秒ごとに雄叫びを上げ、周りの敵に斬撃3倍のダメージを与えて思いっきり吹き飛ばす", "max": 1, "req": "heavy"},
@@ -268,7 +269,7 @@ const SPECIAL := [
 	# ---- 15秒ごとの必殺技（各種類の6つ目）
 	{"id": "sp_ult_flock", "cat": "pet", "special": true, "name": "必殺・遊撃鳥の大群", "desc": "15秒ごとに、遊撃ペット1匹につき6羽の鳥を呼ぶ。鳥は敵を追いかけ、当たった敵にくっついて2回つつく（遊撃ペットの12倍の威力）", "max": 1, "req": "pet"},
 	# ---- 8つ目の特別強化
-	{"id": "sp_touch_blast", "cat": "soldier", "special": true, "name": "触爆", "desc": "遊撃兵に触れた敵が爆発し、周りの敵に射撃の1.5倍ダメージ", "max": 1},
+	{"id": "sp_touch_blast", "cat": "soldier", "special": true, "name": "触爆", "desc": "遊撃兵に触れた敵が爆発し、周りの敵に射撃の1.5倍ダメージ", "max": 1, "req": "recruit"},
 	{"id": "sp_berserk_guard", "cat": "guard", "special": true, "name": "捨て身の構え", "desc": "迎撃兵の最大HPが半分になり、盾で防いでも半分のダメージを受ける。そのかわり槍が当たった敵が爆発し、周りに槍の3倍ダメージ", "max": 1, "req": "guard"},
 	{"id": "sp_blast_arrow", "cat": "sniper", "special": true, "name": "爆裂矢", "desc": "矢が当たった敵が爆発し、周りの敵に小ダメージ（急所狙いの効果は乗らない）", "max": 1, "req": "sniper"},
 	{"id": "sp_firework_blast", "cat": "sniper", "special": true, "name": "花火爆裂矢", "desc": "花火矢の花火が敵に当たったときも爆裂矢が発動し、爆裂矢が発動したときに花火のエフェクトが出る\n「爆裂矢」と「花火矢」を取得している場合のみ出現", "max": 1, "req": "sniper", "req_all": ["sp_blast_arrow", "sp_fun_firework_arrow"]},
@@ -286,7 +287,7 @@ const SPECIAL := [
 	{"id": "sp_ult_cavalry", "cat": "knight", "special": true, "name": "必殺・百騎突撃", "desc": "15秒ごとに、一番下の敵のあたりを騎士の幻8騎が横一列で駆け抜け、通った敵を全部はねる（突進の37.5倍の威力）", "max": 1, "req": "knight"},
 	{"id": "sp_cavalry_star", "cat": "knight", "special": true, "name": "流星百騎", "desc": "百騎突撃の騎士の幻が駆け抜けた跡にも、流れ星が残って弾ける\n「必殺・百騎突撃」と「流れ星突撃」を取得している場合のみ出現", "max": 1, "req": "knight", "req_all": ["sp_ult_cavalry", "sp_fun_star"]},
 	{"id": "sp_ult_overhaul", "cat": "repair", "special": true, "name": "必殺・大修繕", "desc": "15秒ごとに、城のHPを最大HPの5%回復し、味方のHPを全回復する（壁は直さない）", "max": 1, "req": "repairer"},
-	{"id": "sp_ult_storm", "cat": "soldier", "special": true, "name": "必殺・剣の大嵐", "desc": "15秒ごとに、遊撃兵全員が周りを巻き込む巨大な回転斬り（剣の40倍の威力・大きく吹き飛ばす）", "max": 1},
+	{"id": "sp_ult_storm", "cat": "soldier", "special": true, "name": "必殺・剣の大嵐", "desc": "15秒ごとに、遊撃兵全員が周りを巻き込む巨大な回転斬り（剣の40倍の威力・大きく吹き飛ばす）", "max": 1, "req": "recruit"},
 	{"id": "sp_ult_dome", "cat": "guard", "special": true, "name": "必殺・鉄壁の陣", "desc": "15秒ごとに、城をドームで5秒間包む。ドームに入った敵の弾・砲弾は消える。迎撃兵のHPも全回復", "max": 1, "req": "guard"},
 	{"id": "sp_dome_spikes", "cat": "guard", "special": true, "name": "拒馬の陣", "desc": "鉄壁の陣のドームの中にいる敵に、拒馬の柵の効果（移動速度20%ダウン・ダメージ）を与える\n「拒馬の柵」と「必殺・鉄壁の陣」を取得している場合のみ出現", "max": 1, "req": "guard", "req_all": ["sp_spikes", "sp_ult_dome"]},
 	{"id": "sp_ult_sky_arrow", "cat": "sniper", "special": true, "name": "必殺・天穿つ一矢", "desc": "15秒ごとに、狙撃兵が敵が一番多く並ぶ方向へ巨大な矢を放つ（基本の威力の180倍で全部貫く。通常の矢の約86倍）", "max": 1, "req": "sniper"},
@@ -299,7 +300,7 @@ const SPECIAL := [
 	{"id": "sp_ult_thunder", "cat": "castle", "special": true, "name": "バリスタ・必殺・雷神の大槍", "desc": "15秒ごとに、敵が一番多く並ぶ方向へ雷の大槍を放つ（基本の威力の4.8倍＋1秒しびれる）", "max": 1, "req": "ballista"},
 	{"id": "sp_ult_ice_age", "cat": "castle", "special": true, "name": "結界・必殺・氷河期", "desc": "15秒ごとに、結界の2倍以上の広さの敵をまとめて1秒凍らせてダメージ", "max": 1, "req": "frost"},
 	# --- 9つ目の特別強化（面白くてしっかり強いもの）
-	{"id": "sp_boss_hunt", "cat": "soldier", "special": true, "name": "魔王狩り", "desc": "遊撃兵がボスを最優先で狙うようになる。遊撃兵のボスへのダメージ +10%", "max": 1},
+	{"id": "sp_boss_hunt", "cat": "soldier", "special": true, "name": "魔王狩り", "desc": "遊撃兵がボスを最優先で狙うようになる。遊撃兵のボスへのダメージ +10%", "max": 1, "req": "recruit"},
 	{"id": "sp_giant_spear", "cat": "guard", "special": true, "name": "神槍投擲", "desc": "8秒ごとに、迎撃兵が一番近い敵の方へ巨大な槍を投げる。槍はゆっくり進み、通った敵を全部貫く（槍の5倍の威力）", "max": 1, "req": "guard"},
 	{"id": "sp_rapid_snipe", "cat": "sniper", "special": true, "name": "速射の極意", "desc": "狙撃兵の攻撃力が1/3になるかわりに、攻撃速度が4倍になる", "max": 1, "req": "sniper"},
 	{"id": "sp_kill_chain", "cat": "knight", "special": true, "name": "疾風怒濤", "desc": "突進で敵を倒すたびに、すぐ次の敵へ突進し直す（最大5連鎖）", "max": 1, "req": "knight"},

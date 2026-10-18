@@ -14,7 +14,7 @@ const NamedSaves := preload("res://scripts/named_saves.gd")
 const SaveSlotsPopup := preload("res://scripts/save_slots_popup.gd")
 
 ## 部隊・兵装を出す強化（見出しのチェックボックスになる）。遊撃と城（本体）は最初からあるのでなし
-const UNIT_IDS := {"pet": "pet", "guard": "guard", "sniper": "sniper", "knight": "knight", "heavy": "heavy",
+const UNIT_IDS := {"soldier": "recruit", "pet": "pet", "guard": "guard", "sniper": "sniper", "knight": "knight", "heavy": "heavy",
 	"engineer": "engineer", "builder": "builder", "repair": "repairer", "tower": "tower", "cannon": "cannon",
 	"catapult": "catapult", "ballista": "ballista", "frost": "frost", "mine_site": "mine_site",
 	"archer": "archer", "archer_pet": "archer_pet", "rapid": "rapid"}

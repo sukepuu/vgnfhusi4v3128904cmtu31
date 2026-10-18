@@ -318,12 +318,10 @@ func _ready() -> void:
 	ground.name = "Ground"
 	world.add_child(ground)
 
-	# 最初は兵士2人でスタート（オートセーブから再開するときは、保存した兵士を戻すので出さない）
+	# 最初の部隊・兵装はゲーム開始時に _grant_starting_upgrade() で決める（オートセーブから再開するときは、保存した兵士を戻す）
 	var loading := _load_autosave
 	_load_autosave = false
 	if not loading:
-		add_soldier()
-		add_soldier()
 		# 新しいゲーム：前のゲームのオートセーブは消す（残っていると「前回のLvからリスタート」で前のゲームを読んでしまう）
 		AutosaveScript.clear_slot()
 
@@ -384,8 +382,6 @@ func _ready() -> void:
 		debug_start = {}
 		# オートセーブから再開（読み込めなかったら、ふつうに最初から始める）
 		if not _restore_autosave():
-			add_soldier()
-			add_soldier()
 			_grant_starting_upgrade.call_deferred()
 			milestone_level = 1
 			hud.show_notice("前回のセーブを読み込めなかったので、最初から始めます")
@@ -393,7 +389,7 @@ func _ready() -> void:
 		_apply_debug_start.call_deferred(debug_start)
 		debug_start = {}
 	else:
-		# ゲーム開始時（リトライも）、部隊・兵装のどれか1つを最初から加入した状態にする
+		# ゲーム開始時（リトライも）、部隊・兵装からランダムで3つを最初から加入した状態にする
 		_grant_starting_upgrade.call_deferred()
 
 	queue_redraw()
@@ -1790,22 +1786,37 @@ func start_debug(cfg: Dictionary) -> void:
 
 
 ## ゲーム開始時にランダムで1つ加入した状態にする部隊・兵装
-const STARTING_UPGRADE_POOL := ["builder", "guard", "knight", "sniper", "heavy", "engineer",
-	"tower", "cannon", "catapult", "ballista", "mine_site"]
+## ゲーム開始時に最初から加入する部隊・兵装の候補（遊撃・迎撃・狙撃・近衛・重装・弓兵・矢倉・大砲・投石器・バリスタ・連射砲）
+const STARTING_UPGRADE_POOL := ["recruit", "guard", "sniper", "knight", "heavy", "archer",
+	"tower", "cannon", "catapult", "ballista", "rapid"]
+## 最初から加入する数
+const STARTING_PICKS := 3
 
 
+## 候補からランダムで3回選んで加入させる（同じものが選ばれたら、その強化をもう1回取ったことにする＝1人・1基増える）。
+## もう上限まで取っているもの（重装は1人まで）が選ばれたら、まだ取れるものから選び直す
 func _grant_starting_upgrade() -> void:
-	var id: String = STARTING_UPGRADE_POOL[randi() % STARTING_UPGRADE_POOL.size()]
-	var u: Dictionary = {}
+	var names := PackedStringArray()
+	for n in STARTING_PICKS:
+		var open: Array = STARTING_UPGRADE_POOL.filter(func(id: String) -> bool:
+			var u := _upgrade_def(id)
+			return not u.is_empty() and int(upgrade_levels.get(id, 0)) < int(u["max"]))
+		if open.is_empty():
+			break
+		var id: String = open[randi() % open.size()]
+		var lv: int = int(upgrade_levels.get(id, 0)) + 1
+		upgrade_levels[id] = lv
+		Upgrades.apply(id, lv, self)
+		names.append(_upgrade_def(id)["name"])
+	hud.show_notice("最初から加入：%s" % "・".join(names))
+	hud.refresh()
+
+
+func _upgrade_def(id: String) -> Dictionary:
 	for x in Upgrades.LIST:
 		if x["id"] == id:
-			u = x
-	if u.is_empty():
-		return
-	upgrade_levels[id] = 1
-	Upgrades.apply(id, 1, self)
-	hud.show_notice("最初から加入：%s" % u["name"])
-	hud.refresh()
+			return x
+	return {}
 
 
 func _apply_debug_start(cfg: Dictionary) -> void:

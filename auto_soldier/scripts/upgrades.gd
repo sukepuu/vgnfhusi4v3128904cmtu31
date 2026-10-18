@@ -338,8 +338,8 @@ const SPECIAL := [
 	# 城ロボの追加の特別強化（城ロボ起動を取っていると出る。オート選択などでは「城」のグループあつかい）
 	{"id": "sp_castle_robot_flight", "cat": "castle", "special": true, "name": "城・城ロボ フライトモード", "desc": "城ロボにロボットウイングが付いて空を飛ぶ。両手を上げて遠くの敵へ高速タックル → 両手から誘導ミサイルを30発 をくり返す", "max": 1, "req": "sp_castle_robot", "group": "castle"},
 	{"id": "sp_castle_robot_final", "cat": "castle", "special": true, "name": "城・城ロボ ファイナルモード", "desc": "城ロボが画面の真ん中に出撃して動かずに戦う。10本のビームをそれぞれランダムな敵へ撃ち続け（途中にいる敵にも当たる）、城レーザーは上下2本同時に撃ちながら、両手から誘導ミサイルを撃ち続ける（攻撃の切れ目なし）。城に設置する各種兵装の通常強化を全て取得した場合のみ取得可能", "max": 1, "req": "sp_castle_robot_flight", "group": "castle",
-		# 候補には出るが、城の兵装（矢倉・大砲・投石器・バリスタ・砲術）の通常強化を全部最大まで取っていないと選べない
-		"req_maxed": ["tower", "cannon", "catapult", "ballista", "artillery"]},
+		# 候補には出るが、城の兵装（矢倉・大砲・投石器・バリスタ・砲術・連射砲）の通常強化を全部最大まで取っていないと選べない
+		"req_maxed": ["tower", "cannon", "catapult", "ballista", "artillery", "rapid"]},
 	{"id": "sp_castle_robot_true", "cat": "castle", "special": true, "name": "城・城ロボ 真・ファイナルモード", "desc": "真の力を解放する\n「城・城の火炎くしゃみ」と「城・城レーザー」を取得している場合のみ取得できる", "max": 1, "req": "sp_castle_robot_final", "req_owned": ["sp_castle_sneeze", "sp_castle_laser"], "group": "castle"},
 ]
 

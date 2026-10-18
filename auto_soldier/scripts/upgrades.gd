@@ -67,6 +67,13 @@ const LIST := [
 	{"id": "archer_pet_eye", "cat": "archer_pet", "name": "弓兵ペットの目", "desc": "弓兵ペットの射程 +20%", "max": 5, "req": "archer_pet"},
 	{"id": "archer_pet_multi", "cat": "archer_pet", "name": "連続斬撃", "desc": "弓兵ペットの斬撃発生回数 +1", "max": 3, "req": "archer_pet"},
 	{"id": "archer_size", "cat": "archer", "name": "大矢", "desc": "弓兵の矢のサイズ +20%", "max": 5, "req": "archer"},
+	# 【鼓舞】
+	{"id": "drummer", "cat": "drummer", "name": "鼓舞部隊", "desc": "太鼓を持ってふらふら歩きまわり、一定の間隔で太鼓を叩いて自分のまわりの敵にまとめてダメージを与える鼓舞兵が加わる（敵から狙われない）",
+		"desc_up": "鼓舞兵が1人増える（最大2人）", "max": 2, "weight": 0.5},
+	{"id": "drum_dmg", "cat": "drummer", "name": "力強い太鼓", "desc": "太鼓のダメージ +20%", "max": 5, "req": "drummer"},
+	{"id": "drum_rate", "cat": "drummer", "name": "早打ち", "desc": "太鼓を叩く間隔 -10%", "max": 5, "req": "drummer"},
+	{"id": "drum_range", "cat": "drummer", "name": "響く太鼓", "desc": "太鼓が届く範囲 +15%", "max": 5, "req": "drummer"},
+	{"id": "drum_speed", "cat": "drummer", "name": "軽い足取り", "desc": "鼓舞兵の歩く速さ +20%", "max": 3, "req": "drummer"},
 	{"id": "sniper_rate", "cat": "sniper", "name": "早撃ち", "desc": "狙撃兵が矢を放つ間隔 -10%", "max": 5, "req": "sniper"},
 	{"id": "sniper_multi", "cat": "sniper", "name": "多連矢", "desc": "一度に放つ矢 +1本", "max": 3, "req": "sniper"},
 	{"id": "sniper_dmg", "cat": "sniper", "name": "強弓", "desc": "矢の威力 +20%", "max": 5, "req": "sniper"},
@@ -214,6 +221,13 @@ const SPECIAL := [
 	{"id": "sp_archer_tornado", "cat": "archer", "special": true, "name": "竜巻矢", "desc": "10秒ごとに竜巻矢を発射する。命中したところに竜巻が生成され、1秒間付近の敵を吸引する", "max": 1, "req": "archer"},
 	{"id": "sp_archer_counter", "cat": "archer", "special": true, "name": "反撃の矢", "desc": "被ダメージ時、通常攻撃を1回行う", "max": 1, "req": "archer"},
 	{"id": "sp_archer_execute", "cat": "archer", "special": true, "name": "追い討ち", "desc": "HP50%以下の敵からはダメージを受けず、弓兵が与えるダメージが30%増加する", "max": 1, "req": "archer"},
+	{"id": "sp_drum_shock", "cat": "drummer", "special": true, "name": "衝撃の太鼓", "desc": "太鼓を叩いた範囲の敵を0.5秒気絶させる", "max": 1, "req": "drummer"},
+	{"id": "sp_drum_war", "cat": "drummer", "special": true, "name": "戦の太鼓", "desc": "太鼓を叩いた範囲の敵が、5秒間受けるダメージ +20%", "max": 1, "req": "drummer"},
+	{"id": "sp_drum_double", "cat": "drummer", "special": true, "name": "二度打ち", "desc": "太鼓を叩いた少しあとに、もう一度叩く（半分の威力）", "max": 1, "req": "drummer"},
+	{"id": "sp_drum_wave", "cat": "drummer", "special": true, "name": "響きの波", "desc": "太鼓を叩くたびに、全方位へ8つの衝撃波を飛ばす（太鼓の30%の威力・2体貫通）", "max": 1, "req": "drummer"},
+	{"id": "sp_drum_push", "cat": "drummer", "special": true, "name": "押し返しの太鼓", "desc": "太鼓を叩いた範囲の敵を外へ押し出す（ボスには効かない）", "max": 1, "req": "drummer"},
+	{"id": "sp_drum_heal", "cat": "drummer", "special": true, "name": "癒しの調べ", "desc": "太鼓を叩くたびに、城のHPが10回復する", "max": 1, "req": "drummer"},
+	{"id": "sp_ult_drum", "cat": "drummer", "special": true, "name": "必殺・大太鼓", "desc": "20秒ごとに、全鼓舞兵がいっせいに特大の一打。太鼓の3倍の範囲に5倍のダメージ＋1秒気絶", "max": 1, "req": "drummer"},
 	{"id": "sp_archer_giant_tornado", "cat": "archer", "special": true, "name": "巨大竜巻", "desc": "30秒に1回、フィールド中央に巨大な竜巻を発生させ、発生地点にいる敵にダメージを与え押し出す", "max": 1, "req": "archer"},
 	{"id": "sp_rapid_overheat", "cat": "castle", "special": true, "name": "連射砲・過熱", "desc": "撃ち続けるほど威力が上がる（最大+50%）。1秒撃たないとリセット", "max": 1, "req": "rapid"},
 	{"id": "sp_rapid_stun", "cat": "castle", "special": true, "name": "連射砲・気絶弾", "desc": "10発に1回、命中した敵を気絶させ、0.5秒行動を止める（ボスには効かない）", "max": 1, "req": "rapid"},
@@ -344,10 +358,11 @@ const SPECIAL := [
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",
-	"heavy": "重装", "engineer": "工兵", "repair": "修理", "archer": "弓兵", "archer_pet": "弓兵ペット", "castle": "城"}
+	"heavy": "重装", "engineer": "工兵", "repair": "修理", "archer": "弓兵", "archer_pet": "弓兵ペット", "drummer": "鼓舞", "castle": "城"}
 const CAT_COLOR := {
 	"pet": Color(0.55, 1.0, 0.75), "knight": Color(1.0, 0.82, 0.4), "repair": Color(0.55, 0.75, 1.0),
 	"sniper": Color(0.75, 0.95, 0.45), "archer": Color(1.0, 0.55, 0.8), "archer_pet": Color(1.0, 0.7, 0.9),
+	"drummer": Color(1.0, 0.45, 0.4),
 	"soldier": Color(0.6, 0.85, 1.0), "builder": Color(1.0, 0.88, 0.45),
 	"guard": Color(0.6, 1.0, 0.65), "heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), 
 	"castle": Color(1.0, 0.7, 0.45), "rapid": Color(1.0, 0.7, 0.45)}
@@ -357,7 +372,7 @@ const CAT_COLOR := {
 const GROUPS := [
 	["遊撃", "soldier"], ["ペット", "pet"], ["迎撃", "guard"], ["狙撃", "sniper"], ["近衛", "knight"],
 	["重装", "heavy"], ["工兵", "engineer"], ["築城", "builder"], ["修理", "repair"],
-	["弓兵", "archer"], ["弓兵ペット", "archer_pet"],
+	["弓兵", "archer"], ["弓兵ペット", "archer_pet"], ["鼓舞", "drummer"],
 	["矢倉", "tower"], ["大砲", "cannon"], ["投石器", "catapult"], ["バリスタ", "ballista"], ["連射砲", "rapid"],
 	["氷結の結界", "frost"], ["採掘場", "mine_site"], ["城（本体）", "castle"]]
 ## 城の通常強化がどの兵装のものか
@@ -991,6 +1006,31 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.archer_stats.pierce += 1
 		"archer_size":
 			game.archer_stats.arrow_scale = 1.0 + 0.2 * new_level
+		# ---- 鼓舞部隊
+		"drummer":
+			game.add_drummer()
+		"drum_dmg":
+			game.drummer_stats.damage = 268.8 * (1.0 + 0.2 * new_level)
+		"drum_rate":
+			game.drummer_stats.interval = maxf(1.0, 9.0 * (1.0 - 0.1 * new_level))
+		"drum_range":
+			game.drummer_stats.radius = 150.0 * (1.0 + 0.15 * new_level)
+		"drum_speed":
+			game.drummer_stats.move_speed = 70.0 * (1.0 + 0.2 * new_level)
+		"sp_drum_shock":
+			game.drum_shock = true
+		"sp_drum_war":
+			game.drum_war = true
+		"sp_drum_double":
+			game.drum_double = true
+		"sp_drum_wave":
+			game.drum_wave = true
+		"sp_drum_push":
+			game.drum_push = true
+		"sp_drum_heal":
+			game.drum_heal = true
+		"sp_ult_drum":
+			game.drum_ult = true
 		"sniper_rate":
 			game.sniper_stats.interval = maxf(0.2, 1.6 * (1.0 - 0.1 * new_level))
 		"sniper_multi":

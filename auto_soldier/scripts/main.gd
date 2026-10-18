@@ -32,6 +32,8 @@ const SniperStats := preload("res://scripts/sniper_stats.gd")
 const ArcherScript := preload("res://scripts/archer.gd")
 const ArcherStats := preload("res://scripts/archer_stats.gd")
 const ArcherFxScript := preload("res://scripts/archer_fx.gd")
+const DrummerScript := preload("res://scripts/drummer.gd")
+const DrummerStats := preload("res://scripts/drummer_stats.gd")
 const UltimatesScript := preload("res://scripts/ultimates.gd")
 const KnightScript := preload("res://scripts/knight.gd")
 const KnightStats := preload("res://scripts/knight_stats.gd")
@@ -131,6 +133,17 @@ var engineer_stats := EngineerStats.new()
 var snipers: Array = []
 var sniper_stats := SniperStats.new()
 var archers: Array = []
+## 鼓舞部隊（最大2人）と、その特別強化
+var drummers: Array = []
+var drummer_stats := DrummerStats.new()
+const MAX_DRUMMERS := 2
+var drum_shock := false
+var drum_war := false
+var drum_double := false
+var drum_wave := false
+var drum_push := false
+var drum_heal := false
+var drum_ult := false
 var archer_stats := ArcherStats.new()
 const MAX_ARCHERS := 3
 const MAX_SNIPERS := 3
@@ -733,6 +746,17 @@ func add_sniper() -> void:
 	s.position = castle.gate_position()
 	world.add_child(s)
 	snipers.append(s)
+
+
+func add_drummer() -> void:
+	if drummers.size() >= MAX_DRUMMERS:
+		return
+	var d := DrummerScript.new()
+	d.game = self
+	d.index = drummers.size()
+	d.position = castle.gate_position() + Vector2(randf_range(-40, 40), -30)
+	world.add_child(d)
+	drummers.append(d)
 
 
 func add_archer() -> void:

@@ -391,6 +391,8 @@ func refresh() -> void:
 		lines_r.append("迎撃 %d / %d" % [_alive(game.guards), game.guards.size()])
 	if not game.snipers.is_empty():
 		lines_r.append("狙撃 %d人" % game.snipers.size())
+	if not game.drummers.is_empty():
+		lines_r.append("鼓舞 %d人" % game.drummers.size())
 	if not game.knights.is_empty():
 		lines_r.append("近衛 %d / %d" % [_alive(game.knights), game.knights.size()])
 	if not game.repairers.is_empty():

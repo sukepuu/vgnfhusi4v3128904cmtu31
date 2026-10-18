@@ -9,7 +9,7 @@ const Upgrades := preload("res://scripts/upgrades.gd")
 const GROUPS := [
 	["遊撃", "soldier"], ["ペット", "pet"], ["迎撃", "guard"], ["狙撃", "sniper"], ["近衛", "knight"],
 	["重装", "heavy"], ["工兵", "engineer"], ["築城", "builder"], ["修理", "repair"],
-	["弓兵", "archer"], ["弓兵ペット", "archer_pet"],
+	["弓兵", "archer"], ["弓兵ペット", "archer_pet"], ["鼓舞", "drummer"],
 	["矢倉", "tower"], ["大砲", "cannon"], ["投石器", "catapult"], ["バリスタ", "ballista"], ["連射砲", "rapid"],
 	["氷結の結界", "frost"], ["採掘場", "mine_site"], ["城（本体）", "castle"]]
 ## 城の設備の戦績カードは名前で見分ける（「矢倉1」「大砲2」など）

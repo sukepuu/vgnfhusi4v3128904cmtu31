@@ -5,15 +5,15 @@ extends CanvasLayer
 
 const Upgrades := preload("res://scripts/upgrades.gd")
 
-const CAT_ORDER := ["soldier", "pet", "guard", "sniper", "knight", "heavy", "engineer", "builder", "repair", "archer", "archer_pet", "castle"]
+const CAT_ORDER := ["soldier", "pet", "guard", "sniper", "knight", "heavy", "engineer", "builder", "repair", "archer", "archer_pet", "drummer", "castle"]
 const CAT_LABEL := {
 	"soldier": "遊撃部隊", "pet": "ペット", "guard": "迎撃部隊", "sniper": "狙撃部隊", "knight": "近衛部隊", "heavy": "重装部隊", "repair": "修理部隊",
-	"engineer": "工兵部隊", "builder": "築城部隊", "archer": "弓兵部隊", "archer_pet": "弓兵ペット", "castle": "城"}
+	"engineer": "工兵部隊", "builder": "築城部隊", "archer": "弓兵部隊", "archer_pet": "弓兵ペット", "drummer": "鼓舞部隊", "castle": "城"}
 const CAT_COLOR := {
 	"soldier": Color(0.6, 0.85, 1.0), "pet": Color(0.55, 1.0, 0.75), "guard": Color(0.6, 1.0, 0.65),
 	"sniper": Color(0.75, 0.95, 0.45), "knight": Color(1.0, 0.82, 0.4), "repair": Color(0.55, 0.75, 1.0),
 	"heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), "builder": Color(1.0, 0.88, 0.45),
-	"archer": Color(1.0, 0.55, 0.8), "archer_pet": Color(1.0, 0.7, 0.9),
+	"archer": Color(1.0, 0.55, 0.8), "archer_pet": Color(1.0, 0.7, 0.9), "drummer": Color(1.0, 0.45, 0.4),
 	"castle": Color(1.0, 0.7, 0.45)}
 const COL_WIDTHS := [250, 115, 65, 115, 115, 190]
 

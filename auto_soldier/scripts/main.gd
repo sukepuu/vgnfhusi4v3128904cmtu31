@@ -256,7 +256,11 @@ var _shown_special := false
 var _shown_level := 1
 
 var _spawn_acc := 0.0
-var _next_wave := 50.0
+## 横一列の大群が来る間隔（秒）
+const WAVE_EVERY := 30.0
+## 大群は、フィールドの敵がこの数を超えないぶんだけ出す（800体いたら200体だけ）
+const WAVE_FIELD_CAP := 1000
+var _next_wave := WAVE_EVERY
 ## 黒衣の大司教：BISHOP_EVERY 秒（10分）ごとに出現する（レベルのボスとは別）
 const BISHOP_EVERY := 600.0
 var _next_bishop := BISHOP_EVERY
@@ -965,8 +969,9 @@ func _update_spawning(delta: float) -> void:
 			_spawn_ironclads(IRONCLAD_LATE_COUNT)
 	# 定期的に横一列の大群
 	if elapsed >= _next_wave:
-		_next_wave += 50.0
-		var count := 8 + int(elapsed / 25.0)
+		_next_wave += WAVE_EVERY
+		# フィールドの敵が WAVE_FIELD_CAP を超えないように、出す数をけずる
+		var count := mini(8 + int(elapsed / 25.0), WAVE_FIELD_CAP - get_tree().get_nodes_in_group("enemies").size())
 		for i in count:
 			var px := lerpf(MAP_RECT.position.x + 60.0, MAP_RECT.end.x - 60.0, (i + 0.5) / count)
 			_spawn_enemy("grunt", Vector2(px, MAP_RECT.position.y + 20.0 + randf() * 40.0))
@@ -1844,7 +1849,7 @@ func _apply_debug_start(cfg: Dictionary) -> void:
 	if level % BOSS_EVERY == 0:
 		bosses_spawned -= 3 if level >= TRIPLE_BOSS_FROM else (2 if level >= DOUBLE_BOSS_FROM else 1)
 	_next_bishop = (floorf(elapsed / BISHOP_EVERY) + 1.0) * BISHOP_EVERY
-	_next_wave = (floorf(elapsed / 50.0) + 1.0) * 50.0
+	_next_wave = (floorf(elapsed / WAVE_EVERY) + 1.0) * WAVE_EVERY
 	_next_ironclad = (floorf(elapsed / IRONCLAD_EVERY) + 1.0) * IRONCLAD_EVERY
 	_next_ironclad_late = -1.0
 	# 強化は、取る前の強化（req）がそろう順に、レベル1から順番に入れる

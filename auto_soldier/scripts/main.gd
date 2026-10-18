@@ -31,6 +31,7 @@ const SniperScript := preload("res://scripts/sniper.gd")
 const SniperStats := preload("res://scripts/sniper_stats.gd")
 const ArcherScript := preload("res://scripts/archer.gd")
 const ArcherStats := preload("res://scripts/archer_stats.gd")
+const ArcherFxScript := preload("res://scripts/archer_fx.gd")
 const UltimatesScript := preload("res://scripts/ultimates.gd")
 const KnightScript := preload("res://scripts/knight.gd")
 const KnightStats := preload("res://scripts/knight_stats.gd")
@@ -103,6 +104,8 @@ var _recent_taken: Array = []
 const RECENT_WINDOW := 30
 ## いまダメージを与えている敵の名前（敵・敵の弾・敵の砲弾が、攻撃する間だけ入れる。空なら「その他」）
 var dmg_from := ""
+## 今ダメージを与えている敵（弾・砲弾なら撃った敵。わからなければ null）。弓兵の追い討ちで使う
+var dmg_attacker: Node2D = null
 
 ## 兵士全員で共有するステータス（強化はここに入る）
 var stats := SoldierStats.new()
@@ -174,8 +177,12 @@ var archer_pet_damage := 32.0
 var pet_interval := 0.8
 var archer_pet_interval := 0.75
 var pet_range := 420.0
-var archer_pet_range := 420.0
+## 弓兵ペットの斬撃の半径（遊撃兵の剣と同じ85から）
+var archer_pet_range := 85.0
 ## ペットが一度に撃つ弾の数
+## 遊撃ペットが一度に撃つ弾の数
+var pet_shots := 1
+## 弓兵ペットが一度に出す斬撃の回数
 var archer_pet_shots := 1
 ## ペットの特別強化：爆裂ペット弾・巨大ペット・凍える羽根・癒しのさえずり
 var pet_burst := false
@@ -201,6 +208,7 @@ var archer_pet_charge_burst := false
 var archer_pet_flock := false
 var archer_pet_body := false
 var archer_pet_fusion := false
+var archer_pet_heal := false
 ## 体当たりペット：ペットに触れた敵にペットの12倍ダメージ（pet.gd の BODY_MULT）
 var pet_body := false
 ## 突撃ペット（6秒ごとにHPが一番高い敵へ突進）・爆裂突撃ペット（突進が当たった所で小爆発）
@@ -316,6 +324,8 @@ func _ready() -> void:
 	if not loading:
 		add_soldier()
 		add_soldier()
+		# 新しいゲーム：前のゲームのオートセーブは消す（残っていると「前回のLvからリスタート」で前のゲームを読んでしまう）
+		AutosaveScript.clear_slot()
 
 	camera = Camera2D.new()
 	camera.position = MAP_RECT.get_center()
@@ -494,6 +504,15 @@ func allies() -> Array:
 	for p in get_tree().get_nodes_in_group("attackable"):
 		if not p.dead:
 			list.append(p)
+	return list
+
+
+## 敵の攻撃が当たる味方（allies() ＋ 弓兵）。弓兵は敵から狙われないが、流れ弾・爆発・ビームには当たる
+func hittables() -> Array:
+	var list: Array = allies()
+	for a in archers:
+		if is_instance_valid(a) and not a.dead:
+			list.append(a)
 	return list
 
 
@@ -725,6 +744,8 @@ func add_archer() -> void:
 	a.position = castle.gate_position() + Vector2(randf_range(-40, 40), -30)
 	world.add_child(a)
 	archers.append(a)
+	# あとから増えた弓兵にも、弓兵ペットを付ける
+	_fill_archer_pets()
 
 
 func add_knight() -> void:
@@ -845,6 +866,20 @@ func start_pet_fusion() -> void:
 	world.add_child(pet_fusion)
 
 
+## 弓兵ペット大合体（弓兵ペットの特別強化）を始める
+var archer_fusion: Node2D = null
+
+
+func start_archer_pet_fusion() -> void:
+	archer_pet_fusion = true
+	if archer_fusion != null:
+		return
+	archer_fusion = PetFusionScript.new()
+	archer_fusion.game = self
+	archer_fusion.archer = true
+	world.add_child(archer_fusion)
+
+
 ## 全遊撃兵にペットを1匹ずつ追加する
 func add_pet() -> void:
 	if pets_per_soldier >= MAX_PETS:
@@ -890,6 +925,7 @@ func _fill_archer_pets() -> void:
 			p.game = self
 			p.owner_soldier = a
 			p.index = have
+			p.archer = true
 			p.damage = archer_pet_damage
 			p.position = a.position
 			world.add_child(p)
@@ -1590,16 +1626,15 @@ func spawn_fun_fx(kind: String, pos: Vector2) -> Node2D:
 	return f
 
 
+## 竜巻（弓兵の竜巻矢）：duration 秒のあいだ、まわりの敵を中心へ吸い寄せる
 func spawn_tornado(pos: Vector2, duration: float) -> void:
-	var t := Node2D.new()
+	var t := ArcherFxScript.new()
+	t.game = self
+	t.kind = "tornado"
+	t.radius = 130.0
+	t.duration = duration
 	t.position = pos
-	t.set_meta("tornado", true)
-	t.set_meta("life", duration)
 	effects.add_child(t)
-	# simple suction over time handled in process if needed
-	await get_tree().create_timer(duration).timeout
-	if is_instance_valid(t):
-		t.queue_free()
 
 
 func spawn_burst(pos: Vector2, col: Color, r: float) -> void:
@@ -1827,3 +1862,9 @@ func _apply_debug_start(cfg: Dictionary) -> void:
 func restart() -> void:
 	get_tree().paused = false
 	get_tree().reload_current_scene()
+
+
+## ゲームオーバー画面の「もう一度」：オート選択の有効・無効はそのままでやり直す
+func retry() -> void:
+	_retry_auto_pick = auto_pick
+	restart()

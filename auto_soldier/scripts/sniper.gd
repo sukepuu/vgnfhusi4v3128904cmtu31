@@ -103,9 +103,8 @@ func _shoot(target: Node2D, st) -> void:
 		b.damage = dmg
 		b.pierce = st.pierce
 		b.radius = 5.0 * st.arrow_scale
-		b.scale = Vector2.ONE * st.arrow_scale
 		b.bolt = true
-		b.scale = Vector2(0.6, 0.6)
+		b.scale = Vector2(0.6, 0.6) * st.arrow_scale
 		b.life = st.fire_range / st.arrow_speed + 0.3
 		# 急所狙いは矢そのものを強くするだけなので、通常攻撃として数える
 		b.src = record

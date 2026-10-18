@@ -30,15 +30,23 @@ var explode_src: Dictionary = {}
 ## 爆発したとき、花火のエフェクトも出す（花火爆裂矢）
 var explode_firework := false
 var first_blast_src: Dictionary = {}
+## 矢倉・追尾の矢：飛んでいる途中で一度だけ、一番近い敵へ向きを変える
 var homing := false
 var _homed := false
+## 当たった敵の移動速度を、この秒数だけ40%下げる（影縫い・減速ボルト）
 var slow_on_hit := 0.0
+## 弓兵の矢（近城の矢・追い討ちの威力アップがかかる）
+var archer_hit := false
+## 連携射撃：当たった敵に連携マークを付ける。ほかの弓兵のマークが付いた敵には+60%
 var link_mark := false
-var ult_orb := false
+## 竜巻矢：当たった所に竜巻ができる
 var tornado_on_hit := false
+## 連射砲・強敵狙い：当たった敵の残りHPの割合が多いほど威力アップ（最大+50%）
 var hp_scale := false
+## 連射砲・弱点付与：当たった敵の被ダメージを5秒間 +15%
 var debuff_on_hit := false
-var _orb_cd := 1.0
+## 撃った敵（敵の弾のとき。追い討ちで、HPが半分以下の敵の弾を受けないため）
+var shooter: Node2D = null
 ## 跳ねたあとのダメージを記録する戦績カード（跳弾矢の分け記録）。空なら src のまま
 var bounce_src: Dictionary = {}
 ## 跳弾矢：最初に跳ねたとき、矢の威力をこの倍率にする（跳ねたあとの命中と爆発が強くなる）
@@ -97,8 +105,10 @@ func _process(delta: float) -> void:
 		return
 	# 敵の弾が当たったダメージは、撃った敵のものとして被害状況に記録する
 	game.dmg_from = from_name
+	game.dmg_attacker = shooter if is_instance_valid(shooter) else null
 	_step(delta)
 	game.dmg_from = ""
+	game.dmg_attacker = null
 
 
 func _step(delta: float) -> void:
@@ -136,23 +146,6 @@ func _step(delta: float) -> void:
 			aim_target = null
 	position += velocity * delta
 	life -= delta
-	if ult_orb:
-		_orb_cd -= delta
-		if _orb_cd <= 0.0:
-			_orb_cd = 1.0
-			for i in 8:
-				var dir := Vector2.from_angle(TAU * i / 8.0)
-				var sb: Node2D = get_script().new()
-				sb.game = game
-				sb.position = global_position
-				sb.velocity = dir * 500.0
-				sb.damage = 15.0
-				sb.pierce = 1
-				sb.radius = 4.0
-				sb.color = Color(1.0, 0.9, 0.5)
-				sb.life = 0.8
-				sb.src = src
-				game.effects.add_child(sb)
 	if life <= 0.0:
 		queue_free()
 		return
@@ -162,7 +155,7 @@ func _step(delta: float) -> void:
 			game.spawn_burst(global_position, Color(0.6, 1.0, 0.7), 10.0)
 			queue_free()
 			return
-		for s in game.allies():
+		for s in game.hittables():
 			if not s.dead and not _hit.has(s) and global_position.distance_to(s.global_position) < radius + s.radius:
 				# 弾が飛んできた方向を渡す（迎撃部隊の盾の判定用）
 				s.take_damage(damage, global_position - velocity.normalized() * 30.0)
@@ -212,18 +205,29 @@ func _step(delta: float) -> void:
 				e.slow(slow_on_hit, 0.4)
 			if tornado_on_hit:
 				game.spawn_tornado(global_position, 1.0)
+			# 当たった敵によって変わる威力アップは、この1回だけにかける（貫通した次の敵には持ち越さない）
+			var dmg := damage
 			if hp_scale and e.max_hp > 0.0:
-				var ratio := clampf(e.hp / e.max_hp, 0.0, 1.0)
-				damage *= 1.0 + 0.5 * ratio
+				dmg *= 1.0 + 0.5 * clampf(e.hp / e.max_hp, 0.0, 1.0)
 			if debuff_on_hit:
 				e.debuff_left = 5.0
 				e.debuff_mult = 1.15
+			if archer_hit:
+				# 近城の矢：城に近い敵ほど痛い（城から100以内で+60%、800離れると+0%）
+				if game.archer_close:
+					var d: float = game.castle.distance_to_point(e.global_position)
+					dmg *= 1.0 + 0.6 * clampf(1.0 - (d - 100.0) / 700.0, 0.0, 1.0)
+				# 追い討ち：HPが半分以下の敵には+30%
+				if game.archer_execute and e.hp <= e.max_hp * 0.5:
+					dmg *= 1.3
 			if link_mark:
-				e.link_archer = src.get("owner", null)
+				# 連携射撃：ほかの弓兵が付けたマークの敵なら+60%。当てた敵には自分のマークを付ける
+				var me: int = int(src.get("rec_idx", src.get("idx", -1)))
+				if e.link_left > 0.0 and e.link_archer != me:
+					dmg *= 1.6
+				e.link_archer = me
 				e.link_left = 5.0
-			if e.link_left > 0.0 and e.link_archer != src.get("owner", null):
-				damage *= 1.6
-			e.take_damage(damage, Vector2.ZERO, src)
+			e.take_damage(dmg, Vector2.ZERO, src)
 			# 射撃のノックバック（下側へは押さない。クールタイムは敵側で管理）
 			e.shot_knockback(velocity.normalized() * 120.0)
 			if first_blast_radius > 0.0:

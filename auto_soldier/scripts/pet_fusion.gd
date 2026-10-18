@@ -6,8 +6,10 @@ extends Node2D
 ## 合体中、元のペットは隠れて休んでいる。
 ## 突撃ペットを持っていたら、合体中も6秒ごとの区切り（ふつうのペットと同じタイミング）で、
 ## 合体前のペットを1匹ずつ（LAUNCH_GAP 秒おきに、合体した数だけ）体の中心から突進させる（pet_charger.gd）。
+## archer = true なら弓兵ペット大合体：弓兵ペットが合体し、特大弾のかわりに特大の斬撃を連発する（弓兵ペットの強化・特別強化が乗る）。
 
 const BulletScript := preload("res://scripts/bullet.gd")
+const SlashScript := preload("res://scripts/slash_effect.gd")
 const PetScript := preload("res://scripts/pet.gd")
 const ChargerScript := preload("res://scripts/pet_charger.gd")
 ## 合体中の突撃：1匹ずつ飛び出す間隔
@@ -18,6 +20,8 @@ const DURATION := 10.0
 
 var game: Node2D
 var record: Dictionary
+## 弓兵ペット大合体か
+var archer := false
 
 var _cd := 5.0
 var _left := 0.0
@@ -35,7 +39,10 @@ var _launch_i := 0
 
 
 func _ready() -> void:
-	record = game.new_record("pet", "合体ペット")
+	if archer:
+		record = game.new_record("archer_pet", "合体弓兵ペット")
+	else:
+		record = game.new_record("pet", "合体ペット")
 	visible = false
 
 
@@ -43,16 +50,33 @@ func merged() -> bool:
 	return _left > 0.0
 
 
+## 合体するペット（遊撃ペットか弓兵ペット）
+func _pets() -> Array:
+	return game.archer_pets if archer else game.pets
+
+
+func _giant() -> bool:
+	return game.archer_pet_giant if archer else game.pet_giant
+
+
+func _pet_damage() -> float:
+	return game.archer_pet_damage if archer else game.pet_damage
+
+
+func _dance() -> bool:
+	return game.archer_pet_dance if archer else game.fun.pet_dance
+
+
 func _process(delta: float) -> void:
 	_t += delta
 	if not merged():
 		_cd -= delta
-		if _cd <= 0.0 and not game.pets.is_empty():
+		if _cd <= 0.0 and not _pets().is_empty():
 			_merge()
 		return
 	_left -= delta
 	# 合体中に増えたペットも隠しておく
-	for p in game.pets:
+	for p in _pets():
 		if p.visible:
 			_hide_pet(p)
 	_update_body(delta)
@@ -68,13 +92,13 @@ func _hide_pet(p: Node2D) -> void:
 
 
 func _merge() -> void:
-	_n = game.pets.size()
+	_n = _pets().size()
 	var center := Vector2.ZERO
-	for p in game.pets:
+	for p in _pets():
 		center += p.global_position
 		_hide_pet(p)
 	position = center / _n
-	_radius = minf(18.0 + 6.0 * _n, 80.0) * (1.3 if game.pet_giant else 1.0)
+	_radius = minf(18.0 + 6.0 * _n, 80.0) * (1.3 if _giant() else 1.0)
 	_left = DURATION
 	_cd = CYCLE - DURATION
 	_ram_cd.clear()
@@ -91,7 +115,7 @@ func _split() -> void:
 	_left = 0.0
 	visible = false
 	_launch_left = 0
-	for p in game.pets:
+	for p in _pets():
 		p.visible = true
 		p.process_mode = Node.PROCESS_MODE_INHERIT
 		p.position = position + Vector2.from_angle(randf() * TAU) * 20.0
@@ -124,14 +148,22 @@ var _dash_dir := Vector2.ZERO
 
 
 func _update_body(delta: float) -> void:
+	# 癒しの羽ばたき：合体中も、各弓兵をペットの数ぶん回復
+	if archer and game.archer_pet_heal:
+		for a in game.archers:
+			if not a.dead:
+				game.heal_unit(a, game.archer_stats.max_hp, 2.0 * game.pets_per_archer * delta, record, "sp_archer_pet_heal")
 	# 癒しのさえずり：合体中も、各遊撃兵をペットの数ぶん回復
-	if game.pet_heal:
+	if not archer and game.pet_heal:
 		for s in game.soldiers:
 			if not s.dead:
 				game.heal_unit(s, game.stats.max_hp, 2.0 * game.pets_per_soldier * delta, record, "sp_pet_heal")
 	_mode_left -= delta
 	if _mode == "shoot":
-		_shoot_update(delta)
+		if archer:
+			_slash_update(delta)
+		else:
+			_shoot_update(delta)
 		if _mode_left <= 0.0:
 			var t: Node2D = game.nearest_enemy(global_position, INF)
 			if t != null:
@@ -156,7 +188,7 @@ func _update_body(delta: float) -> void:
 ## 合体中の突撃：区切りが来たら、合体した数だけ1匹ずつ（LAUNCH_GAP 秒おき）体の中心から突進させる。
 ## 前の区切りのぶんが残っていたら、新しい区切りの数に入れ替える
 func _update_launch(delta: float) -> void:
-	if not game.pet_charge:
+	if not (game.archer_pet_charge if archer else game.pet_charge):
 		_launch_left = 0
 		_charge_tick = PetScript.charge_cycle(game)
 		return
@@ -179,9 +211,10 @@ func _update_launch(delta: float) -> void:
 	var c := ChargerScript.new()
 	c.game = game
 	c.fusion = self
+	c.archer = archer
 	# ダメージは合体前のペットの戦績に、突撃ペット・爆裂突撃ペットとして記録する
-	if not game.pets.is_empty():
-		c.record = game.pets[_launch_i % game.pets.size()].record
+	if not _pets().is_empty():
+		c.record = _pets()[_launch_i % _pets().size()].record
 	_launch_i += 1
 	c.target = target
 	c.position = global_position
@@ -190,7 +223,8 @@ func _update_launch(delta: float) -> void:
 
 ## 突進中に触れた敵へ体当たり（1回の突進で同じ敵には1回）。体当たりペットを持っていると4倍
 func _ram() -> void:
-	var dmg: float = game.pet_damage * 2.0 * _power() * (4.0 if game.pet_body else 1.0)
+	var body: bool = game.archer_pet_body if archer else game.pet_body
+	var dmg: float = _pet_damage() * 2.0 * _power() * (4.0 if body else 1.0)
 	for e in game.enemies_near(global_position, _radius + 40.0):
 		if not is_instance_valid(e) or e.dead or _ram_cd.has(e):
 			continue
@@ -235,6 +269,42 @@ func _shoot_update(delta: float) -> void:
 		game.world.add_child(b)
 
 
+## 弓兵ペット大合体：立ち止まって、一番近い敵の方へ特大の斬撃を連発する。
+## 弓兵ペットの強化（間隔・威力・射程・斬撃回数・巨大・爆裂）がそのまま乗る
+func _slash_update(delta: float) -> void:
+	_shot_cd -= delta
+	if _shot_cd > 0.0:
+		return
+	var reach: float = game.archer_pet_range * 2.0 + _radius
+	var aim: Node2D = game.nearest_enemy(global_position, reach + 60.0)
+	if aim == null:
+		return
+	# 弓兵ペット早撃ちで間隔が縮む（ふつうの弓兵ペットの間隔0.75に対して0.15）
+	_shot_cd = 0.15 * game.archer_pet_interval / 0.75
+	var dir: Vector2 = (aim.global_position - global_position).normalized()
+	var arc: float = game.stats.sword_arc
+	var radius: float = reach * (1.3 if game.archer_pet_giant else 1.0)
+	# 連続斬撃のぶん、1回の斬撃が強くなる
+	var dmg: float = game.archer_pet_damage * _power() * game.archer_pet_shots * (1.4 if game.archer_pet_giant else 1.0)
+	for e in game.enemies_near(global_position, radius + 30.0):
+		if not is_instance_valid(e) or e.dead:
+			continue
+		var to: Vector2 = e.global_position - global_position
+		if to.length() > radius + e.radius:
+			continue
+		if to.length() > _radius + e.radius and absf(dir.angle_to(to)) > arc / 2.0:
+			continue
+		e.take_damage(dmg, to.normalized() * 380.0, record)
+		if game.archer_pet_burst:
+			game.explode(e.global_position, 45.0 + 3.0 * _n, dmg * PetScript.BURST_RATIO * FUSION_BURST_MULT, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
+	var fx := SlashScript.new()
+	fx.radius = radius
+	fx.arc = arc
+	fx.rotation = dir.angle()
+	fx.position = global_position
+	game.effects.add_child(fx)
+
+
 func _draw() -> void:
 	if not merged():
 		return
@@ -242,7 +312,8 @@ func _draw() -> void:
 	var flap := sin(_t * 14.0) * r * 0.25
 	draw_circle(Vector2(0, r * 0.4), r, Color(0, 0, 0, 0.25))
 	# ペットの踊り：合体中も、虹色の光をまといながらその場でくるくる回る
-	if game.fun.pet_dance:
+	var wing_col := Color(0.85, 0.75, 1.0) if archer else Color(0.75, 1.0, 0.85)
+	if _dance():
 		var hue := fmod(_t * 0.8, 1.0)
 		draw_circle(Vector2.ZERO, r * 1.6, Color.from_hsv(hue, 0.7, 1.0, 0.25))
 		for i in 10:
@@ -250,11 +321,11 @@ func _draw() -> void:
 			draw_circle(Vector2.from_angle(a) * r * 1.5, 3.0 + r * 0.06, Color.from_hsv(fmod(hue + i / 10.0, 1.0), 0.8, 1.0))
 		draw_set_transform(Vector2.ZERO, _t * 6.0, Vector2.ONE)
 	# 大きな羽
-	draw_colored_polygon(PackedVector2Array([Vector2(-r * 0.6, 0), Vector2(-r * 1.7, -r * 0.6 - flap), Vector2(-r * 1.2, r * 0.3)]), Color(0.75, 1.0, 0.85))
-	draw_colored_polygon(PackedVector2Array([Vector2(r * 0.6, 0), Vector2(r * 1.7, -r * 0.6 - flap), Vector2(r * 1.2, r * 0.3)]), Color(0.75, 1.0, 0.85))
+	draw_colored_polygon(PackedVector2Array([Vector2(-r * 0.6, 0), Vector2(-r * 1.7, -r * 0.6 - flap), Vector2(-r * 1.2, r * 0.3)]), wing_col)
+	draw_colored_polygon(PackedVector2Array([Vector2(r * 0.6, 0), Vector2(r * 1.7, -r * 0.6 - flap), Vector2(r * 1.2, r * 0.3)]), wing_col)
 	# 体（キラキラ光る輪つき）
 	# ペットの踊りを持っていたら、虹色に光る
-	var body_col := Color.from_hsv(fmod(_t * 0.8, 1.0), 0.55, 1.0) if game.fun.pet_dance else Color(0.45, 0.95, 0.65)
+	var body_col := Color.from_hsv(fmod(_t * 0.8, 1.0), 0.55, 1.0) if _dance() else (Color(0.8, 0.65, 1.0) if archer else Color(0.45, 0.95, 0.65))
 	draw_circle(Vector2.ZERO, r, body_col)
 	draw_arc(Vector2.ZERO, r + 6.0 + sin(_t * 6.0) * 3.0, 0.0, TAU, 48, Color.from_hsv(fmod(_t * 0.5, 1.0), 0.6, 1.0, 0.7), 4.0)
 	draw_circle(Vector2(-r * 0.3, -r * 0.35), r * 0.25, Color(0.8, 1.0, 0.9))

@@ -81,6 +81,9 @@ var _rapid_reload_cd := [0.0, 0.0]
 var _rapid_ult_cd := 0.0
 var _rapid_ult_active := 0.0
 var _rapid_cds: Array = [0.0, 0.0]
+## 連射砲の向き・撃った直後の光（見た目用）
+var _rapid_aims: Array = [Vector2.UP, Vector2.UP]
+var _rapid_flash: Array = [0.0, 0.0]
 var ballista_interval := 4.0
 ## バリスタの基本の威力（前の96の2倍）。通常の矢も特別強化も、ぜんぶここから計算する
 var ballista_damage := 274.56
@@ -503,6 +506,27 @@ func _update_catapult(delta: float) -> void:
 		_catapult_swings[i] = 0.4
 
 
+## 連射砲の位置（城の中心から。左右の出っ張りの真ん中）
+func _rapid_local_pos(i: int) -> Vector2:
+	var x := HALF.x * 1.15
+	return Vector2(-x if i == 0 else x, 0.0)
+
+
+## 連射砲：台座と、狙っている向きへ伸びる3本の砲身（撃った直後は先が光る）
+func _draw_rapid() -> void:
+	for i in mini(rapid_level, 2):
+		var p := _rapid_local_pos(i)
+		var aim: Vector2 = _rapid_aims[i]
+		var side := aim.orthogonal()
+		var hot := Color(1.0, 0.45, 0.2) if _rapid_ult_active > 0.0 else Color(0.25, 0.25, 0.28)
+		draw_circle(p, 11.0, Color(0.3, 0.28, 0.26))
+		for k in [-1.0, 0.0, 1.0]:
+			draw_line(p + side * k * 3.5, p + side * k * 3.5 + aim * 20.0, hot, 3.0)
+		draw_circle(p, 6.0, Color(0.55, 0.5, 0.45))
+		if _rapid_flash[i] > 0.0:
+			draw_circle(p + aim * 22.0, 5.0, Color(1.0, 0.85, 0.4, 0.9))
+
+
 func _update_rapid(delta: float) -> void:
 	if rapid_ult:
 		_rapid_ult_cd -= delta
@@ -513,6 +537,7 @@ func _update_rapid(delta: float) -> void:
 			_rapid_ult_active -= delta
 	for i in mini(rapid_level, 2):
 		_rapid_cds[i] -= delta
+		_rapid_flash[i] -= delta
 		if rapid_overheat:
 			if game.elapsed - _rapid_last_fire[i] > 1.0:
 				_rapid_heat[i] = 0.0
@@ -521,13 +546,16 @@ func _update_rapid(delta: float) -> void:
 			continue
 		if _rapid_cds[i] > 0.0:
 			continue
-		var from := global_position + Vector2(-HALF.x - 20.0 if i == 0 else HALF.x + 20.0, 0)
-		var target: Node2D = game.nearest_enemy(from, 480.0)
+		var pivot := global_position + _rapid_local_pos(i)
+		var target: Node2D = game.nearest_enemy(pivot, 480.0)
 		if rapid_ult and _rapid_ult_active > 0.0:
 			target = game.nearest_enemy(global_position, 1200.0)
 		if target == null:
 			continue
-		var aim: Vector2 = (target.global_position - from).normalized()
+		var aim: Vector2 = (target.global_position - pivot).normalized()
+		var from := pivot + aim * 18.0
+		_rapid_aims[i] = aim
+		_rapid_flash[i] = 0.05
 		var mult := 1.0
 		if rapid_overheat:
 			_rapid_heat[i] = minf(0.5, _rapid_heat[i] + 0.02)
@@ -544,16 +572,18 @@ func _update_rapid(delta: float) -> void:
 			mult *= 1.0 + 0.6 * clampf(float(game.level) / 150.0, 0.0, 1.0)
 		if rapid_ult and _rapid_ult_active > 0.0:
 			mult *= 1.3
+		# 装填：いつも与ダメージ+80%。50回撃つたびに3秒撃てなくなる
 		if rapid_reload:
+			mult *= 1.8
 			_rapid_shot_count[i] += 1
 			if _rapid_shot_count[i] >= 50:
 				_rapid_shot_count[i] = 0
 				_rapid_reload_cd[i] = 3.0
-				mult *= 1.8
 		var interval_mult := 1.0
+		# 背水：城のHPが減るほど攻撃速度アップ（HP100%で+0%、残り20%以下で最大+80%）
 		if rapid_low_hp:
-			var ratio := clampf((0.2 - hp / max_hp) / 0.2, 0.0, 1.0)
-			interval_mult = 1.0 - 0.8 * ratio
+			var ratio := clampf((1.0 - hp / max_hp) / 0.8, 0.0, 1.0)
+			interval_mult = 1.0 / (1.0 + 0.8 * ratio)
 		for k in rapid_shots:
 			var dir: Vector2 = aim.rotated((k - (rapid_shots - 1) / 2.0) * 0.1)
 			var b := BulletScript.new()
@@ -918,6 +948,7 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2(-HALF.x - ext_w, -ext_h), Vector2(ext_w, ext_h * 2.0)), dark, false, 2.0)
 	draw_rect(Rect2(Vector2(HALF.x, -ext_h), Vector2(ext_w, ext_h * 2.0)), wall)
 	draw_rect(Rect2(Vector2(HALF.x, -ext_h), Vector2(ext_w, ext_h * 2.0)), dark, false, 2.0)
+	_draw_rapid()
 	# 胸壁（ギザギザ）
 	var bw := 16.0
 	var x := -HALF.x

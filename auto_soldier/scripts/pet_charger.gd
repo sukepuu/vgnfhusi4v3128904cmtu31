@@ -11,6 +11,8 @@ var game: Node2D
 var fusion: Node2D
 ## ダメージを記録する、合体前のペットの戦績カード
 var record: Dictionary = {}
+## 弓兵ペット大合体から飛び出したか（攻撃力・特別強化・色を弓兵ペットのものにする）
+var archer := false
 var target: Node2D = null
 ## 1 = 突進中 / 2 = 戻り中
 var _state := 1
@@ -24,7 +26,7 @@ var _hue_ofs := randf()
 
 func _process(delta: float) -> void:
 	_t += delta
-	scale = Vector2(1.7, 1.7) if game.pet_giant else Vector2.ONE
+	scale = Vector2(1.7, 1.7) if (game.archer_pet_giant if archer else game.pet_giant) else Vector2.ONE
 	if _state == 1:
 		# 狙った敵が倒れたら、別の一番HPが高い敵へ。いなければ戻る
 		if not is_instance_valid(target) or target.dead:
@@ -69,11 +71,11 @@ func _hit() -> void:
 			continue
 		if global_position.distance_to(e.global_position) < r + e.radius + 3.0:
 			_hits[id] = true
-			var dmg: float = game.pet_damage * PetScript.CHARGE_MULT
+			var dmg: float = (game.archer_pet_damage if archer else game.pet_damage) * PetScript.CHARGE_MULT
 			var hit_pos: Vector2 = e.global_position
-			e.take_damage(dmg, _aim * 260.0, game.sp_src(record, "sp_pet_charge"))
-			if game.pet_charge_burst:
-				game.explode(hit_pos, PetScript.CHARGE_BURST_RADIUS, dmg * PetScript.CHARGE_BURST_RATIO, game.sp_src(record, "sp_pet_charge_burst"), Color(1.0, 0.7, 0.3))
+			e.take_damage(dmg, _aim * 260.0, game.sp_src(record, "sp_archer_pet_charge" if archer else "sp_pet_charge"))
+			if game.archer_pet_charge_burst if archer else game.pet_charge_burst:
+				game.explode(hit_pos, PetScript.CHARGE_BURST_RADIUS, dmg * PetScript.CHARGE_BURST_RATIO, game.sp_src(record, "sp_archer_pet_charge_burst" if archer else "sp_pet_charge_burst"), Color(1.0, 0.7, 0.3))
 
 
 func _draw() -> void:
@@ -85,7 +87,7 @@ func _draw() -> void:
 			draw_line(to_local(_trail[i - 1]), to_local(_trail[i]), Color(col, 0.6 * a), 3.0 + 7.0 * a)
 	# ふつうのペットと同じ小鳥
 	var c := Vector2.ZERO
-	var dance: bool = game.fun.pet_dance
+	var dance: bool = game.archer_pet_dance if archer else game.fun.pet_dance
 	if dance:
 		# ペットの踊り：ふつうのペットと同じく、虹色に光りながらくるくる回る
 		var hue := fmod(_t * 0.8 + _hue_ofs, 1.0)
@@ -94,10 +96,12 @@ func _draw() -> void:
 			var a := _t * 4.0 + TAU * i / 6.0
 			draw_circle(c + Vector2.from_angle(a) * 14.0, 2.5, Color.from_hsv(fmod(hue + i / 6.0, 1.0), 0.8, 1.0))
 		draw_set_transform(c, _t * 9.0, Vector2.ONE)
-	draw_circle(c, 9.0, Color.from_hsv(fmod(_t * 0.8 + _hue_ofs, 1.0), 0.55, 1.0) if dance else Color(0.45, 0.95, 0.65))
+	var body_col := Color(0.8, 0.65, 1.0) if archer else Color(0.45, 0.95, 0.65)
+	var wing_col := Color(0.6, 0.45, 0.85) if archer else Color(0.3, 0.75, 0.5)
+	draw_circle(c, 9.0, Color.from_hsv(fmod(_t * 0.8 + _hue_ofs, 1.0), 0.55, 1.0) if dance else body_col)
 	var wing := sin(_t * 18.0) * 4.0
-	draw_colored_polygon(PackedVector2Array([c + Vector2(-6, 0), c + Vector2(-15, -4 - wing), c + Vector2(-8, 5)]), Color(0.3, 0.75, 0.5))
-	draw_colored_polygon(PackedVector2Array([c + Vector2(6, 0), c + Vector2(15, -4 - wing), c + Vector2(8, 5)]), Color(0.3, 0.75, 0.5))
+	draw_colored_polygon(PackedVector2Array([c + Vector2(-6, 0), c + Vector2(-15, -4 - wing), c + Vector2(-8, 5)]), wing_col)
+	draw_colored_polygon(PackedVector2Array([c + Vector2(6, 0), c + Vector2(15, -4 - wing), c + Vector2(8, 5)]), wing_col)
 	draw_circle(c + _aim * 4.0 + Vector2(-2, -2), 1.8, Color(0.1, 0.1, 0.1))
 	draw_circle(c + _aim * 4.0 + Vector2(2, -2), 1.8, Color(0.1, 0.1, 0.1))
 	draw_colored_polygon(PackedVector2Array([c + _aim * 12.0, c + _aim * 7.0 + _aim.orthogonal() * 3.0, c + _aim * 7.0 - _aim.orthogonal() * 3.0]), Color(1.0, 0.8, 0.3))

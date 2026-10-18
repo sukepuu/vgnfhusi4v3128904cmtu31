@@ -343,7 +343,7 @@ const SPECIAL := [
 ]
 
 const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城", "guard": "迎撃", "sniper": "狙撃", "knight": "近衛",
-	"heavy": "重装", "engineer": "工兵", "repair": "修理", "castle": "城"}
+	"heavy": "重装", "engineer": "工兵", "repair": "修理", "archer": "弓兵", "archer_pet": "弓兵ペット", "castle": "城"}
 const CAT_COLOR := {
 	"pet": Color(0.55, 1.0, 0.75), "knight": Color(1.0, 0.82, 0.4), "repair": Color(0.55, 0.75, 1.0),
 	"sniper": Color(0.75, 0.95, 0.45), "archer": Color(0.9, 0.7, 0.5), "archer_pet": Color(0.7, 0.9, 0.6),
@@ -360,7 +360,8 @@ const GROUPS := [
 	["矢倉", "tower"], ["大砲", "cannon"], ["投石器", "catapult"], ["バリスタ", "ballista"], ["連射砲", "rapid"],
 	["氷結の結界", "frost"], ["採掘場", "mine_site"], ["城（本体）", "castle"]]
 ## 城の通常強化がどの兵装のものか
-const CASTLE_UPGRADE_GROUPS := {"tower": ["tower"], "tower_dmg": ["tower"], "tower_rate": ["tower"], "tower_pierce": ["tower"], "tower_multi": ["tower"], "cannon": ["cannon"], "cannon_multi": ["cannon"], "catapult": ["catapult"], "catapult_multi": ["catapult"], "ballista": ["ballista"], "ballista_dmg": ["ballista"], "ballista_rate": ["ballista"], "ballista_multi": ["ballista"], "rapid": ["rapid"], "rapid_dmg": ["rapid"], "rapid_rate": ["rapid"], "rapid_pierce": ["rapid"], "rapid_multi": ["rapid"],
+const CASTLE_UPGRADE_GROUPS := {"tower": ["tower"], "tower_dmg": ["tower"], "tower_rate": ["tower"], "tower_pierce": ["tower"], "tower_multi": ["tower"], "cannon": ["cannon"], "cannon_multi": ["cannon"], "catapult": ["catapult"], "catapult_multi": ["catapult"], "ballista": ["ballista"], "ballista_dmg": ["ballista"], "ballista_rate": ["ballista"], "ballista_multi": ["ballista"], "rapid": ["rapid"],
+	"rapid_dmg": ["rapid"], "rapid_rate": ["rapid"], "rapid_pierce": ["rapid"], "rapid_multi": ["rapid"],
 	"artillery": ["cannon"], "cannon_rate": ["cannon"], "cannon_range": ["cannon"],
 	"catapult_dmg": ["catapult"], "catapult_rate": ["catapult"], "catapult_range": ["catapult"],
 	"frost": ["frost"], "frost_range": ["frost"], "frost_slow": ["frost"],
@@ -509,6 +510,18 @@ static func describe(u: Dictionary, current_level: int) -> String:
 
 
 ## new_level = 取得後のレベル（1始まり）
+## ペットの攻撃力 = 基本 ×（1 + 0.2 × 牙のレベル）× 1.2^(ペットの強化のレベル - 1)。
+## 「ペット」の2回目以降の+20%と「牙」の+20%の両方が乗るように、毎回レベルから計算し直して、いるペット全員に入れる
+static func _update_pet_damage(game: Node2D) -> void:
+	var lv: Dictionary = game.upgrade_levels
+	game.pet_damage = 12.0 * (1.0 + 0.2 * int(lv.get("pet_fang", 0))) * pow(1.2, maxi(0, int(lv.get("pet", 0)) - 1))
+	for p in game.pets:
+		p.damage = game.pet_damage
+	game.archer_pet_damage = 32.0 * (1.0 + 0.2 * int(lv.get("archer_pet_fang", 0))) * pow(1.2, maxi(0, int(lv.get("archer_pet", 0)) - 1))
+	for p in game.archer_pets:
+		p.damage = game.archer_pet_damage
+
+
 static func apply(id: String, new_level: int, game: Node2D) -> void:
 	var st = game.stats
 	var castle: Node2D = game.castle
@@ -535,11 +548,8 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 				st.dash_interval = maxf(0.5, 4.0 * (1.0 - 0.1 * new_level))
 				st.dash_damage *= 1.3
 		"pet":
-			if new_level > 1:
-				game.pet_damage *= 1.2
-				for p in game.pets:
-					p.damage = game.pet_damage
 			game.add_pet()
+			_update_pet_damage(game)
 		"soldier_hp":
 			st.max_hp += 25.0
 			for s in game.soldiers:
@@ -748,9 +758,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"pet_rate":
 			game.pet_interval = maxf(0.1, 0.8 * (1.0 - 0.1 * new_level))
 		"pet_fang":
-			game.pet_damage = 12.0 * (1.0 + 0.2 * new_level)
-			for p in game.pets:
-				p.damage = game.pet_damage
+			_update_pet_damage(game)
 		"pet_eye":
 			game.pet_range = 280.0 * (1.0 + 0.2 * new_level)
 		"pet_multi":
@@ -822,7 +830,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"sp_archer_pet_body":
 			game.archer_pet_body = true
 		"sp_archer_pet_fusion":
-			game.archer_pet_fusion = true
+			game.start_archer_pet_fusion()
 		"sp_ult_flock":
 			game.ultimates.flock = true
 		"sp_pet_burst":
@@ -956,10 +964,11 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.add_archer()
 		"archer_pet":
 			game.add_archer_pet()
+			_update_pet_damage(game)
 		"archer_pet_rate":
 			game.archer_pet_interval = maxf(0.2, 0.75 * (1.0 - 0.1 * new_level))
 		"archer_pet_fang":
-			game.archer_pet_damage = 32.0 * (1.0 + 0.2 * new_level)
+			_update_pet_damage(game)
 		"archer_pet_eye":
 			game.archer_pet_range = 85.0 * (1.0 + 0.2 * new_level)
 		"archer_pet_multi":

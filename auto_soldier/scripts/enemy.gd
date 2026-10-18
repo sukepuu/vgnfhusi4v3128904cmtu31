@@ -239,8 +239,10 @@ func _process(delta: float) -> void:
 	if kind == "archer":
 		_archer_age += delta
 	game.dmg_from = display_name()
+	game.dmg_attacker = self
 	_update(delta)
 	game.dmg_from = ""
+	game.dmg_attacker = null
 
 
 func _update(delta: float) -> void:
@@ -544,6 +546,7 @@ func _lob_at_castle(dmg: float, area: float, size: float) -> void:
 	s.target = castle.global_position + Vector2(randf_range(-half.x, half.x), randf_range(-half.y, half.y) * 0.6)
 	s.damage = dmg
 	s.from_name = display_name()
+	s.shooter = self
 	s.blast_radius = area
 	s.size = size
 	s.flight_time = clampf(muzzle.distance_to(s.target) / 320.0, 1.5, 3.2)
@@ -634,8 +637,8 @@ func _fire_beam(dmg: float) -> void:
 	var fx: Node2D = game.spawn_fun_fx("beam", from)
 	fx.end = to
 	const WIDTH := 30.0
-	# 線上の味方（兵士・設置物など）
-	for a in game.allies():
+	# 線上の味方（兵士・設置物・弓兵など）
+	for a in game.hittables():
 		if a.dead:
 			continue
 		var p: Vector2 = Geometry2D.get_closest_point_to_segment(a.global_position, from, to)
@@ -734,7 +737,7 @@ func _heal_skill(delta: float) -> void:
 
 ## 自爆兵の爆発：周りの味方と城にダメージ
 func _bomber_explode() -> void:
-	for a in game.allies():
+	for a in game.hittables():
 		if not a.dead and global_position.distance_to(a.global_position) < 80.0 + a.radius:
 			a.take_damage(damage, global_position)
 	if game.castle.distance_to_point(global_position) < 80.0:
@@ -774,6 +777,7 @@ func _shoot(dir: Vector2, dmg: float, spd: float = 260.0, r: float = 7.0, col: C
 	b.game = game
 	b.from_enemy = true
 	b.from_name = display_name()
+	b.shooter = self
 	b.velocity = dir * spd
 	b.damage = dmg
 	b.radius = r

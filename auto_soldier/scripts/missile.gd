@@ -23,7 +23,7 @@ var target: Node2D = null
 var bird_color := Color(0.95, 0.95, 0.98)
 ## 鳥の羽の色（透明なら体の色を少し暗くした色）
 var bird_wing := Color(0, 0, 0, 0)
-## 見た目（ball："iron" 鉄球 / "rock" 岩 / "cow" 牛、homing："arrow" 火矢 / "bird" 鳩）
+## 見た目（ball："iron" 鉄球 / "rock" 岩 / "cow" 牛、homing："arrow" 火矢 / "bird" 鳩 / "blade" 弓兵ペットの刃）
 var look := "iron"
 
 ## 流星百騎：通った跡に流れ星を残す（0より大きいとき。星1つのダメージ）
@@ -122,8 +122,8 @@ func _check_hits() -> void:
 				game.explode(global_position, 55.0, damage * 0.5, src, Color(1.0, 0.5, 0.15), 0.0, 120.0)
 				if blast_ratio > 0.0:
 					game.explode(global_position, 70.0, damage * blast_ratio, blast_src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
-				if look == "bird" and is_instance_valid(e) and not e.dead:
-					# 鳩：敵が生き残っていたらくっついて、1秒ごとに2回つつく
+				if (look == "bird" or look == "blade") and is_instance_valid(e) and not e.dead:
+					# 鳩・刃：敵が生き残っていたらくっついて、1秒ごとに2回つつく（斬る）
 					_stuck_on = e
 					_pecks_left = 2
 					_peck_cd = 1.0
@@ -233,6 +233,12 @@ func _draw() -> void:
 				draw_circle(Vector2(-radius * 0.3, -radius * 0.3), radius * 0.3, Color(0.55, 0.55, 0.6))
 		"homing":
 			var dir := velocity.normalized()
+			if look == "blade":
+				# 弓兵ペットの刃：くるくる回る三日月（くっついている間は斬りつけるように速く回る）
+				var spin := _t * (30.0 if _stuck_on != null else 14.0)
+				draw_arc(Vector2.ZERO, 10.0, spin, spin + 3.6, 14, Color(0.85, 0.75, 1.0), 4.0)
+				draw_arc(Vector2.ZERO, 7.0, spin + 0.3, spin + 3.3, 10, Color(1, 1, 1, 0.8), 1.5)
+				return
 			if look == "bird":
 				if _stuck_on != null:
 					# くっついてつつく鳩（頭がコツコツ動く）

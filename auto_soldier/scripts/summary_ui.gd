@@ -9,14 +9,11 @@ const Upgrades := preload("res://scripts/upgrades.gd")
 const GROUPS := [
 	["遊撃", "soldier"], ["ペット", "pet"], ["迎撃", "guard"], ["狙撃", "sniper"], ["近衛", "knight"],
 	["重装", "heavy"], ["工兵", "engineer"], ["築城", "builder"], ["修理", "repair"],
-	["矢倉", "tower"], ["大砲", "cannon"], ["投石器", "catapult"], ["バリスタ", "ballista"],
+	["弓兵", "archer"], ["弓兵ペット", "archer_pet"],
+	["矢倉", "tower"], ["大砲", "cannon"], ["投石器", "catapult"], ["バリスタ", "ballista"], ["連射砲", "rapid"],
 	["氷結の結界", "frost"], ["採掘場", "mine_site"], ["城（本体）", "castle"]]
 ## 城の設備の戦績カードは名前で見分ける（「矢倉1」「大砲2」など）
-const EQUIP_PREFIX := {"矢倉": "tower", "大砲": "cannon", "投石器": "catapult", "バリスタ": "ballista", "採掘場": "mine_site", "氷結の結界": "frost", "城（本体）": "castle"}
-## 城の通常強化がどの設備のものか（砲術は大砲と投石器の両方に効くが、大砲に数える）
-const CASTLE_UPGRADE_GROUP := {"tower": "tower", "cannon": "cannon", "catapult": "catapult", "ballista": "ballista",
-	"artillery": "cannon", "frost": "frost",
-	"mine_site": "mine_site", "mine_speed": "mine_site", "mine_yield": "mine_site", "wall": "castle"}
+const EQUIP_PREFIX := {"矢倉": "tower", "大砲": "cannon", "投石器": "catapult", "バリスタ": "ballista", "連射砲": "rapid", "採掘場": "mine_site", "氷結の結界": "frost", "城（本体）": "castle"}
 
 var game: Node2D
 var _grid: GridContainer
@@ -153,13 +150,8 @@ func _group_of_record(r: Dictionary) -> String:
 
 ## 強化が、どの種類のものか
 func _group_of_upgrade(u: Dictionary) -> String:
-	if u["cat"] != "castle":
-		return u["cat"]
-	if u.has("group"):
-		return u["group"]
-	if u.get("special", false):
-		return u.get("req", "castle")
-	return CASTLE_UPGRADE_GROUP.get(u["id"], "castle")
+	# 部隊・兵装の分け方は強化一覧（upgrades.gd の groups_of）と同じ
+	return Upgrades.groups_of(u)[0]
 
 
 ## 今のゲームの戦績まとめの中身（そのままJSONに保存できる形）

@@ -32,7 +32,7 @@ const MAIN_SKIP := [
 	"world", "effects", "camera", "castle", "walls", "ground", "hud", "level_up_ui", "stats_ui", "upgrades_ui",
 	"auto_pick_ui", "summary_ui", "records_ui", "damage_ui", "changelog_ui", "debug_ui", "ultimates", "fun",
 	"last_record_id", "records", "enemies_cache", "_grid", "game_over", "auto_pick", "_shown_choices",
-	"_autosave_queued", "debug_start", "_retry_auto_pick", "auto_priority", "_load_autosave",
+	"_autosave_queued", "debug_start", "_retry_auto_pick", "auto_priority", "_load_autosave", "_load_autosave_level", "dmg_attacker",
 ]
 ## ノードそのものの性質で保存するもの
 const BUILTIN := ["position", "rotation", "scale", "visible", "modulate", "self_modulate", "z_index", "process_mode"]
@@ -141,21 +141,39 @@ static func save(g: Node2D) -> bool:
 	return true
 
 
+## 12以上前のセーブと、今より高いレベルのセーブを消す。
+## 今より高いレベルのセーブは、「○Lv前から再開」で戻る前の続き（もう使わない流れ）なので残さない
 static func _prune_old(current_level: int) -> void:
+	_remove_saves(func(lv: int) -> bool: return lv < current_level - KEEP_LEVELS + 1 or lv > current_level)
+
+
+## 今の枠のオートセーブを全部消す（新しいゲームを始めたとき）
+static func clear_slot() -> void:
+	_remove_saves(func(_lv: int) -> bool: return true)
+	# 前の形式（レベルなし）のセーブも消す
+	var legacy := SaveSlot.save_path()
+	if FileAccess.file_exists(legacy):
+		DirAccess.remove_absolute(legacy)
+
+
+## 今の枠のオートセーブのうち、should_remove(レベル) が true のものを消す
+static func _remove_saves(should_remove: Callable) -> void:
 	var dir := DirAccess.open("user://")
 	if dir == null:
 		return
 	var prefix := "autosave_%d_lv" % maxi(1, SaveSlot.slot)
-	var min_keep := current_level - KEEP_LEVELS + 1
+	var doomed: Array = []
 	dir.list_dir_begin()
 	var fname := dir.get_next()
 	while fname != "":
 		if fname.begins_with(prefix) and fname.ends_with(".dat"):
 			var lv_str := fname.trim_prefix(prefix).trim_suffix(".dat")
-			if lv_str.is_valid_int() and int(lv_str) < min_keep:
-				dir.remove(fname)
+			if lv_str.is_valid_int() and should_remove.call(int(lv_str)):
+				doomed.append(fname)
 		fname = dir.get_next()
 	dir.list_dir_end()
+	for n in doomed:
+		dir.remove(n)
 
 
 ## 保存を読み込んで g（作り直したばかりの main.gd。兵士はまだいない状態）に戻す。

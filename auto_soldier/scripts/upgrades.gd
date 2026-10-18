@@ -11,41 +11,41 @@ const LIST := [
 	# ---- 遊撃部隊
 	{"id": "recruit", "cat": "soldier", "name": "遊撃兵を増員", "desc": "遊撃部隊の兵士が1人増える（最大5人）", "max": 3, "weight": 1.5},
 	{"id": "multishot", "cat": "soldier", "name": "射撃数+1", "desc": "一度に撃つ弾が1発増える", "max": 5},
-	{"id": "firerate", "cat": "soldier", "name": "速射", "desc": "射撃の間隔 -15%", "max": 5},
-	{"id": "bullet_dmg", "cat": "soldier", "name": "強化弾", "desc": "射撃ダメージ +30%", "max": 5},
+	{"id": "firerate", "cat": "soldier", "name": "速射", "desc": "射撃の間隔 -10%", "max": 5},
+	{"id": "bullet_dmg", "cat": "soldier", "name": "強化弾", "desc": "射撃ダメージ +20%", "max": 5},
 	{"id": "pierce", "cat": "soldier", "name": "貫通弾", "desc": "弾が敵をもう1体貫通する", "max": 3},
-	{"id": "sword_dmg", "cat": "soldier", "name": "剣術", "desc": "斬撃ダメージ +35%", "max": 5},
+	{"id": "sword_dmg", "cat": "soldier", "name": "剣術", "desc": "斬撃ダメージ +20%", "max": 5},
 	{"id": "sword_range", "cat": "soldier", "name": "大振り", "desc": "斬撃の範囲 +20%", "max": 4},
 	{"id": "whirlwind", "cat": "soldier", "name": "回転斬り", "desc": "斬撃が全方位360度になる", "max": 1},
 	{"id": "dash", "cat": "soldier", "name": "突進突き", "desc": "4秒ごとに敵へ突進して貫く（突進中は無敵）",
-		"desc_up": "突進の間隔 -20%、威力 +30%", "max": 4},
-	{"id": "pet", "cat": "soldier", "name": "ペットの仲間", "desc": "全遊撃兵にペットが1匹ずつ付き、自動で射撃してくれる（あとから増えた遊撃兵にも付く）",
+		"desc_up": "突進の間隔 -10%、威力 +30%", "max": 4},
+	{"id": "pet", "cat": "soldier", "name": "遊撃ペット", "desc": "全遊撃兵にペットが1匹ずつ付き、自動で射撃してくれる（あとから増えた遊撃兵にも付く）",
 		"desc_up": "全遊撃兵にペットがもう1匹ずつ付く、全ペットの攻撃力 +20%", "max": 4},
 	{"id": "soldier_hp", "cat": "soldier", "name": "鍛錬", "desc": "遊撃兵の最大HP +25、全員HP全回復", "max": 4},
 	# ---- 築城部隊
 	{"id": "builder", "cat": "builder", "name": "築城部隊", "desc": "城の上側180度を囲むように、20秒ごとに壁を1枚建てる（壁1枚で敵の攻撃を10発防ぐ）",
 		"desc_up": "築城部隊の作業員が1人増える（最大3人、それぞれ別の場所に壁を建てる）", "max": 3, "weight": 0.5},
-	{"id": "build_speed", "cat": "builder", "name": "突貫工事", "desc": "壁の建築時間 -20%", "max": 4, "req": "builder"},
+	{"id": "build_speed", "cat": "builder", "name": "突貫工事", "desc": "壁の建築時間 -10%", "max": 5, "req": "builder"},
 	{"id": "wall_hp", "cat": "builder", "name": "石壁強化", "desc": "壁が防げる回数 +2発（建っている壁にも反映。大きな壁は幅に合わせてもっと増える）", "max": 5, "req": "builder"},
-	{"id": "wall_width", "cat": "builder", "name": "大きな壁", "desc": "これから建てる壁の幅 +4度（少ない枚数で囲める）。防げる回数も幅に合わせて増える", "max": 3, "req": "builder"},
+	{"id": "wall_width", "cat": "builder", "name": "大きな壁", "desc": "これから建てる壁の幅 +2.4度（少ない枚数で囲める）。防げる回数も幅に合わせて増える", "max": 5, "req": "builder"},
 	# ---- 迎撃部隊
 	{"id": "guard", "cat": "guard", "name": "迎撃部隊", "desc": "盾と槍を持ち、城の近くで敵を迎え撃つ兵士が加わる（前方からの攻撃は盾でダメージ20%）",
 		"desc_up": "迎撃部隊の兵士が1人増える（最大3人）", "max": 3, "weight": 0.5},
-	{"id": "shield_arc", "cat": "guard", "name": "大盾", "desc": "盾で防げる範囲 +20度、盾で受けたときのダメージカット +5%（最大で100%カット）", "max": 4, "req": "guard"},
-	{"id": "spear_reach", "cat": "guard", "name": "長槍", "desc": "槍のリーチ +25", "max": 4, "req": "guard"},
-	{"id": "spear_dmg", "cat": "guard", "name": "槍術", "desc": "槍の攻撃力 +35%", "max": 5, "req": "guard"},
+	{"id": "shield_arc", "cat": "guard", "name": "大盾", "desc": "盾で防げる範囲 +20度、盾で受けたときのダメージカット +5%（最大で100%カット）", "max": 5, "req": "guard"},
+	{"id": "spear_reach", "cat": "guard", "name": "長槍", "desc": "槍のリーチ +25", "max": 5, "req": "guard"},
+	{"id": "spear_dmg", "cat": "guard", "name": "槍術", "desc": "槍の攻撃力 +20%", "max": 5, "req": "guard"},
 	# 【ペット】（ペットの仲間を取ると出る）
-	{"id": "pet_rate", "cat": "pet", "name": "早撃ちペット", "desc": "ペットの射撃の間隔 -15%", "max": 4, "req": "pet"},
-	{"id": "pet_fang", "cat": "pet", "name": "ペットの牙", "desc": "ペットの弾の威力 +30%", "max": 5, "req": "pet"},
-	{"id": "pet_eye", "cat": "pet", "name": "ペットの目", "desc": "ペットの射程 +20%", "max": 3, "req": "pet"},
-	{"id": "pet_multi", "cat": "pet", "name": "連射ペット", "desc": "ペットが一度に撃つ弾 +1発", "max": 3, "req": "pet"},
+	{"id": "pet_rate", "cat": "pet", "name": "遊撃ペット早撃ち", "desc": "遊撃ペットの射撃の間隔 -10%", "max": 4, "req": "pet"},
+	{"id": "pet_fang", "cat": "pet", "name": "遊撃ペットの牙", "desc": "遊撃ペットの弾の威力 +20%", "max": 5, "req": "pet"},
+	{"id": "pet_eye", "cat": "pet", "name": "遊撃ペットの目", "desc": "遊撃ペットの射程 +20%", "max": 5, "req": "pet"},
+	{"id": "pet_multi", "cat": "pet", "name": "遊撃ペット連射", "desc": "遊撃ペットが一度に撃つ弾 +1発", "max": 3, "req": "pet"},
 	# 【近衛】
 	{"id": "knight", "cat": "knight", "name": "近衛部隊", "desc": "フィールドの一番下にいる敵を最優先で狙い、近くから一直線に高速突進して貫く騎士が加わる（隠密兵は当たっただけで倒れる）",
 		"desc_up": "近衛部隊の騎士が1人増える（最大3人）", "max": 3, "weight": 0.5},
-	{"id": "knight_dmg", "cat": "knight", "name": "剛突", "desc": "突進の威力 +35%", "max": 5, "req": "knight"},
-	{"id": "knight_rate", "cat": "knight", "name": "疾駆", "desc": "突進の間隔 -15%", "max": 4, "req": "knight"},
-	{"id": "knight_width", "cat": "knight", "name": "大槍", "desc": "突進の当たる幅 +30%", "max": 3, "req": "knight"},
-	{"id": "knight_move", "cat": "knight", "name": "駿馬", "desc": "近衛兵の移動速度 +20%（突進していないときの歩く速さ）", "max": 3, "req": "knight"},
+	{"id": "knight_dmg", "cat": "knight", "name": "剛突", "desc": "突進の威力 +20%", "max": 5, "req": "knight"},
+	{"id": "knight_rate", "cat": "knight", "name": "疾駆", "desc": "突進の間隔 -10%", "max": 5, "req": "knight"},
+	{"id": "knight_width", "cat": "knight", "name": "大槍", "desc": "突進の当たる幅 +30%", "max": 5, "req": "knight"},
+	{"id": "knight_move", "cat": "knight", "name": "駿馬", "desc": "近衛兵の移動速度 +20%（突進していないときの歩く速さ）", "max": 5, "req": "knight"},
 	# 【修理】
 	{"id": "repairer", "cat": "repair", "name": "修理部隊", "desc": "城のまわりで修理をして、城のHPを毎秒1回復する修理兵が加わる",
 		"desc_up": "修理兵が1人増える（最大3人）", "max": 3, "weight": 1.0},
@@ -53,22 +53,36 @@ const LIST := [
 	# 【狙撃】
 	{"id": "sniper", "cat": "sniper", "name": "狙撃部隊", "desc": "迎撃部隊の後ろに立ち、遠距離型の敵（弓兵・迫撃砲）を優先して弓で狙い撃つ狙撃兵が加わる",
 		"desc_up": "狙撃部隊の狙撃兵が1人増える（最大3人）", "max": 3, "weight": 0.5},
-	{"id": "sniper_rate", "cat": "sniper", "name": "早撃ち", "desc": "狙撃兵が矢を放つ間隔 -15%", "max": 4, "req": "sniper"},
+	{"id": "archer", "cat": "archer", "name": "弓兵部隊", "desc": "画面の下半分を自由に動き回りながら射撃する弓兵が加わる（敵から狙われない）",
+		"desc_up": "弓兵が1人増える（最大3人）", "max": 3, "weight": 0.6},
+	{"id": "archer_rate", "cat": "archer", "name": "早撃ち", "desc": "弓兵が矢を放つ間隔 -10%", "max": 5, "req": "archer"},
+	{"id": "archer_multi", "cat": "archer", "name": "多連矢", "desc": "一度に放つ矢 +1本", "max": 3, "req": "archer"},
+	{"id": "archer_dmg", "cat": "archer", "name": "強弓", "desc": "矢の威力 +20%", "max": 5, "req": "archer"},
+	{"id": "archer_pierce", "cat": "archer", "name": "貫き矢", "desc": "矢が敵をもう1体貫通する", "max": 5, "req": "archer"},
+	{"id": "archer_pet", "cat": "archer_pet", "name": "弓兵ペット", "desc": "全弓兵にペットが1匹ずつ付き、斬撃で戦う（遊撃兵の剣と同じ設定）",
+		"desc_up": "全弓兵にペットがもう1匹ずつ付く、全ペットの攻撃力 +20%", "max": 4, "req": "archer"},
+	{"id": "archer_pet_rate", "cat": "archer_pet", "name": "弓兵ペット早撃ち", "desc": "弓兵ペットの射撃の間隔 -10%", "max": 4, "req": "archer_pet"},
+	{"id": "archer_pet_fang", "cat": "archer_pet", "name": "弓兵ペットの牙", "desc": "弓兵ペットの弾の威力 +20%", "max": 5, "req": "archer_pet"},
+	{"id": "archer_pet_eye", "cat": "archer_pet", "name": "弓兵ペットの目", "desc": "弓兵ペットの射程 +20%", "max": 5, "req": "archer_pet"},
+	{"id": "archer_pet_multi", "cat": "archer_pet", "name": "連続斬撃", "desc": "弓兵ペットの斬撃発生回数 +1", "max": 3, "req": "archer_pet"},
+	{"id": "archer_size", "cat": "archer", "name": "大矢", "desc": "弓兵の矢のサイズ +20%", "max": 5, "req": "archer"},
+	{"id": "sniper_rate", "cat": "sniper", "name": "早撃ち", "desc": "狙撃兵が矢を放つ間隔 -10%", "max": 5, "req": "sniper"},
 	{"id": "sniper_multi", "cat": "sniper", "name": "多連矢", "desc": "一度に放つ矢 +1本", "max": 3, "req": "sniper"},
-	{"id": "sniper_dmg", "cat": "sniper", "name": "強弓", "desc": "矢の威力 +35%", "max": 5, "req": "sniper"},
-	{"id": "sniper_pierce", "cat": "sniper", "name": "貫き矢", "desc": "矢が敵をもう1体貫通する", "max": 3, "req": "sniper"},
+	{"id": "sniper_dmg", "cat": "sniper", "name": "強弓", "desc": "矢の威力 +20%", "max": 5, "req": "sniper"},
+	{"id": "sniper_pierce", "cat": "sniper", "name": "貫き矢", "desc": "矢が敵をもう1体貫通する", "max": 5, "req": "sniper"},
+	{"id": "sniper_size", "cat": "sniper", "name": "大矢", "desc": "狙撃兵の矢のサイズ +20%", "max": 5, "req": "sniper"},
 	# ---- 重装部隊
 	{"id": "heavy", "cat": "heavy", "name": "重装部隊", "desc": "足は遅いが耐久力と攻撃力が高い重装兵が加わる。マップ内を自由に歩き回り、マップの真ん中に一番近い敵を最優先で斬りに行く", "max": 1, "weight": 0.5},
 	{"id": "heavy_dmg", "cat": "heavy", "name": "剛剣", "desc": "重装兵の斬撃の威力 +20%", "max": 5, "req": "heavy"},
-	{"id": "heavy_haste", "cat": "heavy", "name": "連撃", "desc": "重装兵の斬撃の間隔 -15%", "max": 4, "req": "heavy"},
-	{"id": "heavy_range", "cat": "heavy", "name": "大薙ぎ", "desc": "重装兵の斬撃の範囲 +20%", "max": 4, "req": "heavy"},
-	{"id": "heavy_hp", "cat": "heavy", "name": "重鎧", "desc": "重装兵の最大HP +40%、HP全回復、自然回復 +3/秒", "max": 4, "req": "heavy"},
-	{"id": "heavy_speed", "cat": "heavy", "name": "軽量化", "desc": "重装兵の移動速度 +20%", "max": 3, "req": "heavy"},
+	{"id": "heavy_haste", "cat": "heavy", "name": "連撃", "desc": "重装兵の斬撃の間隔 -10%", "max": 5, "req": "heavy"},
+	{"id": "heavy_range", "cat": "heavy", "name": "大薙ぎ", "desc": "重装兵の斬撃の範囲 +20%", "max": 5, "req": "heavy"},
+	{"id": "heavy_hp", "cat": "heavy", "name": "重鎧", "desc": "重装兵の最大HP +40%、HP全回復、自然回復 +3/秒", "max": 5, "req": "heavy"},
+	{"id": "heavy_speed", "cat": "heavy", "name": "軽量化", "desc": "重装兵の移動速度 +20%", "max": 5, "req": "heavy"},
 	{"id": "heavy_whirl", "cat": "heavy", "name": "旋風斬り", "desc": "重装兵の斬撃が全方位360度になる", "max": 1, "req": "heavy"},
 	# ---- 工兵部隊
 	{"id": "engineer", "cat": "engineer", "name": "工兵部隊", "desc": "フィールドを回って、爆弾（範囲ダメージ）と落とし穴（範囲ダメージ＋1秒足止め）を交互に仕掛ける工兵が加わる",
 		"desc_up": "工兵が1人増える（最大3人）", "max": 3, "weight": 0.5},
-	{"id": "trap_dmg", "cat": "engineer", "name": "高性能火薬", "desc": "工兵の攻撃すべての威力 +40%（爆弾・落とし穴・毒沼・子爆弾・自動砲台・からくり兵・絨毯爆撃など。仕掛け済みの罠にも反映）", "max": 5, "req": "engineer"},
+	{"id": "trap_dmg", "cat": "engineer", "name": "高性能火薬", "desc": "工兵の攻撃すべての威力 +20%（爆弾・落とし穴・毒沼・子爆弾・自動砲台・からくり兵・絨毯爆撃など。仕掛け済みの罠にも反映）", "max": 5, "req": "engineer"},
 	{"id": "trap_speed", "cat": "engineer", "name": "手際", "desc": "罠の設置時間 -20%", "max": 4, "req": "engineer"},
 	{"id": "engineer_move", "cat": "engineer", "name": "健脚", "desc": "工兵の移動速度 +15%", "max": 4, "req": "engineer"},
 	{"id": "trap_range", "cat": "engineer", "name": "広域罠", "desc": "罠の効果範囲 +20%", "max": 3, "req": "engineer"},
@@ -76,19 +90,40 @@ const LIST := [
 	{"id": "pit_stun", "cat": "engineer", "name": "深い落とし穴", "desc": "落とし穴の足止め時間 +1秒", "max": 3, "req": "engineer"},
 	# ---- 城
 	{"id": "tower", "cat": "castle", "name": "矢倉", "desc": "城に矢倉が建ち、近づく敵を自動で射る",
-		"desc_up": "矢倉をもう1基追加、全矢倉の威力 +15%", "max": 4, "weight": 0.5},
+		"desc_up": "矢倉をもう1基追加（最大4基）", "max": 4, "weight": 0.5},
+	{"id": "tower_dmg", "cat": "castle", "name": "強弓矢倉", "desc": "矢倉のダメージ +20%", "max": 5, "req": "tower"},
+	{"id": "tower_rate", "cat": "castle", "name": "速射矢倉", "desc": "矢倉の発射間隔 -10%", "max": 5, "req": "tower"},
+	{"id": "tower_pierce", "cat": "castle", "name": "貫通矢倉", "desc": "矢倉の矢が敵をもう1体貫通する", "max": 5, "req": "tower"},
+	{"id": "tower_multi", "cat": "castle", "name": "多連矢", "desc": "矢倉が一度に放つ矢の数 +1", "max": 3, "req": "tower"},
 	{"id": "cannon", "cat": "castle", "name": "大砲", "desc": "敵が密集した場所へ砲弾を撃ち込む（範囲攻撃）",
 		"desc_up": "大砲をもう1門追加（最大3門）", "max": 3, "weight": 0.5},
 	{"id": "catapult", "cat": "castle", "name": "投石器", "desc": "大砲より広い範囲に岩を落とす（発射間隔は長い）",
 		"desc_up": "投石器をもう1台追加（最大3台）", "max": 3, "weight": 0.5},
 	{"id": "ballista", "cat": "castle", "name": "バリスタ", "desc": "城にバリスタを設置。HPが一番多い敵を最優先で狙う。発射間隔は長いが、高威力・射程無限で敵を何体でも貫通する",
-		"desc_up": "バリスタをもう1基追加、全バリスタの威力 +30%（最大4基）", "max": 4, "weight": 0.5},
-	{"id": "artillery", "cat": "castle", "name": "砲術", "desc": "大砲と投石器の威力 +30%、発射間隔 -10%", "max": 4, "req_any": ["cannon", "catapult"]},
-	{"id": "frost", "cat": "castle", "name": "氷結の結界", "desc": "城のまわりの敵の動きを遅くする",
-		"desc_up": "結界の範囲が広がり、さらに遅くなる", "max": 3, "weight": 0.5},
+		"desc_up": "バリスタをもう1基追加（最大4基）", "max": 4, "weight": 0.5},
+	{"id": "rapid", "cat": "castle", "name": "連射砲", "desc": "城の左右に連射砲を設置。威力が低い代わりに高速で連射する（貫通なし）",
+		"desc_up": "連射砲をもう1基追加（最大2基）", "max": 2, "weight": 0.6},
+	{"id": "rapid_dmg", "cat": "castle", "name": "連射強化", "desc": "連射砲の威力 +20%", "max": 5, "req": "rapid"},
+	{"id": "rapid_rate", "cat": "castle", "name": "超速射", "desc": "連射砲の発射間隔 -10%", "max": 5, "req": "rapid"},
+	{"id": "rapid_pierce", "cat": "castle", "name": "貫通連射", "desc": "連射砲の貫通 +1", "max": 5, "req": "rapid"},
+	{"id": "rapid_multi", "cat": "castle", "name": "多連射", "desc": "連射砲が一度に放つ弾の数 +1", "max": 3, "req": "rapid"},
+	{"id": "ballista_dmg", "cat": "castle", "name": "強化弩", "desc": "バリスタのダメージ +20%", "max": 5, "req": "ballista"},
+	{"id": "ballista_rate", "cat": "castle", "name": "速射弩", "desc": "バリスタの発射間隔 -10%", "max": 5, "req": "ballista"},
+	{"id": "ballista_multi", "cat": "castle", "name": "多連弩", "desc": "バリスタが一度に放つ矢の数 +1", "max": 3, "req": "ballista"},
+	{"id": "artillery", "cat": "castle", "name": "砲術", "desc": "大砲の威力 +20%", "max": 5, "req": "cannon"},
+	{"id": "cannon_rate", "cat": "castle", "name": "速射砲術", "desc": "大砲の発射間隔 -10%", "max": 5, "req": "cannon"},
+	{"id": "cannon_range", "cat": "castle", "name": "広範囲砲撃", "desc": "大砲の攻撃範囲 +20%", "max": 5, "req": "cannon"},
+	{"id": "cannon_multi", "cat": "castle", "name": "多連砲", "desc": "大砲が一度に撃つ砲弾の数 +1", "max": 3, "req": "cannon"},
+	{"id": "catapult_dmg", "cat": "castle", "name": "投石強化", "desc": "投石器の威力 +20%", "max": 5, "req": "catapult"},
+	{"id": "catapult_rate", "cat": "castle", "name": "連続投石", "desc": "投石器の発射間隔 -10%", "max": 5, "req": "catapult"},
+	{"id": "catapult_range", "cat": "castle", "name": "広域投石", "desc": "投石器の攻撃範囲 +20%", "max": 5, "req": "catapult"},
+	{"id": "catapult_multi", "cat": "castle", "name": "多連投", "desc": "投石器が一度に投げる岩の数 +1", "max": 3, "req": "catapult"},
+	{"id": "frost", "cat": "castle", "name": "氷結の結界", "desc": "城のまわりの敵の動きを遅くする（範囲280、減速10%）", "max": 1, "weight": 0.5},
+	{"id": "frost_range", "cat": "castle", "name": "結界拡大", "desc": "氷結の結界の範囲 +15%", "max": 5, "req": "frost"},
+	{"id": "frost_slow", "cat": "castle", "name": "極寒の結界", "desc": "氷結の結界の減速率 +5%", "max": 5, "req": "frost"},
 	{"id": "mine_site", "cat": "castle", "name": "採掘場", "desc": "城の右側（壁の外）に採掘場ができる。待機中の兵士が1人掘りに行き、掘っている間10秒ごとに経験値を1獲得する（敵が来たら戦いに戻る）", "max": 1, "weight": 0.5},
-	{"id": "mine_speed", "cat": "castle", "name": "採掘の効率化", "desc": "採掘の間隔 -1秒（最大で6秒）", "max": 4, "req": "mine_site"},
-	{"id": "mine_yield", "cat": "castle", "name": "豊かな鉱脈", "desc": "採掘1回で獲得する経験値 +1（最大3）", "max": 2, "req": "mine_site"},
+	{"id": "mine_speed", "cat": "castle", "name": "採掘の効率化", "desc": "採掘の間隔 -1秒（最大で5秒）", "max": 5, "req": "mine_site"},
+	{"id": "mine_yield", "cat": "castle", "name": "豊かな鉱脈", "desc": "採掘1回で獲得する経験値 +1（最大6）", "max": 5, "req": "mine_site"},
 	{"id": "wall", "cat": "castle", "name": "城壁補強", "desc": "城の最大HP +100、城のHP全回復", "max": 5},
 ]
 
@@ -128,25 +163,26 @@ const SPECIAL := [
 	{"id": "sp_ap_mine", "cat": "engineer", "special": true, "name": "徹甲地雷", "desc": "爆弾の真上近くにいる敵1体に、追加で爆弾40倍のダメージ", "max": 1, "req": "engineer"},
 	{"id": "sp_sentry", "cat": "engineer", "special": true, "name": "自動砲台", "desc": "罠と一緒に自動砲台を置く（30秒間、近くの敵を連射。工兵1人につき3台まで）", "max": 1, "req": "engineer"},
 	# ---- 矢倉
-	{"id": "sp_tower_multi", "cat": "castle", "special": true, "name": "矢倉・連射", "desc": "矢倉が一度に3本の矢を放つ", "max": 1, "req": "tower"},
+	{"id": "sp_homing_arrow", "cat": "castle", "special": true, "name": "矢倉・追尾の矢", "desc": "矢倉の矢が途中で一番近い敵へ向きを変える（1回だけ）", "max": 1, "req": "tower"},
 	{"id": "sp_tower_ap", "cat": "castle", "special": true, "name": "矢倉・徹甲矢", "desc": "矢倉の矢が敵を3体貫通し、威力 +60%", "max": 1, "req": "tower"},
 	{"id": "sp_tower_crit", "cat": "castle", "special": true, "name": "矢倉・会心の一矢", "desc": "矢倉の矢が25%の確率でダメージ3倍、射程 +40%", "max": 1, "req": "tower"},
 	{"id": "sp_arrow_rain", "cat": "castle", "special": true, "name": "矢倉・火矢の雨", "desc": "7秒ごとに、矢倉1基につき1か所、敵が密集した所へ矢の雨が降る（範囲大ダメージ）", "max": 1, "req": "tower"},
 	{"id": "sp_homing", "cat": "castle", "special": true, "name": "矢倉・追尾火矢", "desc": "3秒ごとに、矢倉1基につき2本、敵を追いかける火矢を放つ（当たると小爆発）", "max": 1, "req": "tower"},
 	# ---- 大砲
 	{"id": "sp_scatter", "cat": "castle", "special": true, "name": "大砲・散弾砲", "desc": "砲弾が分裂して、着弾地点の周りにも4発落ちる", "max": 1, "req": "cannon"},
+	{"id": "sp_suction", "cat": "castle", "special": true, "name": "大砲・吸引砲", "desc": "着弾地点に0.5秒間、近くの敵を少し吸い寄せる", "max": 1, "req": "cannon"},
 	{"id": "sp_incendiary", "cat": "castle", "special": true, "name": "大砲・焼夷弾", "desc": "着弾地点が6秒間燃え続ける", "max": 1, "req": "cannon"},
 	{"id": "sp_rapid_cannon", "cat": "castle", "special": true, "name": "大砲・速射砲", "desc": "大砲の発射間隔 -40%", "max": 1, "req": "cannon"},
 	{"id": "sp_ap_shell", "cat": "castle", "special": true, "name": "大砲・徹甲榴弾", "desc": "6秒ごとに、大砲1門につき1発、一番HPの多い敵へ80倍ダメージの直射弾（間にいる敵はすり抜けて、狙った敵を追いかける）", "max": 1, "req": "cannon"},
 	{"id": "sp_mines", "cat": "castle", "special": true, "name": "大砲・機雷散布", "desc": "砲弾が着弾地点のまわりに機雷を3個ばらまく。敵が触れると爆発（20秒残る）", "max": 1, "req": "cannon"},
 	# ---- 投石器
-	{"id": "sp_big_rock", "cat": "castle", "special": true, "name": "投石器・大岩", "desc": "岩の範囲 +40%・威力 +80%", "max": 1, "req": "catapult"},
+	{"id": "sp_treasure", "cat": "castle", "special": true, "name": "投石器・トレジャーシュート", "desc": "投石器のダメージを敵に与えたとき、5%の確率で経験値+1", "max": 1, "req": "catapult"},
 	{"id": "sp_split_rock", "cat": "castle", "special": true, "name": "投石器・分裂岩", "desc": "着弾した岩が砕けて、周りに6個の岩が落ちる", "max": 1, "req": "catapult"},
 	{"id": "sp_rock_rain", "cat": "castle", "special": true, "name": "投石器・岩雨", "desc": "撃つたびに、ランダムな敵2体の頭上にも岩が落ちる", "max": 1, "req": "catapult"},
 	{"id": "sp_direct_hit", "cat": "castle", "special": true, "name": "投石器・巨岩直撃", "desc": "着弾地点の真ん中にいる敵1体に、追加で35倍ダメージ", "max": 1, "req": "catapult"},
 	{"id": "sp_rolling", "cat": "castle", "special": true, "name": "投石器・転がり岩", "desc": "着弾した岩がそのまま城と反対の方へ転がり、敵をひいていく", "max": 1, "req": "catapult"},
 	# ---- バリスタ
-	{"id": "sp_ballista_multi", "cat": "castle", "special": true, "name": "バリスタ・連装", "desc": "バリスタが一度に3発撃つ", "max": 1, "req": "ballista"},
+	{"id": "sp_slow_bolt", "cat": "castle", "special": true, "name": "バリスタ・減速ボルト", "desc": "当たった敵の移動速度を2秒間大きく下げる", "max": 1, "req": "ballista"},
 	{"id": "sp_ballista_blast", "cat": "castle", "special": true, "name": "バリスタ・爆裂ボルト", "desc": "貫いた敵ごとに小爆発が起きる（矢の威力の約13.8%）", "max": 1, "req": "ballista"},
 	{"id": "sp_big_bolt", "cat": "castle", "special": true, "name": "バリスタ・大型弩", "desc": "矢が大きくなって当たり判定が広がり、威力 +50%", "max": 1, "req": "ballista"},
 	{"id": "sp_blast_bolt", "cat": "castle", "special": true, "name": "バリスタ・炸裂大矢", "desc": "矢が最初に当たった敵の場所で大爆発（基本の威力の120%の範囲攻撃）", "max": 1, "req": "ballista"},
@@ -164,11 +200,40 @@ const SPECIAL := [
 	{"id": "sp_ricochet", "cat": "sniper", "special": true, "name": "跳弾矢", "desc": "狙った敵に当たった矢が、近くの別の敵へ最大3回跳ねる（跳ねたあとは矢の威力が5倍）", "max": 1, "req": "sniper"},
 	{"id": "sp_mark", "cat": "sniper", "special": true, "name": "弱点看破", "desc": "矢が当たった敵に赤い印。6秒間、味方全員から受けるダメージ +20%", "max": 1, "req": "sniper"},
 	# ---- ペット・近衛・修理
-	{"id": "sp_pet_burst", "cat": "pet", "special": true, "name": "爆裂ペット弾", "desc": "ペットの弾が当たると小爆発する（威力35%）", "max": 1, "req": "pet"},
-	{"id": "sp_pet_giant", "cat": "pet", "special": true, "name": "巨大ペット", "desc": "ペットが大きくなり、弾も大きく2体貫通、威力 +40%", "max": 1, "req": "pet"},
-	{"id": "sp_pet_charge", "cat": "pet", "special": true, "name": "突撃ペット", "desc": "一定時間ごとに、ペットが遊撃兵から離れてHPが一番高い敵へ高速で突進する。突進中に触れた敵に1回ずつダメージ（ペットの攻撃力の32倍）。戻るときはダメージなし", "max": 1, "req": "pet"},
-	{"id": "sp_pet_frost", "cat": "pet", "special": true, "name": "凍える羽根", "desc": "10秒ごとに、全ペットが敵を追いかける凍結弾を撃つ。当たった敵は0.5秒凍る", "max": 1, "req": "pet"},
-	{"id": "sp_pet_heal", "cat": "pet", "special": true, "name": "癒しのさえずり", "desc": "ペット1匹につき、担当の遊撃兵のHPが毎秒2回復する", "max": 1, "req": "pet"},
+	{"id": "sp_pet_burst", "cat": "pet", "special": true, "name": "爆裂遊撃ペット弾", "desc": "遊撃ペットの弾が当たると小爆発する（威力35%）", "max": 1, "req": "pet"},
+	{"id": "sp_pet_giant", "cat": "pet", "special": true, "name": "巨大遊撃ペット", "desc": "遊撃ペットが大きくなり、弾も大きく2体貫通、威力 +40%", "max": 1, "req": "pet"},
+	{"id": "sp_pet_charge", "cat": "pet", "special": true, "name": "突撃遊撃ペット", "desc": "一定時間ごとに、遊撃ペットが遊撃兵から離れてHPが一番高い敵へ高速で突進する。突進中に触れた敵に1回ずつダメージ（遊撃ペットの攻撃力の32倍）。戻るときはダメージなし", "max": 1, "req": "pet"},
+	{"id": "sp_pet_frost", "cat": "pet", "special": true, "name": "凍える遊撃羽根", "desc": "10秒ごとに、全遊撃ペットが敵を追いかける凍結弾を撃つ。当たった敵は0.5秒凍る", "max": 1, "req": "pet"},
+	{"id": "sp_pet_heal", "cat": "pet", "special": true, "name": "癒しの遊撃さえずり", "desc": "遊撃ペット1匹につき、担当の遊撃兵のHPが毎秒2回復する", "max": 1, "req": "pet"},
+	{"id": "sp_archer_shadow", "cat": "archer", "special": true, "name": "影縫い", "desc": "弓兵の矢が当たった敵の移動速度を3秒間 -40%", "max": 1, "req": "archer"},
+	{"id": "sp_archer_rain", "cat": "archer", "special": true, "name": "矢雨の予兆", "desc": "8秒ごとに、弓兵のいる高さの横一列に薄い矢の雨が降る（低威力）", "max": 1, "req": "archer"},
+	{"id": "sp_archer_close", "cat": "archer", "special": true, "name": "近城の矢", "desc": "弓兵の攻撃が当たった敵が城に近いほどダメージ増加（最大+60%）", "max": 1, "req": "archer"},
+	{"id": "sp_archer_link", "cat": "archer", "special": true, "name": "連携射撃", "desc": "弓兵の攻撃が当たった敵に連携マークを付ける。マークが付いた敵に、マークを付けた弓兵以外の弓兵が攻撃を当てたときダメージ+60%", "max": 1, "req": "archer"},
+	{"id": "sp_archer_ult", "cat": "archer", "special": true, "name": "必殺・連珠の玉", "desc": "15秒ごとに、全弓兵が同時に丸い玉を発射する。玉はゆっくりまっすぐ進み、1秒ごとに全方位へ8発の矢を放つ（貫通1）", "max": 1, "req": "archer"},
+	{"id": "sp_archer_tornado", "cat": "archer", "special": true, "name": "竜巻矢", "desc": "10秒ごとに竜巻矢を発射する。命中したところに竜巻が生成され、1秒間付近の敵を吸引する", "max": 1, "req": "archer"},
+	{"id": "sp_archer_counter", "cat": "archer", "special": true, "name": "反撃の矢", "desc": "被ダメージ時、通常攻撃を1回行う", "max": 1, "req": "archer"},
+	{"id": "sp_archer_execute", "cat": "archer", "special": true, "name": "追い討ち", "desc": "HP50%以下の敵からはダメージを受けず、弓兵が与えるダメージが30%増加する", "max": 1, "req": "archer"},
+	{"id": "sp_archer_giant_tornado", "cat": "archer", "special": true, "name": "必殺・巨大竜巻", "desc": "40秒に1回、フィールド中央に巨大な竜巻を発生させ、発生地点にいる敵にダメージを与え押し出す", "max": 1, "req": "archer"},
+	{"id": "sp_rapid_overheat", "cat": "castle", "special": true, "name": "連射砲・過熱", "desc": "撃ち続けるほど威力が上がる（最大+50%）。1秒撃たないとリセット", "max": 1, "req": "rapid"},
+	{"id": "sp_rapid_stun", "cat": "castle", "special": true, "name": "連射砲・気絶弾", "desc": "命中した敵を気絶させ、0.5秒行動を止める", "max": 1, "req": "rapid"},
+	{"id": "sp_rapid_sacrifice", "cat": "castle", "special": true, "name": "連射砲・犠牲", "desc": "射撃する度に城のHP -1、連射砲のダメージ +100%", "max": 1, "req": "rapid"},
+	{"id": "sp_rapid_low_hp", "cat": "castle", "special": true, "name": "連射砲・背水", "desc": "城のHPが少ないほど攻撃速度増加（最大+80%）。HP残り20%で最大", "max": 1, "req": "rapid"},
+	{"id": "sp_rapid_swarm", "cat": "castle", "special": true, "name": "連射砲・数の力", "desc": "侵攻中の敵が多いほどダメージ増加（最大+50%）。500体で最大", "max": 1, "req": "rapid"},
+	{"id": "sp_rapid_hp_scale", "cat": "castle", "special": true, "name": "連射砲・強敵狙い", "desc": "攻撃が当たった敵の体力が多いほどダメージ増加（最大+50%）", "max": 1, "req": "rapid"},
+	{"id": "sp_rapid_debuff", "cat": "castle", "special": true, "name": "連射砲・弱点付与", "desc": "連射砲の攻撃が当たった敵の被ダメージを5秒間 +15%", "max": 1, "req": "rapid"},
+	{"id": "sp_rapid_ult", "cat": "castle", "special": true, "name": "連射砲・必殺・オーバーヒート", "desc": "15秒ごとにオーバーヒートモードになり、5秒間与ダメージ +30%、城に一番近い敵を攻撃する", "max": 1, "req": "rapid"},
+	{"id": "sp_rapid_level", "cat": "castle", "special": true, "name": "連射砲・成長", "desc": "城のLvが高いほどダメージ増加（最大+60%）。Lv150で最大", "max": 1, "req": "rapid"},
+	{"id": "sp_rapid_reload", "cat": "castle", "special": true, "name": "連射砲・装填", "desc": "50発射撃する度に3秒間射撃できなくなるが、与ダメージ +80%", "max": 1, "req": "rapid"},
+	{"id": "sp_archer_pet_burst", "cat": "archer_pet", "special": true, "name": "爆裂ペット斬撃", "desc": "弓兵ペットの斬撃が当たると小爆発する（威力35%）", "max": 1, "req": "archer_pet"},
+	{"id": "sp_archer_pet_giant", "cat": "archer_pet", "special": true, "name": "巨大弓兵ペット", "desc": "弓兵ペットが大きくなり、斬撃も大きく2体貫通、威力 +40%", "max": 1, "req": "archer_pet"},
+	{"id": "sp_archer_pet_charge", "cat": "archer_pet", "special": true, "name": "突撃弓兵ペット", "desc": "一定時間ごとに、弓兵ペットが弓兵から離れてHPが一番高い敵へ高速で突進する。突進中に触れた敵に1回ずつダメージ（攻撃力の32倍）。戻るときはダメージなし", "max": 1, "req": "archer_pet"},
+	{"id": "sp_archer_pet_frost", "cat": "archer_pet", "special": true, "name": "凍える爪", "desc": "10秒ごとに、全弓兵ペットが敵を追いかける凍結斬撃を放つ。当たった敵は0.5秒凍る", "max": 1, "req": "archer_pet"},
+	{"id": "sp_archer_pet_heal", "cat": "archer_pet", "special": true, "name": "癒しの羽ばたき", "desc": "弓兵ペット1匹につき、担当の弓兵のHPが毎秒2回復する", "max": 1, "req": "archer_pet"},
+	{"id": "sp_archer_pet_dance", "cat": "archer_pet", "special": true, "name": "弓兵ペットの舞", "desc": "弓兵ペットが虹色に光りながらくるくる回り、5秒ごとに全方位へ虹色の斬撃を12発放つ（攻撃力の20倍の威力）", "max": 1, "req": "archer_pet"},
+	{"id": "sp_archer_pet_charge_burst", "cat": "archer_pet", "special": true, "name": "爆裂突撃弓兵ペット", "desc": "突進が命中した敵の位置で小爆発が起きる（突進の70%の威力）\n「爆裂ペット斬撃」と「突撃弓兵ペット」を取得している場合のみ出現", "max": 1, "req": "archer_pet", "req_all": ["sp_archer_pet_burst", "sp_archer_pet_charge"]},
+	{"id": "sp_archer_pet_flock", "cat": "archer_pet", "special": true, "name": "必殺・刃の大群", "desc": "15秒ごとに、弓兵ペット1匹につき6本の追尾斬撃を放つ。斬撃は敵を追いかけ、当たった敵にくっついて2回斬る（攻撃力の12倍の威力）", "max": 1, "req": "archer_pet"},
+	{"id": "sp_archer_pet_body", "cat": "archer_pet", "special": true, "name": "体当たり弓兵ペット", "desc": "弓兵ペットに触れた敵に、攻撃力の12倍ダメージ", "max": 1, "req": "archer_pet"},
+	{"id": "sp_archer_pet_fusion", "cat": "archer_pet", "special": true, "name": "弓兵ペット大合体", "desc": "20秒ごとに、全弓兵ペットが合体して10秒間巨大ペットになる。立ち止まって特大斬撃を連発→まっすぐ高速突進をくり返す。\n合体したペットが多いほど強く大きくなり、強化の効果も乗る。合体中のダメージは1.875倍", "max": 1, "req": "archer_pet"},
 	{"id": "sp_chain_dash", "cat": "knight", "special": true, "name": "連続突撃", "desc": "突進のあと、近くのまだ貫いていない敵へ続けて2回まで突進する", "max": 1, "req": "knight"},
 	{"id": "sp_dash_quake", "cat": "knight", "special": true, "name": "突撃の衝撃", "desc": "突進が止まった所で爆発が起きる（突進の1.5倍の威力）", "max": 1, "req": "knight"},
 	{"id": "sp_knight_stun", "cat": "knight", "special": true, "name": "衝撃の槍", "desc": "突進で貫いた敵を1秒間気絶させる", "max": 1, "req": "knight"},
@@ -196,12 +261,12 @@ const SPECIAL := [
 	{"id": "sp_fun_cow", "cat": "castle", "special": true, "name": "投石器・牛投げ", "desc": "3回に1回、岩のかわりに大きな牛（ふつうの2.1倍）を投げる。着地した牛は6秒間、近くの敵へ何度も突進する", "max": 1, "req": "catapult"},
 	{"id": "sp_fun_rainbow", "cat": "castle", "special": true, "name": "バリスタ・虹の矢", "desc": "矢が虹色の尾を引き、当たった敵は1.5秒間混乱してふらふら歩く", "max": 1, "req": "ballista"},
 	{"id": "sp_fun_snowball", "cat": "castle", "special": true, "name": "結界・雪合戦", "desc": "城から近くの敵へ雪玉を投げ続ける（ちょっとだけ止まる）", "max": 1, "req": "frost"},
-	{"id": "sp_fun_dance", "cat": "pet", "special": true, "name": "ペットの踊り", "desc": "ペットが虹色に光りながらくるくる回り、5秒ごとに全方位へ虹色の玉を12発撃つ（ペットの攻撃力の20倍の威力）", "max": 1, "req": "pet"},
-	{"id": "sp_pet_charge_burst", "cat": "pet", "special": true, "name": "爆裂突撃ペット", "desc": "突進が命中した敵の位置で小爆発が起きる（突進の70%の威力）\n「爆裂ペット弾」と「突撃ペット」を取得している場合のみ出現", "max": 1, "req": "pet", "req_all": ["sp_pet_burst", "sp_pet_charge"]},
+	{"id": "sp_fun_dance", "cat": "pet", "special": true, "name": "遊撃ペットの踊り", "desc": "遊撃ペットが虹色に光りながらくるくる回り、5秒ごとに全方位へ虹色の玉を12発撃つ（遊撃ペットの攻撃力の20倍の威力）", "max": 1, "req": "pet"},
+	{"id": "sp_pet_charge_burst", "cat": "pet", "special": true, "name": "爆裂突撃遊撃ペット", "desc": "突進が命中した敵の位置で小爆発が起きる（突進の70%の威力）\n「爆裂遊撃ペット弾」と「突撃遊撃ペット」を取得している場合のみ出現", "max": 1, "req": "pet", "req_all": ["sp_pet_burst", "sp_pet_charge"]},
 	{"id": "sp_fun_star", "cat": "knight", "special": true, "name": "流れ星突撃", "desc": "突進の跡にキラキラの星が残って弾ける（小ダメージ）", "max": 1, "req": "knight"},
 	{"id": "sp_repair_orb", "cat": "repair", "special": true, "name": "修理玉", "desc": "20秒ごとに城の前へ修理玉を置く（当たり判定なし）。\n置いてから10秒間に回復した城のHPの20倍のダメージの弾を、HPが一番多い敵へゆっくり撃つ（貫通無限）", "max": 1, "req": "repairer"},
 	# ---- 15秒ごとの必殺技（各種類の6つ目）
-	{"id": "sp_ult_flock", "cat": "pet", "special": true, "name": "必殺・鳥の大群", "desc": "15秒ごとに、ペット1匹につき6羽の鳥を呼ぶ。鳥は敵を追いかけ、当たった敵にくっついて2回つつく（ペットの12倍の威力）", "max": 1, "req": "pet"},
+	{"id": "sp_ult_flock", "cat": "pet", "special": true, "name": "必殺・遊撃鳥の大群", "desc": "15秒ごとに、遊撃ペット1匹につき6羽の鳥を呼ぶ。鳥は敵を追いかけ、当たった敵にくっついて2回つつく（遊撃ペットの12倍の威力）", "max": 1, "req": "pet"},
 	# ---- 8つ目の特別強化
 	{"id": "sp_touch_blast", "cat": "soldier", "special": true, "name": "触爆", "desc": "遊撃兵に触れた敵が爆発し、周りの敵に射撃の1.5倍ダメージ", "max": 1},
 	{"id": "sp_berserk_guard", "cat": "guard", "special": true, "name": "捨て身の構え", "desc": "迎撃兵の最大HPが半分になり、盾で防いでも半分のダメージを受ける。そのかわり槍が当たった敵が爆発し、周りに槍の3倍ダメージ", "max": 1, "req": "guard"},
@@ -212,11 +277,10 @@ const SPECIAL := [
 	{"id": "sp_automaton", "cat": "engineer", "special": true, "name": "巨大からくり兵", "desc": "20秒ごとに、ボスの2倍の大きさのからくり兵を置く（10秒で消える）。ゆっくり歩き、広い全方位斬り1回→別々の2か所へ大きな弾（10体貫通）の高速連射をくり返す。消えるときに超広範囲の大爆発", "max": 1, "req": "engineer"},
 	{"id": "sp_tower_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂矢", "desc": "矢倉の矢が当たった敵が爆発し、周りの敵に矢の1/8のダメージ", "max": 1, "req": "tower"},
 	{"id": "sp_homing_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂追尾火矢", "desc": "追尾火矢が当たった敵にも、爆裂矢の爆発が起きるようになる\n「矢倉・爆裂矢」と「矢倉・追尾火矢」を取得している場合のみ出現", "max": 1, "req": "tower", "req_all": ["sp_tower_blast", "sp_homing"]},
-	{"id": "sp_double_cannon", "cat": "castle", "special": true, "name": "大砲・二連砲", "desc": "大砲が一度に2発撃つ（2発目は別の密集地へ）", "max": 1, "req": "cannon"},
 	{"id": "sp_stay_rock", "cat": "castle", "special": true, "name": "投石器・居座り岩", "desc": "着弾地点に大岩が5秒間残り、上にいる敵にダメージを与え続け、移動速度 -30%", "max": 1, "req": "catapult"},
 	{"id": "sp_mega_bolt", "cat": "castle", "special": true, "name": "バリスタ・巨大弩砲", "desc": "8秒ごとに、3倍の大きさ・基本の威力の7.2倍の矢を、HPが一番多い敵へゆっくり（速さ1/3）撃つ", "max": 1, "req": "ballista"},
 	{"id": "sp_frost_ground", "cat": "castle", "special": true, "name": "結界・凍てつく大地", "desc": "結界の中の地面が凍りつき、中にいる敵にずっとダメージを与える（吹雪と重ねがけできる）", "max": 1, "req": "frost"},
-	{"id": "sp_pet_body", "cat": "pet", "special": true, "name": "体当たりペット", "desc": "ペットに触れた敵に、ペットの攻撃力の12倍ダメージ", "max": 1, "req": "pet"},
+	{"id": "sp_pet_body", "cat": "pet", "special": true, "name": "体当たり遊撃ペット", "desc": "遊撃ペットに触れた敵に、遊撃ペットの攻撃力の12倍ダメージ", "max": 1, "req": "pet"},
 	{"id": "sp_carry", "cat": "knight", "special": true, "name": "連行突撃", "desc": "突進で当たった敵（ボス以外）を、突進が終わるまで槍の先に引っかけて連れていく", "max": 1, "req": "knight"},
 	{"id": "sp_tool_throw", "cat": "repair", "special": true, "name": "工具投げ", "desc": "城のHPが満タンのとき、修理兵が近くの敵へスパナを投げつける（行って戻ってくる）", "max": 1, "req": "repairer"},
 	{"id": "sp_ult_cavalry", "cat": "knight", "special": true, "name": "必殺・百騎突撃", "desc": "15秒ごとに、一番下の敵のあたりを騎士の幻8騎が横一列で駆け抜け、通った敵を全部はねる（突進の37.5倍の威力）", "max": 1, "req": "knight"},
@@ -245,7 +309,7 @@ const SPECIAL := [
 	{"id": "sp_automaton_squad", "cat": "engineer", "special": true, "name": "からくり兵団", "desc": "巨大からくり兵を一度に2体置くようになる", "max": 1, "req": "sp_automaton"},
 	{"id": "sp_overwork", "cat": "repair", "special": true, "name": "背水の修繕", "desc": "修理兵1人につき、城のHPが毎秒50ずつ減るようになる（最大HPの40%より下にはならない）。かわりに修理兵1人の回復量 +20/秒（城のHPが40%以下のときは +1/秒だけ）", "max": 1, "req": "repairer"},
 	{"id": "sp_repair_orb_triple", "cat": "repair", "special": true, "name": "三連修理玉", "desc": "修理玉の弾を3個、3方向に発射するようになる\n「修理玉」と「背水の修繕」を取得している場合のみ出現", "max": 1, "req": "repairer", "req_all": ["sp_repair_orb", "sp_overwork"]},
-	{"id": "sp_pet_fusion", "cat": "pet", "special": true, "name": "ペット大合体", "desc": "20秒ごとに、全ペットが合体して10秒間巨大ペットになる。立ち止まって特大弾を連射→まっすぐ高速突進をくり返す。\n合体したペットが多いほど強く大きくなり、ペットの強化の効果も乗る。合体中のダメージは1.875倍", "max": 1, "req": "pet"},
+	{"id": "sp_pet_fusion", "cat": "pet", "special": true, "name": "遊撃ペット大合体", "desc": "20秒ごとに、全遊撃ペットが合体して10秒間巨大ペットになる。立ち止まって特大弾を連射→まっすぐ高速突進をくり返す。\n合体したペットが多いほど強く大きくなり、ペットの強化の効果も乗る。合体中のダメージは1.875倍", "max": 1, "req": "pet"},
 	{"id": "sp_tower_lock", "cat": "castle", "special": true, "name": "矢倉・執念の矢", "desc": "狙った敵を倒せなかったら、次も同じ敵を狙う。同じ敵を狙い続けるほど矢が強くなる（1回ごとに+20%、最大3倍）", "max": 1, "req": "tower"},
 	{"id": "sp_cannon_bomb", "cat": "castle", "special": true, "name": "大砲・置き土産", "desc": "砲弾が着弾した場所に爆弾を置く。近くに敵が来ると爆発する（大砲の1.5倍の威力）", "max": 1, "req": "cannon"},
 	{"id": "sp_iron_chunk", "cat": "castle", "special": true, "name": "投石器・鉄塊投げ", "desc": "4発に1回、ふつうの岩と一緒に、HPが一番多い敵へ鉄塊を投げる（投石器の128倍の威力）", "max": 1, "req": "catapult"},
@@ -282,20 +346,24 @@ const CAT_LABEL := {"soldier": "遊撃", "pet": "ペット", "builder": "築城"
 	"heavy": "重装", "engineer": "工兵", "repair": "修理", "castle": "城"}
 const CAT_COLOR := {
 	"pet": Color(0.55, 1.0, 0.75), "knight": Color(1.0, 0.82, 0.4), "repair": Color(0.55, 0.75, 1.0),
-	"sniper": Color(0.75, 0.95, 0.45),
+	"sniper": Color(0.75, 0.95, 0.45), "archer": Color(0.9, 0.7, 0.5), "archer_pet": Color(0.7, 0.9, 0.6),
 	"soldier": Color(0.6, 0.85, 1.0), "builder": Color(1.0, 0.88, 0.45),
-	"guard": Color(0.6, 1.0, 0.65), "heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), "castle": Color(1.0, 0.7, 0.45)}
+	"guard": Color(0.6, 1.0, 0.65), "heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), 
+	"castle": Color(1.0, 0.7, 0.45), "rapid": Color(1.0, 0.6, 0.3)}
 
 
 ## オート選択設定などで使う「部隊・兵装」の一覧（表示名, キー）
 const GROUPS := [
 	["遊撃", "soldier"], ["ペット", "pet"], ["迎撃", "guard"], ["狙撃", "sniper"], ["近衛", "knight"],
 	["重装", "heavy"], ["工兵", "engineer"], ["築城", "builder"], ["修理", "repair"],
-	["矢倉", "tower"], ["大砲", "cannon"], ["投石器", "catapult"], ["バリスタ", "ballista"],
+	["弓兵", "archer"], ["弓兵ペット", "archer_pet"],
+	["矢倉", "tower"], ["大砲", "cannon"], ["投石器", "catapult"], ["バリスタ", "ballista"], ["連射砲", "rapid"],
 	["氷結の結界", "frost"], ["採掘場", "mine_site"], ["城（本体）", "castle"]]
-## 城の通常強化がどの兵装のものか（砲術は大砲と投石器の両方に効く）
-const CASTLE_UPGRADE_GROUPS := {"tower": ["tower"], "cannon": ["cannon"], "catapult": ["catapult"], "ballista": ["ballista"],
-	"artillery": ["cannon", "catapult"], "frost": ["frost"],
+## 城の通常強化がどの兵装のものか
+const CASTLE_UPGRADE_GROUPS := {"tower": ["tower"], "tower_dmg": ["tower"], "tower_rate": ["tower"], "tower_pierce": ["tower"], "tower_multi": ["tower"], "cannon": ["cannon"], "cannon_multi": ["cannon"], "catapult": ["catapult"], "catapult_multi": ["catapult"], "ballista": ["ballista"], "ballista_dmg": ["ballista"], "ballista_rate": ["ballista"], "ballista_multi": ["ballista"], "rapid": ["rapid"], "rapid_dmg": ["rapid"], "rapid_rate": ["rapid"], "rapid_pierce": ["rapid"], "rapid_multi": ["rapid"],
+	"artillery": ["cannon"], "cannon_rate": ["cannon"], "cannon_range": ["cannon"],
+	"catapult_dmg": ["catapult"], "catapult_rate": ["catapult"], "catapult_range": ["catapult"],
+	"frost": ["frost"], "frost_range": ["frost"], "frost_slow": ["frost"],
 	"mine_site": ["mine_site"], "mine_speed": ["mine_site"], "mine_yield": ["mine_site"], "wall": ["castle"]}
 
 
@@ -450,21 +518,21 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"multishot":
 			st.shot_count += 1
 		"firerate":
-			st.fire_interval *= 0.85
+			st.fire_interval = maxf(0.1, 0.55 * (1.0 - 0.1 * new_level))
 		"bullet_dmg":
-			st.bullet_damage *= 1.3
+			st.bullet_damage = 10.0 * (1.0 + 0.2 * new_level)
 		"pierce":
 			st.bullet_pierce += 1
 		"sword_dmg":
-			st.sword_damage *= 1.35
+			st.sword_damage = 32.0 * (1.0 + 0.2 * new_level)
 		"sword_range":
-			st.sword_radius *= 1.2
+			st.sword_radius = 85.0 * (1.0 + 0.2 * new_level)
 		"whirlwind":
 			st.sword_arc = TAU
 		"dash":
 			st.dash_level = new_level
 			if new_level > 1:
-				st.dash_interval *= 0.8
+				st.dash_interval = maxf(0.5, 4.0 * (1.0 - 0.1 * new_level))
 				st.dash_damage *= 1.3
 		"pet":
 			if new_level > 1:
@@ -484,7 +552,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"wall_hp":
 			game.walls.add_wall_hp(2.0)
 		"wall_width":
-			game.walls.wall_width += deg_to_rad(4.0)
+			game.walls.wall_width += deg_to_rad(2.4)
 		"guard":
 			game.add_guard()
 		"shield_arc":
@@ -493,50 +561,75 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"spear_reach":
 			game.guard_stats.spear_reach += 25.0
 		"spear_dmg":
-			game.guard_stats.spear_damage *= 1.35
+			game.guard_stats.spear_damage = 46.0 * (1.0 + 0.2 * new_level)
 		"catapult":
 			castle.catapult_level = new_level
 		"ballista":
 			castle.ballista_level = new_level
-			if new_level > 1:
-				castle.ballista_damage *= 1.3
+		"rapid":
+			castle.rapid_level = new_level
+		"rapid_dmg":
+			castle.rapid_damage = 12.5 * (1.0 + 0.2 * new_level)
+		"rapid_rate":
+			castle.rapid_interval = maxf(0.03, 0.125 * (1.0 - 0.1 * new_level))
+		"rapid_pierce":
+			castle.rapid_pierce += 1
+		"rapid_multi":
+			castle.rapid_shots += 1
+		"ballista_dmg":
+			castle.ballista_damage = 274.56 * (1.0 + 0.2 * new_level)
+		"ballista_rate":
+			castle.ballista_interval = maxf(0.5, 4.0 * (1.0 - 0.1 * new_level))
+		"ballista_multi":
+			castle.ballista_shots += 1
 		"artillery":
-			castle.cannon_damage *= 1.3
-			castle.catapult_damage *= 1.3
-			castle.cannon_interval *= 0.9
-			castle.catapult_interval *= 0.9
+			castle.cannon_damage = 104.0 * (1.0 + 0.2 * new_level)
+		"cannon_rate":
+			castle.cannon_interval = maxf(0.5, 4.0 * (1.0 - 0.1 * new_level))
+		"cannon_range":
+			castle.cannon_radius = 90.0 * (1.0 + 0.2 * new_level)
+		"cannon_multi":
+			castle.cannon_shots += 1
+		"catapult_dmg":
+			castle.catapult_damage = 134.4 * (1.0 + 0.2 * new_level)
+		"catapult_rate":
+			castle.catapult_interval = maxf(1.0, 9.0 * (1.0 - 0.1 * new_level))
+		"catapult_range":
+			castle.catapult_radius = 150.0 * (1.0 + 0.2 * new_level)
+		"catapult_multi":
+			castle.catapult_shots += 1
 		"heavy":
 			game.add_heavy()
 		"engineer":
 			game.add_engineer()
 		"heavy_dmg":
-			game.heavy.slash_damage *= 1.2
+			game.heavy.slash_damage = 31.5 * (1.0 + 0.2 * new_level)
 		"heavy_haste":
-			game.heavy.slash_interval *= 0.85
+			game.heavy.slash_interval = maxf(0.2, 1.1 * (1.0 - 0.1 * new_level))
 		"heavy_range":
-			game.heavy.slash_radius *= 1.2
+			game.heavy.slash_radius = 105.0 * (1.0 + 0.2 * new_level)
 		"heavy_hp":
-			game.heavy.max_hp *= 1.4
+			game.heavy.max_hp = 270.0 * (1.0 + 0.4 * new_level)
 			game.heavy.regen += 3.0
 			if not game.heavy.dead:
 				game.heavy.hp = game.heavy.max_hp
 		"heavy_speed":
-			game.heavy.move_speed *= 1.2
+			game.heavy.move_speed = 60.0 * (1.0 + 0.2 * new_level)
 		"heavy_whirl":
 			game.heavy.slash_arc = TAU
 		"trap_dmg":
-			game.engineer_stats.bomb_damage *= 1.4
-			game.engineer_stats.pit_damage *= 1.4
-			game.engineer_stats.power_mult *= 1.4
+			game.engineer_stats.bomb_damage = 160.0 * (1.0 + 0.2 * new_level)
+			game.engineer_stats.pit_damage = 80.0 * (1.0 + 0.2 * new_level)
+			game.engineer_stats.power_mult = 1.0 + 0.2 * new_level
 		"trap_speed":
-			game.engineer_stats.plant_time *= 0.8
+			game.engineer_stats.plant_time = maxf(1.0, 6.0 * (1.0 - 0.1 * new_level))
 		"engineer_move":
-			game.engineer_stats.move_speed *= 1.15
+			game.engineer_stats.move_speed = 110.0 * (1.0 + 0.15 * new_level)
 		"trap_range":
-			game.engineer_stats.bomb_radius *= 1.2
-			game.engineer_stats.pit_radius *= 1.2
+			game.engineer_stats.bomb_radius = 110.0 * (1.0 + 0.2 * new_level)
+			game.engineer_stats.pit_radius = 90.0 * (1.0 + 0.2 * new_level)
 		"trap_trigger":
-			game.engineer_stats.trigger_radius *= 1.15
+			game.engineer_stats.trigger_radius = 60.0 * (1.0 + 0.15 * new_level)
 		"pit_stun":
 			game.engineer_stats.stun_time += 1.0
 		# ---- 特別強化（1回きり。効果の中身はそれぞれのスクリプトが処理する）
@@ -570,8 +663,8 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.engineer_stats.poison_level = 2
 		"sp_double_plant":
 			game.engineer_stats.double_plant = true
-		"sp_tower_multi":
-			castle.tower_shots = 3
+		"sp_homing_arrow":
+			castle.homing_arrow = true
 		"sp_tower_ap":
 			castle.tower_pierce += 3
 			castle.tower_damage *= 1.6
@@ -580,19 +673,20 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.tower_range *= 1.4
 		"sp_scatter":
 			castle.scatter_level = 2
+		"sp_suction":
+			castle.suction = true
 		"sp_incendiary":
 			castle.fire_level = 2
 		"sp_rapid_cannon":
 			castle.cannon_interval *= 0.6
-		"sp_big_rock":
-			castle.catapult_radius *= 1.4
-			castle.catapult_damage *= 1.8
+		"sp_treasure":
+			castle.treasure_shoot = true
 		"sp_split_rock":
 			castle.split_level = 2
 		"sp_rock_rain":
 			castle.rock_rain = true
-		"sp_ballista_multi":
-			castle.ballista_shots = 3
+		"sp_slow_bolt":
+			castle.slow_bolt = true
 		"sp_ballista_blast":
 			castle.bolt_blast_level = 2
 		"sp_big_bolt":
@@ -652,13 +746,13 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.snowman = true
 		# ---- ペット
 		"pet_rate":
-			game.pet_interval *= 0.85
+			game.pet_interval = maxf(0.1, 0.8 * (1.0 - 0.1 * new_level))
 		"pet_fang":
-			game.pet_damage *= 1.3
+			game.pet_damage = 12.0 * (1.0 + 0.2 * new_level)
 			for p in game.pets:
 				p.damage = game.pet_damage
 		"pet_eye":
-			game.pet_range *= 1.2
+			game.pet_range = 280.0 * (1.0 + 0.2 * new_level)
 		"pet_multi":
 			game.pet_shots += 1
 		"sp_pet_charge":
@@ -669,6 +763,66 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.pet_frost = true
 		"sp_pet_heal":
 			game.pet_heal = true
+		"sp_archer_shadow":
+			game.archer_shadow = true
+		"sp_archer_rain":
+			game.archer_rain = true
+		"sp_archer_close":
+			game.archer_close = true
+		"sp_archer_link":
+			game.archer_link = true
+		"sp_archer_ult":
+			game.archer_ult = true
+		"sp_archer_tornado":
+			game.archer_tornado = true
+		"sp_archer_counter":
+			game.archer_counter = true
+		"sp_archer_execute":
+			game.archer_execute = true
+		"sp_archer_giant_tornado":
+			game.archer_giant_tornado = true
+		"sp_archer_heavy_arrow":
+			game.archer_heavy_arrow = true
+		"sp_rapid_overheat":
+			game.castle.rapid_overheat = true
+		"sp_rapid_stun":
+			game.castle.rapid_stun = true
+		"sp_rapid_sacrifice":
+			game.castle.rapid_sacrifice = true
+		"sp_rapid_low_hp":
+			game.castle.rapid_low_hp = true
+		"sp_rapid_swarm":
+			game.castle.rapid_swarm = true
+		"sp_rapid_hp_scale":
+			game.castle.rapid_hp_scale = true
+		"sp_rapid_debuff":
+			game.castle.rapid_debuff = true
+		"sp_rapid_ult":
+			game.castle.rapid_ult = true
+		"sp_rapid_level":
+			game.castle.rapid_level_scale = true
+		"sp_rapid_reload":
+			game.castle.rapid_reload = true
+		"sp_archer_pet_burst":
+			game.archer_pet_burst = true
+		"sp_archer_pet_giant":
+			game.archer_pet_giant = true
+		"sp_archer_pet_charge":
+			game.archer_pet_charge = true
+		"sp_archer_pet_frost":
+			game.archer_pet_frost = true
+		"sp_archer_pet_heal":
+			game.archer_pet_heal = true
+		"sp_archer_pet_dance":
+			game.archer_pet_dance = true
+		"sp_archer_pet_charge_burst":
+			game.archer_pet_charge_burst = true
+		"sp_archer_pet_flock":
+			game.archer_pet_flock = true
+		"sp_archer_pet_body":
+			game.archer_pet_body = true
+		"sp_archer_pet_fusion":
+			game.archer_pet_fusion = true
 		"sp_ult_flock":
 			game.ultimates.flock = true
 		"sp_pet_burst":
@@ -679,13 +833,13 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"knight":
 			game.add_knight()
 		"knight_dmg":
-			game.knight_stats.damage *= 1.35
+			game.knight_stats.damage = 1.0 * (1.0 + 0.2 * new_level)
 		"knight_rate":
-			game.knight_stats.interval *= 0.85
+			game.knight_stats.interval = maxf(0.3, 1.6 * (1.0 - 0.1 * new_level))
 		"knight_width":
-			game.knight_stats.hit_width *= 1.3
+			game.knight_stats.hit_width = 1.0 * (1.0 + 0.3 * new_level)
 		"knight_move":
-			game.knight_stats.move_speed *= 1.2
+			game.knight_stats.move_speed = 190.0 * (1.0 + 0.2 * new_level)
 		"sp_chain_dash":
 			game.knight_stats.chain = 2
 		"sp_dash_quake":
@@ -738,8 +892,6 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.tower_blast = true
 		"sp_homing_blast":
 			castle.homing_blast = true
-		"sp_double_cannon":
-			castle.double_cannon = true
 		"sp_stay_rock":
 			castle.stay_rock = true
 		"sp_mega_bolt":
@@ -800,14 +952,38 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		# ---- 狙撃部隊
 		"sniper":
 			game.add_sniper()
+		"archer":
+			game.add_archer()
+		"archer_pet":
+			game.add_archer_pet()
+		"archer_pet_rate":
+			game.archer_pet_interval = maxf(0.2, 0.75 * (1.0 - 0.1 * new_level))
+		"archer_pet_fang":
+			game.archer_pet_damage = 32.0 * (1.0 + 0.2 * new_level)
+		"archer_pet_eye":
+			game.archer_pet_range = 85.0 * (1.0 + 0.2 * new_level)
+		"archer_pet_multi":
+			game.archer_pet_shots += 1
+		"archer_rate":
+			game.archer_stats.interval = maxf(0.1, 0.8 * (1.0 - 0.1 * new_level))
+		"archer_multi":
+			game.archer_stats.shots += 1
+		"archer_dmg":
+			game.archer_stats.damage = 30.0 * (1.0 + 0.2 * new_level)
+		"archer_pierce":
+			game.archer_stats.pierce += 1
+		"archer_size":
+			game.archer_stats.arrow_scale = 1.0 + 0.2 * new_level
 		"sniper_rate":
-			game.sniper_stats.interval *= 0.85
+			game.sniper_stats.interval = maxf(0.2, 1.6 * (1.0 - 0.1 * new_level))
 		"sniper_multi":
 			game.sniper_stats.shots += 1
 		"sniper_dmg":
-			game.sniper_stats.damage *= 1.35
+			game.sniper_stats.damage = 141.75 * (1.0 + 0.2 * new_level)
 		"sniper_pierce":
 			game.sniper_stats.pierce += 1
+		"sniper_size":
+			game.sniper_stats.arrow_scale = 1.0 + 0.2 * new_level
 		"sp_counter_battery":
 			game.sniper_stats.counter_battery = true
 		"sp_headshot":
@@ -895,18 +1071,27 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.enable_robot_true()
 		"tower":
 			castle.tower_count = new_level
-			if new_level > 1:
-				castle.tower_damage *= 1.15
+		"tower_dmg":
+			castle.tower_damage = 192.0 * (1.0 + 0.2 * new_level)
+		"tower_rate":
+			castle.tower_interval = maxf(0.2, 0.9 * (1.0 - 0.1 * new_level))
+		"tower_pierce":
+			castle.tower_pierce += 1
+		"tower_multi":
+			castle.tower_shots += 1
 		"cannon":
 			castle.cannon_level = new_level
 		"frost":
-			castle.frost_radius = 220.0 + 60.0 * new_level
-			# 減速はレベル1で10%、1レベルごとに+5%（最大レベル3で20%）
-			castle.frost_slow = 0.05 + 0.05 * new_level
+			castle.frost_radius = 280.0
+			castle.frost_slow = 0.10
+		"frost_range":
+			castle.frost_radius = 280.0 * (1.0 + 0.15 * new_level)
+		"frost_slow":
+			castle.frost_slow = minf(0.95, castle.frost_slow + 0.05)
 		"mine_site":
 			game.add_mine_site()
 		"mine_speed":
-			# 10秒から1秒ずつ短く（最大レベル4で6秒）
+			# 10秒から1秒ずつ短く（最大レベル5で5秒）
 			game.mine_interval = 10.0 - new_level
 			for m in game.mine_sites:
 				m.interval = game.mine_interval

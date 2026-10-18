@@ -4,8 +4,7 @@ extends Node2D
 ## 一番近い「遠距離型の敵」（弓兵・迫撃砲）を優先して狙う。いなければ一番近い敵。
 ## 作業員と同じく敵からは狙われない。ステータスは game.sniper_stats を全員で共有している。
 
-## 通常攻撃の矢の威力の倍率（基本の威力 × これ）
-const ARROW_MULT := 2.1
+## 通常攻撃の矢の威力（以前は基本の2.1倍だったが、基本値に吸収）
 ## 爆裂矢の爆発の威力（矢の威力 × これ）
 ## 爆裂矢の爆発は、もとの値（矢3倍×0.5）の1/19になるように調整（矢2.1倍に対して約0.0376倍）
 const BLAST_RATIO := 0.5 * 3.0 / 2.1 / 19.0
@@ -93,7 +92,7 @@ func _shoot(target: Node2D, st) -> void:
 		b.game = game
 		b.velocity = dir * st.arrow_speed
 		# 通常攻撃の矢は、基本の威力の ARROW_MULT 倍（花火矢・天穿つ一矢は基本の威力から計算するので、この倍率は入らない）
-		var dmg: float = st.damage * ARROW_MULT
+		var dmg: float = st.damage
 		# 対砲兵狙撃：遠い敵ほど痛い（100離れるごとに +10%）
 		if st.counter_battery:
 			dmg *= 1.0 + dist / 1000.0
@@ -103,7 +102,8 @@ func _shoot(target: Node2D, st) -> void:
 			b.crit = true
 		b.damage = dmg
 		b.pierce = st.pierce
-		b.radius = 5.0
+		b.radius = 5.0 * st.arrow_scale
+		b.scale = Vector2.ONE * st.arrow_scale
 		b.bolt = true
 		b.scale = Vector2(0.6, 0.6)
 		b.life = st.fire_range / st.arrow_speed + 0.3
@@ -137,7 +137,7 @@ func _shoot(target: Node2D, st) -> void:
 		f.src = game.sp_src(record, "sp_fun_firework_arrow")
 		# 花火爆裂矢：花火が敵に当たったときも爆裂矢が発動（ふつうの矢の爆発と同じ威力）
 		if st.firework_blast and st.blast_arrow:
-			f.blast_damage = st.damage * ARROW_MULT * BLAST_RATIO
+			f.blast_damage = st.damage * BLAST_RATIO
 			f.blast_radius = 70.0
 			f.blast_src = game.sp_src(record, "sp_blast_arrow")
 

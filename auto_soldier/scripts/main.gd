@@ -29,6 +29,8 @@ const PlacedScript := preload("res://scripts/placed.gd")
 const LightningScript := preload("res://scripts/lightning.gd")
 const SniperScript := preload("res://scripts/sniper.gd")
 const SniperStats := preload("res://scripts/sniper_stats.gd")
+const ArcherScript := preload("res://scripts/archer.gd")
+const ArcherStats := preload("res://scripts/archer_stats.gd")
 const UltimatesScript := preload("res://scripts/ultimates.gd")
 const KnightScript := preload("res://scripts/knight.gd")
 const KnightStats := preload("res://scripts/knight_stats.gd")
@@ -82,6 +84,7 @@ var records_ui: CanvasLayer
 var damage_ui: CanvasLayer
 var changelog_ui: CanvasLayer
 ## 今回のゲームオーバーで保存した歴代記録の id（TOP20に入らなかったら ""）
+## 今回のゲームオーバーで保存した歴代記録の id（TOP20に入らなかったら ""）
 var last_record_id := ""
 ## このゲーム（1回の出撃）の番号。オートセーブに入るので、「前回のLvからリスタート」しても同じ番号のまま。
 ## ゲームオーバーのとき、同じ番号の歴代記録があれば新しい結果で上書きする
@@ -124,6 +127,9 @@ var engineer_stats := EngineerStats.new()
 ## 狙撃部隊（弓）
 var snipers: Array = []
 var sniper_stats := SniperStats.new()
+var archers: Array = []
+var archer_stats := ArcherStats.new()
+const MAX_ARCHERS := 3
 const MAX_SNIPERS := 3
 ## 15秒ごとの必殺技（6つ目の特別強化）をまとめて管理する
 var ultimates: Node2D
@@ -156,20 +162,45 @@ var _mine_return_until := {}
 var mine_interval := 10.0
 var mine_xp := 1
 var pets: Array = []
-## 遊撃兵1人あたりのペットの数（「ペットの仲間」を取るたびに+1）
+## 遊撃兵1人あたりのペットの数（「遊撃ペット」を取るたびに+1）
 var pets_per_soldier := 0
+var archer_pets: Array = []
+## 弓兵1人あたりのペットの数（「弓兵ペット」を取るたびに+1）
+var pets_per_archer := 0
 ## ペットの攻撃力（あとから付くペットにも反映）
-var pet_damage := 3.0
+var pet_damage := 12.0
+var archer_pet_damage := 32.0
 ## ペットの射撃間隔・射程（全ペット共通）
 var pet_interval := 0.8
+var archer_pet_interval := 0.75
 var pet_range := 420.0
+var archer_pet_range := 420.0
 ## ペットが一度に撃つ弾の数
-var pet_shots := 1
+var archer_pet_shots := 1
 ## ペットの特別強化：爆裂ペット弾・巨大ペット・凍える羽根・癒しのさえずり
 var pet_burst := false
 var pet_giant := false
 var pet_frost := false
 var pet_heal := false
+var archer_pet_burst := false
+var archer_pet_giant := false
+var archer_pet_charge := false
+var archer_pet_frost := false
+var archer_shadow := false
+var archer_rain := false
+var archer_close := false
+var archer_link := false
+var archer_ult := false
+var archer_tornado := false
+var archer_counter := false
+var archer_execute := false
+var archer_giant_tornado := false
+var archer_heavy_arrow := false
+var archer_pet_dance := false
+var archer_pet_charge_burst := false
+var archer_pet_flock := false
+var archer_pet_body := false
+var archer_pet_fusion := false
 ## 体当たりペット：ペットに触れた敵にペットの12倍ダメージ（pet.gd の BODY_MULT）
 var pet_body := false
 ## 突撃ペット（6秒ごとにHPが一番高い敵へ突進）・爆裂突撃ペット（突進が当たった所で小爆発）
@@ -208,6 +239,7 @@ static var _retry_auto_pick := false
 static var auto_priority := {}
 ## ゲームオーバー画面の「前回のLvからリスタート」：作り直したあとの _ready で、オートセーブを読み込んで始める
 static var _load_autosave := false
+static var _load_autosave_level := -1
 ## このフレームの最後にオートセーブする予約が入っているか（1フレームに何回レベルが上がっても保存は1回）
 var _autosave_queued := false
 ## 今出ている強化の候補（リロール用）
@@ -684,6 +716,17 @@ func add_sniper() -> void:
 	snipers.append(s)
 
 
+func add_archer() -> void:
+	if archers.size() >= MAX_ARCHERS:
+		return
+	var a := ArcherScript.new()
+	a.game = self
+	a.index = archers.size()
+	a.position = castle.gate_position() + Vector2(randf_range(-40, 40), -30)
+	world.add_child(a)
+	archers.append(a)
+
+
 func add_knight() -> void:
 	if knights.size() >= MAX_KNIGHTS:
 		return
@@ -810,6 +853,13 @@ func add_pet() -> void:
 	_fill_pets()
 
 
+func add_archer_pet() -> void:
+	if pets_per_archer >= MAX_PETS:
+		return
+	pets_per_archer += 1
+	_fill_archer_pets()
+
+
 ## 各遊撃兵のペットが pets_per_soldier 匹になるように足りない分を付ける
 func _fill_pets() -> void:
 	for s in soldiers:
@@ -826,6 +876,24 @@ func _fill_pets() -> void:
 			p.position = s.position
 			world.add_child(p)
 			pets.append(p)
+			have += 1
+
+
+func _fill_archer_pets() -> void:
+	for a in archers:
+		var have := 0
+		for p in archer_pets:
+			if p.owner_soldier == a:
+				have += 1
+		while have < pets_per_archer:
+			var p := PetScript.new()
+			p.game = self
+			p.owner_soldier = a
+			p.index = have
+			p.damage = archer_pet_damage
+			p.position = a.position
+			world.add_child(p)
+			archer_pets.append(p)
 			have += 1
 
 
@@ -1005,7 +1073,7 @@ const HP_LATE_ACCEL := 0.6
 
 ## ふつうの敵のHP倍率：0〜10分は1分ごとに +0.5。10分からは上がり幅そのものが1分ごとに +0.2 ずつ大きくなる
 ## （1分で×1.5、5分で×3.5、10分で×6、20分で×21、30分で×56、40分で×111、60分で×281、90分で×686）
-## Lv HP_ACCEL_UP_FROM からは、レベル10ごとに上がり幅の増え方が +HP_ACCEL_UP_STEP ずつ大きくなる（Lv170〜で0.3、Lv180〜で0.4、Lv190〜で0.5…上限なし）。
+## 170overtime（HP加速）：Lv HP_ACCEL_UP_FROM からは、レベル10ごとに上がり幅の増え方が +HP_ACCEL_UP_STEP ずつ大きくなる（Lv170〜で0.3、Lv180〜で0.4、Lv190〜で0.5…上限なし）。
 ## そのレベルになった時点から増え方が変わるだけで、倍率がいきなり跳ね上がることはない
 const HP_EARLY_PER_MIN := 0.5
 const HP_SWITCH_MIN := 10.0
@@ -1070,9 +1138,10 @@ func _hp_mult_at(m: float) -> float:
 	return last[1] + slope * d + HP_LATE_ACCEL / 2.0 * d * d
 
 
-## 170overtime：Lv OVERTIME_FROM_LV（170）になったら、その時刻から1分たつごとに、
-## これから出る敵とボス（大司教・手下・鉄甲兵・迫撃砲部隊も）のHPが +OVERTIME_HP_PER_MIN（1%）ずつ増える（足し算・上限なし）。
-## ほかのHPの倍率とは別に、出るときにかける（もう出ている敵は変わらない。分裂の魔獣の分かれた体・分裂体は親の倍率を引き継ぐ）
+## 170overtime：Lv OVERTIME_FROM_LV（170）以降の難易度上昇システム。
+## ・HP加速：Lv170からHP倍率の増え方が加速（詳細は上の HP_ACCEL_UP_FROM 参照）
+## ・時間経過HP増加：Lv170になった時刻から、1分たつごとに、これから出る敵とボス（大司教・手下・鉄甲兵・迫撃砲部隊も）のHPが +OVERTIME_HP_PER_MIN（1%）ずつ増える（足し算・上限なし）。
+##   ほかのHPの倍率とは別に、出るときにかける（もう出ている敵は変わらない。分裂の魔獣の分かれた体・分裂体は親の倍率を引き継ぐ）
 const OVERTIME_FROM_LV := 170
 const OVERTIME_HP_PER_MIN := 0.01
 ## 170overtime：今のレベルが Lv OVERTIME_FROM_LV 以上のあいだ、敵（ボスも）からのダメージ1回ごとに、
@@ -1333,11 +1402,13 @@ func _do_autosave() -> void:
 
 
 ## ゲームオーバー画面の「前回のLvからリスタート」：ゲームを作り直して、オートセーブから続きを始める
-func restart_from_autosave() -> void:
-	if AutosaveScript.peek().is_empty():
+## level を指定するとそのレベルのセーブから（省略時は最新）
+func restart_from_autosave(level: int = -1) -> void:
+	if AutosaveScript.peek(level).is_empty():
 		return
 	_retry_auto_pick = auto_pick
 	_load_autosave = true
+	_load_autosave_level = level
 	restart()
 
 
@@ -1347,9 +1418,10 @@ func _restore_autosave() -> bool:
 	milestone_level = -1
 	# run_id がない前の形式のセーブは、保存した時刻から番号を作る（同じセーブから何回リスタートしても同じ番号）
 	var new_id := run_id
-	var head: Dictionary = AutosaveScript.peek()
+	var head: Dictionary = AutosaveScript.peek(_load_autosave_level)
 	run_id = ""
-	var info: Dictionary = AutosaveScript.load_into(self)
+	var info: Dictionary = AutosaveScript.load_into(self, _load_autosave_level)
+	_load_autosave_level = -1
 	if info.is_empty():
 		run_id = new_id
 		return false
@@ -1516,6 +1588,18 @@ func spawn_fun_fx(kind: String, pos: Vector2) -> Node2D:
 	f.end = pos
 	effects.add_child(f)
 	return f
+
+
+func spawn_tornado(pos: Vector2, duration: float) -> void:
+	var t := Node2D.new()
+	t.position = pos
+	t.set_meta("tornado", true)
+	t.set_meta("life", duration)
+	effects.add_child(t)
+	# simple suction over time handled in process if needed
+	await get_tree().create_timer(duration).timeout
+	if is_instance_valid(t):
+		t.queue_free()
 
 
 func spawn_burst(pos: Vector2, col: Color, r: float) -> void:
@@ -1738,12 +1822,6 @@ func _apply_debug_start(cfg: Dictionary) -> void:
 	# 始めるレベルの Lv刻みの敵（ボス・迫撃砲部隊）
 	_spawn_level_milestone()
 	hud.refresh()
-
-
-## ゲームオーバー画面の「もう一度」：オート選択の有効・無効はそのままでやり直す
-func retry() -> void:
-	_retry_auto_pick = auto_pick
-	restart()
 
 
 func restart() -> void:

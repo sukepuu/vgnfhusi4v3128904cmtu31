@@ -39,6 +39,8 @@ var _notice_left := 0.0
 var _result_label: Label
 ## ゲームオーバー画面の「前回のLvからリスタート」（オートセーブがあるときだけ出す）
 var _load_btn: Button
+## 11Lv前（保持している一番古いセーブ）から再開
+var _load_old_btn: Button
 
 
 func _ready() -> void:
@@ -461,6 +463,15 @@ func _build_game_over() -> void:
 	_load_btn.pressed.connect(func() -> void: game.restart_from_autosave())
 	box.add_child(_load_btn)
 
+	# 11Lv前（保持している一番古いセーブ）から再開
+	_load_old_btn = Button.new()
+	_load_old_btn.text = "11Lv前から再開"
+	_load_old_btn.custom_minimum_size = Vector2(260, 44)
+	_load_old_btn.add_theme_font_size_override("font_size", 18)
+	_load_old_btn.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+	_load_old_btn.pressed.connect(_on_load_old_pressed)
+	box.add_child(_load_old_btn)
+
 	var stats_btn := Button.new()
 	stats_btn.text = "部隊戦績を見る"
 	stats_btn.custom_minimum_size = Vector2(260, 44)
@@ -521,7 +532,33 @@ func show_game_over() -> void:
 	if not save.is_empty():
 		var st := int(save.get("elapsed", 0.0))
 		_load_btn.text = "前回のLvからリスタート（Lv%d・%02d:%02d）" % [int(save.get("level", 1)), st / 60, st % 60]
+	# 11Lv前（一番古い保持セーブ）があれば出す
+	_update_old_load_btn()
 	_game_over.visible = true
+
+
+func _update_old_load_btn() -> void:
+	var levels: Array = game.AutosaveScript.list_levels()
+	if levels.size() < 2:
+		_load_old_btn.visible = false
+		return
+	var oldest := int(levels[levels.size() - 1])
+	var old_save: Dictionary = game.AutosaveScript.peek(oldest)
+	if old_save.is_empty():
+		_load_old_btn.visible = false
+		return
+	var st := int(old_save.get("elapsed", 0.0))
+	var diff := int(levels[0]) - oldest
+	_load_old_btn.text = "%dLv前から再開（Lv%d・%02d:%02d）" % [diff, oldest, st / 60, st % 60]
+	_load_old_btn.visible = true
+
+
+func _on_load_old_pressed() -> void:
+	var levels: Array = game.AutosaveScript.list_levels()
+	if levels.is_empty():
+		return
+	var oldest := int(levels[levels.size() - 1])
+	game.restart_from_autosave(oldest)
 
 
 func _unhandled_input(event: InputEvent) -> void:

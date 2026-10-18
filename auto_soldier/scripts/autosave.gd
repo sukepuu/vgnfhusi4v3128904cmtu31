@@ -1,5 +1,6 @@
 extends RefCounted
-## オートセーブ：レベルが上がったときに、今のゲームの状態をまるごと user://autosave_<枠>.dat に保存する（枠は立ち上げたゲームごと。save_slot.gd）。
+## オートセーブ：レベルが上がったときに、今のゲームの状態をまるごと user://autosave_<枠>_lv<レベル>.dat に保存する（枠は立ち上げたゲームごと。save_slot.gd）。
+## 直近11レベル分を保持し、それより古いものは自動で削除する。
 ## ゲームオーバー画面の「前回のLvからリスタート」で読み込んで、保存したところから続きを遊べる。
 ##
 ## 保存のしかた：城・壁・必殺技・おもしろ特別強化と main.gd の変数、それから World・Ground・Effects に置かれている
@@ -12,7 +13,9 @@ extends RefCounted
 ## 保存しないもの：飛んでいる弾・砲弾・投げた物・遅れて起きる爆発・見た目だけの演出（SKIP_SCRIPTS）。ロードすると消えている。
 ## 乱数の続きも保存しない（ロード後は新しい乱数になる）
 
-## 保存するファイルは、立ち上げたゲームごとの枠のもの（save_slot.gd。user://autosave_<枠>.dat）
+## 保存するファイルは、立ち上げたゲームごとの枠のもの（save_slot.gd。user://autosave_<枠>_lv<レベル>.dat）
+## 直近 KEEP_LEVELS レベル分を残す（それより古いものは削除）
+const KEEP_LEVELS := 11
 const SaveSlot := preload("res://scripts/save_slot.gd")
 ## 保存の形式。形式を変えたら上げる（違う形式のファイルは読まない）
 const FORMAT := 1
@@ -59,10 +62,10 @@ var _loaded_shared := {}
 var _names_cache := {}
 
 
-## オートセーブがあれば {"level", "elapsed", "saved_at", "version"}、なければ空
-static func peek() -> Dictionary:
-	var path := SaveSlot.save_path()
-	if not FileAccess.file_exists(path):
+## 指定レベル（省略時は最新）のオートセーブがあれば {"level", "elapsed", "saved_at", "version", "path"}、なければ空
+static func peek(level: int = -1) -> Dictionary:
+	var path := _path_for_level(level)
+	if path == "" or not FileAccess.file_exists(path):
 		return {}
 	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
@@ -71,7 +74,42 @@ static func peek() -> Dictionary:
 	f.close()
 	if not (head is Dictionary) or int(head.get("format", -1)) != FORMAT:
 		return {}
+	head["path"] = path
 	return head
+
+
+## 今の枠で残っているセーブのレベル一覧（新しい順）
+static func list_levels() -> Array:
+	var dir := DirAccess.open("user://")
+	if dir == null:
+		return []
+	var prefix := "autosave_%d_lv" % maxi(1, SaveSlot.slot)
+	var levels: Array = []
+	dir.list_dir_begin()
+	var fname := dir.get_next()
+	while fname != "":
+		if fname.begins_with(prefix) and fname.ends_with(".dat"):
+			var lv_str := fname.trim_prefix(prefix).trim_suffix(".dat")
+			if lv_str.is_valid_int():
+				levels.append(int(lv_str))
+		fname = dir.get_next()
+	dir.list_dir_end()
+	levels.sort()
+	levels.reverse()
+	return levels
+
+
+static func _path_for_level(level: int = -1) -> String:
+	if level < 0:
+		var levels := list_levels()
+		if levels.is_empty():
+			# 旧形式（レベルなし）の互換
+			var legacy := SaveSlot.save_path()
+			if FileAccess.file_exists(legacy):
+				return legacy
+			return ""
+		level = levels[0]
+	return "user://autosave_%d_lv%d.dat" % [maxi(1, SaveSlot.slot), level]
 
 
 ## 今のゲームの状態を保存する。保存できたら true
@@ -83,7 +121,7 @@ static func save(g: Node2D) -> bool:
 		"saved_at": int(Time.get_unix_time_from_system()),
 		"version": str(ProjectSettings.get_setting("application/config/version", ""))}
 	# 書いている途中で止まっても前の保存が壊れないように、別のファイルに書いてから置き換える
-	var path := SaveSlot.save_path()
+	var path := "user://autosave_%d_lv%d.dat" % [maxi(1, SaveSlot.slot), g.level]
 	var tmp := path + ".tmp"
 	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:
@@ -96,15 +134,38 @@ static func save(g: Node2D) -> bool:
 		return false
 	if dir.file_exists(path.get_file()):
 		dir.remove(path.get_file())
-	return dir.rename(tmp.get_file(), path.get_file()) == OK
+	if dir.rename(tmp.get_file(), path.get_file()) != OK:
+		return false
+	# 12以上前（現在レベル - KEEP_LEVELS より古い）を削除
+	_prune_old(g.level)
+	return true
+
+
+static func _prune_old(current_level: int) -> void:
+	var dir := DirAccess.open("user://")
+	if dir == null:
+		return
+	var prefix := "autosave_%d_lv" % maxi(1, SaveSlot.slot)
+	var min_keep := current_level - KEEP_LEVELS + 1
+	dir.list_dir_begin()
+	var fname := dir.get_next()
+	while fname != "":
+		if fname.begins_with(prefix) and fname.ends_with(".dat"):
+			var lv_str := fname.trim_prefix(prefix).trim_suffix(".dat")
+			if lv_str.is_valid_int() and int(lv_str) < min_keep:
+				dir.remove(fname)
+		fname = dir.get_next()
+	dir.list_dir_end()
 
 
 ## 保存を読み込んで g（作り直したばかりの main.gd。兵士はまだいない状態）に戻す。
 ## 読めなかったら空、読めたら {"choices": 出ていた強化の3択の id, "special", "for_level", "rerolled"}
-static func load_into(g: Node2D) -> Dictionary:
-	if peek().is_empty():
+## level を指定するとそのレベルのセーブを読む（省略時は最新）
+static func load_into(g: Node2D, level: int = -1) -> Dictionary:
+	var path := _path_for_level(level)
+	if path == "" or not FileAccess.file_exists(path):
 		return {}
-	var f := FileAccess.open(SaveSlot.save_path(), FileAccess.READ)
+	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
 		return {}
 	f.get_var()

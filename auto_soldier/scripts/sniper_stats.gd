@@ -1,8 +1,9 @@
 extends RefCounted
 ## 狙撃部隊（弓）全員で共有するステータス
 
+var max_hp := 60.0
 ## 矢1本のダメージ
-var damage := 67.5
+var damage := 141.75
 ## 矢を放つ間隔（秒）
 var interval := 1.6
 ## 一度に放つ矢の数
@@ -12,6 +13,7 @@ var fire_range := 750.0
 ## 貫通する敵の数
 var pierce := 2
 var arrow_speed := 1650.0
+var arrow_scale := 1.0
 
 # --- 特別強化
 ## 対砲兵狙撃（迫撃砲を最優先で狙い、遠い敵ほどダメージ増加）

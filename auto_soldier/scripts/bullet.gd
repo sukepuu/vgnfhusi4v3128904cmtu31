@@ -30,6 +30,15 @@ var explode_src: Dictionary = {}
 ## 爆発したとき、花火のエフェクトも出す（花火爆裂矢）
 var explode_firework := false
 var first_blast_src: Dictionary = {}
+var homing := false
+var _homed := false
+var slow_on_hit := 0.0
+var link_mark := false
+var ult_orb := false
+var tornado_on_hit := false
+var hp_scale := false
+var debuff_on_hit := false
+var _orb_cd := 1.0
 ## 跳ねたあとのダメージを記録する戦績カード（跳弾矢の分け記録）。空なら src のまま
 var bounce_src: Dictionary = {}
 ## 跳弾矢：最初に跳ねたとき、矢の威力をこの倍率にする（跳ねたあとの命中と爆発が強くなる）
@@ -93,6 +102,19 @@ func _process(delta: float) -> void:
 
 
 func _step(delta: float) -> void:
+	if homing and not _homed and not from_enemy:
+		var nearest: Node2D = null
+		var best_d := 280.0
+		for e in game.enemies_cache:
+			if not is_instance_valid(e) or e.dead:
+				continue
+			var d := global_position.distance_to(e.global_position)
+			if d < best_d:
+				best_d = d
+				nearest = e
+		if nearest != null:
+			velocity = (nearest.global_position - global_position).normalized() * velocity.length()
+		_homed = true
 	if seek != null:
 		if is_instance_valid(seek) and not seek.dead:
 			var want := (seek.global_position - global_position).normalized() * velocity.length()
@@ -114,6 +136,23 @@ func _step(delta: float) -> void:
 			aim_target = null
 	position += velocity * delta
 	life -= delta
+	if ult_orb:
+		_orb_cd -= delta
+		if _orb_cd <= 0.0:
+			_orb_cd = 1.0
+			for i in 8:
+				var dir := Vector2.from_angle(TAU * i / 8.0)
+				var sb: Node2D = get_script().new()
+				sb.game = game
+				sb.position = global_position
+				sb.velocity = dir * 500.0
+				sb.damage = 15.0
+				sb.pierce = 1
+				sb.radius = 4.0
+				sb.color = Color(1.0, 0.9, 0.5)
+				sb.life = 0.8
+				sb.src = src
+				game.effects.add_child(sb)
 	if life <= 0.0:
 		queue_free()
 		return
@@ -169,6 +208,21 @@ func _step(delta: float) -> void:
 				e.mark_left = 6.0
 			if confuse_on_hit > 0.0:
 				e.confuse(confuse_on_hit)
+			if slow_on_hit > 0.0:
+				e.slow(slow_on_hit, 0.4)
+			if tornado_on_hit:
+				game.spawn_tornado(global_position, 1.0)
+			if hp_scale and e.max_hp > 0.0:
+				var ratio := clampf(e.hp / e.max_hp, 0.0, 1.0)
+				damage *= 1.0 + 0.5 * ratio
+			if debuff_on_hit:
+				e.debuff_left = 5.0
+				e.debuff_mult = 1.15
+			if link_mark:
+				e.link_archer = src.get("owner", null)
+				e.link_left = 5.0
+			if e.link_left > 0.0 and e.link_archer != src.get("owner", null):
+				damage *= 1.6
 			e.take_damage(damage, Vector2.ZERO, src)
 			# 射撃のノックバック（下側へは押さない。クールタイムは敵側で管理）
 			e.shot_knockback(velocity.normalized() * 120.0)

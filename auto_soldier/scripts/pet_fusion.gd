@@ -216,8 +216,8 @@ func _shoot_update(delta: float) -> void:
 		var b := BulletScript.new()
 		b.game = game
 		b.velocity = dir * 560.0
-		# 通常攻撃なので、ふつうのペットと同じ倍率（pet.gd の SHOT_MULT）
-		b.damage = game.pet_damage * _power() * PetScript.SHOT_MULT
+		# 通常攻撃（以前のSHOT_MULTは基本値に吸収済み）
+		b.damage = game.pet_damage * _power()
 		b.radius = 9.0 + minf(_n, 8.0)
 		b.pierce = 2
 		b.color = Color.from_hsv(fmod(_t * 0.7, 1.0), 0.5, 1.0)

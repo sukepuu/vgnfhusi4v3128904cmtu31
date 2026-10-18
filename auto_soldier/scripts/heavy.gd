@@ -22,9 +22,8 @@ var max_hp := 270.0
 var hp := 270.0
 var regen := 4.0
 var move_speed := 60.0
-var slash_damage := 94.5
-## ふつうの斬撃だけにかける倍率（特別強化の「斬撃○倍」は slash_damage をもとにするので、これはかからない。一刀両断は「通常攻撃の5倍」なので、これがかかる）
-const SLASH_RATIO := 1.0 / 3.0
+var slash_damage := 31.5
+## 通常斬撃の威力（以前は基本の1/3だったが、基本値に吸収）
 ## 怒りの闘志・仁王立ちの上乗せの上限
 const RAGE_MAX := 0.4
 const PROVOKE_MAX := 0.4
@@ -209,7 +208,7 @@ func _try_slash(src: Dictionary = {}) -> bool:
 			continue
 		if slash_arc < TAU and absf(dir.angle_to(rel)) > slash_arc / 2.0 + 0.2:
 			continue
-		e.take_damage(dmg() * SLASH_RATIO, rel.normalized() * 420.0, src)
+		e.take_damage(dmg(), rel.normalized() * 420.0, src)
 	if lifesteal > 0.0:
 		game.heal_unit(self, max_hp, (record["dealt"] - dealt_before) * lifesteal, record, "sp_lifesteal")
 	# 斬撃で敵の弾もかき消す
@@ -231,7 +230,7 @@ func _fire_execute() -> void:
 	var w := SlashWaveScript.new()
 	w.game = game
 	w.position = Vector2(0.0, global_position.y)
-	w.damage = dmg() * SLASH_RATIO * EXECUTE_MULT
+	w.damage = dmg() * EXECUTE_MULT
 	w.src = game.sp_src(record, "sp_execute")
 	game.effects.add_child(w)
 

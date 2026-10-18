@@ -107,6 +107,10 @@ const FORTRESS_SEQ := [0, 1, 0, 1, 2]
 var stun_left := 0.0
 ## 弱点看破（狙撃部隊）：この時間のあいだ受けるダメージ +20%
 var mark_left := 0.0
+var link_left := 0.0
+var link_archer = null
+var debuff_left := 0.0
+var debuff_mult := 1.0
 ## 仁王立ちで挑発されている残り時間（このあいだは重装兵を狙う）
 var provoked_left := 0.0
 ## 混乱（虹の矢・ペットの踊り）：この時間のあいだ、ふらふらと変な方向へ歩く
@@ -243,6 +247,8 @@ func _update(delta: float) -> void:
 	_flash -= delta
 	_contact_cd -= delta
 	mark_left -= delta
+	link_left -= delta
+	debuff_left -= delta
 	provoked_left -= delta
 	_kb_cd -= delta
 	confuse_left -= delta
@@ -842,6 +848,8 @@ func stun(seconds: float) -> void:
 
 ## src = 攻撃した味方の戦績カード（記録しないときは空）
 func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictionary = {}) -> void:
+	if debuff_left > 0.0:
+		amount *= debuff_mult
 	if dead:
 		return
 	if mark_left > 0.0:

@@ -59,9 +59,31 @@ var _catapult_cds: Array = [2.0, 5.0, 8.0]
 var _catapult_swings: Array = [0.0, 0.0, 0.0]
 # --- バリスタ（矢倉より発射間隔が長いが、高威力・射程無限・貫通無限）。最大3基
 var ballista_level := 0
+var rapid_level := 0
+var rapid_damage := 12.5
+var rapid_interval := 0.125
+var rapid_shots := 1
+var rapid_pierce := 0
+var rapid_overheat := false
+var rapid_stun := false
+var rapid_sacrifice := false
+var rapid_low_hp := false
+var rapid_swarm := false
+var rapid_hp_scale := false
+var rapid_debuff := false
+var rapid_ult := false
+var rapid_level_scale := false
+var rapid_reload := false
+var _rapid_heat := [0.0, 0.0]
+var _rapid_last_fire := [0.0, 0.0]
+var _rapid_shot_count := [0, 0]
+var _rapid_reload_cd := [0.0, 0.0]
+var _rapid_ult_cd := 0.0
+var _rapid_ult_active := 0.0
+var _rapid_cds: Array = [0.0, 0.0]
 var ballista_interval := 4.0
 ## バリスタの基本の威力（前の96の2倍）。通常の矢も特別強化も、ぜんぶここから計算する
-var ballista_damage := 192.0
+var ballista_damage := 274.56
 var _ballista_cds: Array = [1.0, 2.3, 3.6, 4.9]
 var _ballista_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
 var _ballista_recoil: Array = [0.0, 0.0, 0.0, 0.0]
@@ -75,11 +97,17 @@ var frost_slow := 0.0
 
 # --- 特別強化
 var tower_shots := 1
+var cannon_shots := 1
+var ballista_shots := 1
+var catapult_shots := 1
 var tower_pierce := 0
+var homing_arrow := false
+var suction := false
+var slow_bolt := false
+var treasure_shoot := false
 var scatter_level := 0
 var fire_level := 0
 var split_level := 0
-var ballista_shots := 1
 var bolt_blast_level := 0
 var freeze_level := 0
 var icicle_level := 0
@@ -93,7 +121,6 @@ var direct_hit := false
 var blast_bolt := false
 var ice_lance := false
 ## 5つ目の特別強化（新しい物を飛ばす・置く）
-var homing_arrow := false
 var cannon_mines := false
 var rolling_rock := false
 var lightning := false
@@ -242,6 +269,7 @@ func _process(delta: float) -> void:
 	_update_towers(delta)
 	_update_cannon(delta)
 	_update_catapult(delta)
+	_update_rapid(delta)
 	_update_ballista(delta)
 	_update_frost_specials(delta)
 	_update_new_specials(delta)
@@ -360,6 +388,8 @@ func _update_towers(delta: float) -> void:
 			b.pierce = tower_pierce
 			b.radius = 4.0
 			b.color = Color(0.95, 0.8, 0.55)
+			if homing_arrow:
+				b.homing = true
 			if tower_lock and power > 1.0:
 				# 執念がたまるほど赤く太い矢に
 				b.color = Color(1.0, 0.8, 0.55).lerp(Color(1.0, 0.25, 0.2), (power - 1.0) / 2.0)
@@ -390,7 +420,12 @@ func _update_cannon(delta: float) -> void:
 		var from := wpos() + _cannon_local_pos(i)
 		_cannon_aims[i] = (best.global_position - from).normalized()
 		var rec := _equip_record("cannon", "大砲", i)
-		var shells: Array = [_fire_shell(from, best.global_position, cannon_damage, cannon_radius, false, rec)]
+		var shells: Array = []
+		for k in cannon_shots:
+			var off := Vector2.ZERO
+			if cannon_shots > 1:
+				off = Vector2(randf_range(-40, 40), randf_range(-30, 30))
+			shells.append(_fire_shell(from, best.global_position + off, cannon_damage, cannon_radius, false, rec))
 		# 置き土産：着弾地点に爆弾を置く
 		if cannon_bomb:
 			shells[0].leave_bomb = cannon_damage * 1.5
@@ -428,13 +463,19 @@ func _update_catapult(delta: float) -> void:
 		if best == null:
 			continue
 		var from := wpos() + _catapult_local_pos(i) + Vector2(0, -20)
-		var s := _fire_shell(from, best.global_position, catapult_damage, catapult_radius, true, _equip_record("catapult", "投石器", i))
-		if split_level > 0:
-			s.split_count = 2 + 2 * split_level
-		if direct_hit:
-			s.direct_bonus = catapult_damage * 35.0
-		if stay_rock:
-			s.stay_rock = true
+		var last_s: Node2D = null
+		for k in catapult_shots:
+			var off := Vector2.ZERO
+			if catapult_shots > 1:
+				off = Vector2(randf_range(-50, 50), randf_range(-40, 40))
+			var s := _fire_shell(from, best.global_position + off, catapult_damage, catapult_radius, true, _equip_record("catapult", "投石器", i))
+			if split_level > 0:
+				s.split_count = 2 + 2 * split_level
+			if direct_hit:
+				s.direct_bonus = catapult_damage * 35.0
+			if stay_rock:
+				s.stay_rock = true
+			last_s = s
 		# 牛投げ：3回に1回、岩のかわりに牛を投げる
 		_catapult_shots += 1
 		# 牛投げ・鉄塊投げは投石器1台ずつ数える（全台の合計で数えると、いつも同じ台だけが投げてしまうため）
@@ -444,22 +485,95 @@ func _update_catapult(delta: float) -> void:
 			var big := _toughest_enemy_in(wpos(), INF)
 			if big != null:
 				# 威力：落ちた所の範囲に投石器×8、追いかけた敵への直撃に投石器×128
-				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_damage * 8.0, 50.0, true, game.sp_src(s.src, "sp_iron_chunk"))
+				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_damage * 8.0, 50.0, true, game.sp_src(last_s.src if last_s else {}, "sp_iron_chunk"))
 				iron.iron = true
 				iron.chase = big
 				iron.direct_bonus = catapult_damage * 128.0
-		if cow_throw and _catapult_shot_counts[i] % 3 == 0:
-			s.cow = true
-		if rolling_rock:
-			s.roll_damage = catapult_damage * 3.6
+		if cow_throw and _catapult_shot_counts[i] % 3 == 0 and last_s != null:
+			last_s.cow = true
+		if rolling_rock and last_s != null:
+			last_s.roll_damage = catapult_damage * 3.6
 		# 岩雨：ランダムな敵2体の頭上にも岩が落ちる
 		if rock_rain:
 			var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool: return is_instance_valid(e) and not e.dead)
 			pool.shuffle()
 			for e in pool.slice(0, 2):
-				game.spawn_blast(e.global_position, 1.0, 75.0, catapult_damage * 2.4, game.sp_src(s.src, "sp_rock_rain"), Color(0.75, 0.65, 0.5), "rock")
+				game.spawn_blast(e.global_position, 1.0, 75.0, catapult_damage * 2.4, game.sp_src(last_s.src if last_s else {}, "sp_rock_rain"), Color(0.75, 0.65, 0.5), "rock")
 		_catapult_cds[i] = catapult_interval
 		_catapult_swings[i] = 0.4
+
+
+func _update_rapid(delta: float) -> void:
+	if rapid_ult:
+		_rapid_ult_cd -= delta
+		if _rapid_ult_cd <= 0.0:
+			_rapid_ult_cd = 15.0
+			_rapid_ult_active = 5.0
+		if _rapid_ult_active > 0.0:
+			_rapid_ult_active -= delta
+	for i in mini(rapid_level, 2):
+		_rapid_cds[i] -= delta
+		if rapid_overheat:
+			if game.elapsed - _rapid_last_fire[i] > 1.0:
+				_rapid_heat[i] = 0.0
+		if _rapid_reload_cd[i] > 0.0:
+			_rapid_reload_cd[i] -= delta
+			continue
+		if _rapid_cds[i] > 0.0:
+			continue
+		var from := global_position + Vector2(-HALF.x - 20.0 if i == 0 else HALF.x + 20.0, 0)
+		var target: Node2D = game.nearest_enemy(from, 480.0)
+		if rapid_ult and _rapid_ult_active > 0.0:
+			target = game.nearest_enemy(global_position, 1200.0)
+		if target == null:
+			continue
+		var aim: Vector2 = (target.global_position - from).normalized()
+		var mult := 1.0
+		if rapid_overheat:
+			_rapid_heat[i] = minf(0.5, _rapid_heat[i] + 0.02)
+			_rapid_last_fire[i] = game.elapsed
+			mult *= 1.0 + _rapid_heat[i]
+		if rapid_sacrifice:
+			if hp > 1.0:
+				hp -= 1.0
+			mult *= 2.0
+		if rapid_swarm:
+			var count: int = game.enemies_cache.size()
+			mult *= 1.0 + 0.5 * clampf(float(count) / 500.0, 0.0, 1.0)
+		if rapid_level_scale:
+			mult *= 1.0 + 0.6 * clampf(float(game.level) / 150.0, 0.0, 1.0)
+		if rapid_ult and _rapid_ult_active > 0.0:
+			mult *= 1.3
+		if rapid_reload:
+			_rapid_shot_count[i] += 1
+			if _rapid_shot_count[i] >= 50:
+				_rapid_shot_count[i] = 0
+				_rapid_reload_cd[i] = 3.0
+				mult *= 1.8
+		var interval_mult := 1.0
+		if rapid_low_hp:
+			var ratio := clampf((0.2 - hp / max_hp) / 0.2, 0.0, 1.0)
+			interval_mult = 1.0 - 0.8 * ratio
+		for k in rapid_shots:
+			var dir: Vector2 = aim.rotated((k - (rapid_shots - 1) / 2.0) * 0.1)
+			var b := BulletScript.new()
+			b.game = game
+			b.velocity = dir * 1100.0
+			b.damage = rapid_damage * mult
+			b.pierce = rapid_pierce
+			b.radius = 3.5
+			b.color = Color(0.9, 0.7, 0.4)
+			b.src = _equip_record("rapid", "連射砲", i)
+			b.life = 1.2
+			b.position = from
+			if rapid_stun:
+				b.stun_on_hit = 0.5
+			if rapid_hp_scale:
+				b.hp_scale = true
+			if rapid_debuff:
+				b.debuff_on_hit = true
+			game.world.add_child(b)
+		_rapid_cds[i] = rapid_interval * interval_mult
 
 
 func _update_ballista(delta: float) -> void:
@@ -483,7 +597,7 @@ func _update_ballista(delta: float) -> void:
 			b.game = game
 			b.velocity = dir * 1000.0
 			# 通常攻撃の矢は ballista_damage の1.3倍（特別強化は ballista_damage から計算するので、これはかからない）
-			b.damage = ballista_damage * 1.3
+			b.damage = ballista_damage
 			b.pierce = 1000000
 			b.radius = 7.0
 			if big_bolt:
@@ -497,6 +611,8 @@ func _update_ballista(delta: float) -> void:
 			if rainbow_bolt:
 				b.rainbow = true
 				b.confuse_on_hit = 1.5
+			if slow_bolt:
+				b.slow_on_hit = 2.0
 			b.src = _equip_record("ballista", "バリスタ", i)
 			# 連装で増えた矢も、通常攻撃として数える
 			b.life = 2.5
@@ -795,6 +911,13 @@ func _draw() -> void:
 	# 本体
 	draw_rect(Rect2(-HALF, HALF * 2.0), wall)
 	draw_rect(Rect2(-HALF, HALF * 2.0), dark, false, 3.0)
+	# 左右の凸部分（縦70%、横30%）
+	var ext_w := HALF.x * 0.3
+	var ext_h := HALF.y * 0.7
+	draw_rect(Rect2(Vector2(-HALF.x - ext_w, -ext_h), Vector2(ext_w, ext_h * 2.0)), wall)
+	draw_rect(Rect2(Vector2(-HALF.x - ext_w, -ext_h), Vector2(ext_w, ext_h * 2.0)), dark, false, 2.0)
+	draw_rect(Rect2(Vector2(HALF.x, -ext_h), Vector2(ext_w, ext_h * 2.0)), wall)
+	draw_rect(Rect2(Vector2(HALF.x, -ext_h), Vector2(ext_w, ext_h * 2.0)), dark, false, 2.0)
 	# 胸壁（ギザギザ）
 	var bw := 16.0
 	var x := -HALF.x

@@ -71,14 +71,26 @@ func _explode() -> void:
 			if stun > 0.0:
 				e.stun(stun)
 			e.take_damage(damage, to.normalized() * 300.0, src)
+			if boulder and game.castle.treasure_shoot and randf() < 0.05:
+				game.add_xp(1)
 	if direct_bonus > 0.0 and chase != null and is_instance_valid(chase) and not chase.dead:
 		# 鉄塊：追いかけた敵に直撃
 		chase.take_damage(direct_bonus, Vector2.ZERO, src if iron else game.sp_src(src, "sp_direct_hit"))
+		if boulder and game.castle.treasure_shoot and randf() < 0.05:
+			game.add_xp(1)
 		game.spawn_burst(target, Color(0.75, 0.8, 0.9), 40.0)
 	elif direct_bonus > 0.0:
 		var near: Node2D = game.nearest_enemy(target, blast_radius)
 		if near != null:
 			near.take_damage(direct_bonus, Vector2.ZERO, src if iron else game.sp_src(src, "sp_direct_hit"))
+			if boulder and game.castle.treasure_shoot and randf() < 0.05:
+				game.add_xp(1)
+	if game.castle.suction and not boulder:
+		for e in game.enemies_near(target, blast_radius + 80.0):
+			if is_instance_valid(e) and not e.dead:
+				var pull: Vector2 = target - e.global_position
+				if pull.length() > 10.0:
+					e.position += pull.normalized() * minf(40.0, pull.length() * 0.3)
 	var col := Color(0.75, 0.65, 0.5) if boulder else Color(1.0, 0.6, 0.2)
 	game.spawn_burst(target, col, blast_radius / 2.2)
 	if meteor:

@@ -10,7 +10,7 @@ var owner_soldier: Node2D
 var index := 0
 var damage := 3.0
 ## 通常攻撃（ペット弾）の威力の倍率。特別強化のダメージにはかからない
-const SHOT_MULT := 4.0
+## 通常弾の威力（以前は基本の4倍だったが、基本値に吸収）
 ## 爆裂ペット弾の爆発（ペット弾の威力 × これ。前は0.7）
 const BURST_RATIO := 0.35
 var record: Dictionary
@@ -47,7 +47,9 @@ var _trail: Array = []
 
 
 func _ready() -> void:
-	record = game.new_record("pet", "遊撃兵%dのペット%d" % [owner_soldier.index + 1, index + 1])
+	var is_archer: bool = game.archers.has(owner_soldier)
+	var unit_name := "弓兵" if is_archer else "遊撃兵"
+	record = game.new_record("pet", "%s%dのペット%d" % [unit_name, owner_soldier.index + 1, index + 1])
 	# あとから来たペットも、次の区切りでほかのペットといっしょに突進する
 	_charge_tick = charge_cycle(game)
 
@@ -67,7 +69,8 @@ func _process(delta: float) -> void:
 	var ang: float = game.elapsed * 1.6 + TAU * index / n
 	var target_pos: Vector2 = center + Vector2.from_angle(ang) * 60.0
 	# 突撃ペット（合体中で隠れているあいだは突進しない）
-	if game.pet_charge and visible:
+	var is_archer_pet: bool = game.archers.has(owner_soldier)
+	if (game.pet_charge and not is_archer_pet or game.archer_pet_charge and is_archer_pet) and visible:
 		_update_charge(delta, target_pos)
 	else:
 		_charge_state = 0
@@ -77,14 +80,43 @@ func _process(delta: float) -> void:
 		position = position.lerp(target_pos, 1.0 - exp(-10.0 * delta))
 
 	# ペットの強化は全ペット共通（game のペット用の値を使う）
-	interval = game.pet_interval
-	attack_range = game.pet_range
-	scale = Vector2(1.7, 1.7) if game.pet_giant else Vector2.ONE
+	interval = game.archer_pet_interval if is_archer_pet else game.pet_interval
+	attack_range = game.archer_pet_range if is_archer_pet else game.pet_range
+	scale = Vector2(1.7, 1.7) if (game.pet_giant and not is_archer_pet) or (game.archer_pet_giant and is_archer_pet) else Vector2.ONE
 	# 癒しのさえずり：担当の遊撃兵のHPを少しずつ回復
-	if game.pet_heal and not owner_soldier.dead:
+	if game.pet_heal and not owner_soldier.dead and not is_archer_pet:
 		game.heal_unit(owner_soldier, game.stats.max_hp, 2.0 * delta, record, "sp_pet_heal")
+	if game.archer_pet_dance and is_archer_pet and fmod(game.elapsed, 5.0) < delta:
+		for i in 12:
+			var dir := Vector2.from_angle(TAU * i / 12.0)
+			var b := BulletScript.new()
+			b.game = game
+			b.velocity = dir * 400.0
+			b.damage = damage * 20.0
+			b.radius = 6.0
+			b.color = Color(1, 0.5, 1)
+			b.life = 1.2
+			b.position = global_position
+			b.src = game.sp_src(record, "sp_archer_pet_dance")
+			game.world.add_child(b)
+	if game.archer_pet_flock and is_archer_pet and fmod(game.elapsed, 15.0) < delta:
+		for i in 6:
+			var target := _nearest_enemy()
+			if target == null:
+				break
+			var dir := (target.global_position - global_position).normalized().rotated(randf_range(-0.3, 0.3))
+			var b := BulletScript.new()
+			b.game = game
+			b.velocity = dir * 600.0
+			b.damage = damage * 12.0
+			b.radius = 5.0
+			b.color = Color(0.9, 0.9, 1)
+			b.life = 1.5
+			b.position = global_position
+			b.src = game.sp_src(record, "sp_archer_pet_flock")
+			game.world.add_child(b)
 	# 体当たりペット：触れた敵にペットの BODY_MULT（12）倍ダメージ（同じ敵は0.5秒に1回）
-	if game.pet_body:
+	if game.pet_body or (game.archer_pet_body and is_archer_pet):
 		_body_slam(delta)
 	_cd -= delta
 	# 突進中・戻り中は撃たない
@@ -92,20 +124,47 @@ func _process(delta: float) -> void:
 		var target := _nearest_enemy()
 		if target != null:
 			_aim = (target.global_position - global_position).normalized()
-			for k in game.pet_shots:
-				_shoot_one(target, k)
+			if is_archer_pet:
+				var slash_count: int = game.archer_pet_shots
+				for i in slash_count:
+					_do_slash()
+			else:
+				var shots: int = game.pet_shots
+				for k in shots:
+					_shoot_one(target, k, shots)
 			_cd = interval
 	queue_redraw()
 
 
+func _do_slash() -> void:
+	var radius := 85.0
+	var dmg := damage
+	var is_archer_pet: bool = game.archers.has(owner_soldier)
+	if game.archer_pet_giant and is_archer_pet:
+		radius *= 1.3
+		dmg *= 1.4
+	for e in game.enemies_near(global_position, radius + 30.0):
+		if not is_instance_valid(e) or e.dead:
+			continue
+		var to: Vector2 = e.global_position - global_position
+		if to.length() < radius + e.radius:
+			e.take_damage(dmg, to.normalized() * 380.0, record)
+			if game.archer_pet_burst and is_archer_pet:
+				game.explode(e.global_position, 45.0, dmg * 0.35, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
+			if game.archer_pet_frost and is_archer_pet and randf() < 0.3:
+				e.stun(0.5)
+	# 簡易的な斬撃エフェクト
+	game.spawn_burst(global_position, Color(0.8, 0.9, 1.0), radius * 0.4)
+
+
 ## 1発撃つ。何発も撃つときは少しずつ横にずらして、どれも狙った敵へ向かわせる
-func _shoot_one(target: Node2D, k: int) -> void:
-	var offset: Vector2 = _aim.orthogonal() * (k - (game.pet_shots - 1) / 2.0) * 8.0
+func _shoot_one(target: Node2D, k: int, shots: int) -> void:
+	var offset: Vector2 = _aim.orthogonal() * (k - (shots - 1) / 2.0) * 8.0
 	var dir: Vector2 = (target.global_position - (global_position + offset)).normalized()
 	var b := BulletScript.new()
 	b.game = game
 	b.velocity = dir * 520.0
-	b.damage = damage * SHOT_MULT
+	b.damage = damage
 	b.radius = 4.0
 	b.color = Color(0.5, 1.0, 0.7)
 	b.life = attack_range / 520.0 + 0.2
@@ -173,6 +232,7 @@ func _push_trail() -> void:
 ## 突進中に触れた敵に1回ずつダメージ（爆裂突撃ペットなら、当たった所で小爆発）
 func _charge_hit() -> void:
 	var r := 9.0 * scale.x
+	var is_archer_pet: bool = game.archers.has(owner_soldier)
 	for e in game.enemies_near(global_position, r + 60.0):
 		if not is_instance_valid(e) or e.dead:
 			continue
@@ -184,7 +244,7 @@ func _charge_hit() -> void:
 			var dmg: float = game.pet_damage * CHARGE_MULT
 			var hit_pos: Vector2 = e.global_position
 			e.take_damage(dmg, _aim * 260.0, game.sp_src(record, "sp_pet_charge"))
-			if game.pet_charge_burst:
+			if game.pet_charge_burst or (game.archer_pet_charge_burst and is_archer_pet):
 				game.explode(hit_pos, CHARGE_BURST_RADIUS, dmg * CHARGE_BURST_RATIO, game.sp_src(record, "sp_pet_charge_burst"), Color(1.0, 0.7, 0.3))
 
 

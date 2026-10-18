@@ -1,5 +1,6 @@
 extends Node2D
 ## 鼓舞部隊。太鼓を持ってフィールドの下半分をふらふら歩きまわり、一定の間隔で太鼓を叩いて、自分のまわりの敵にまとめてダメージを与える。
+## 叩いたとき、範囲内の味方（ほかの鼓舞兵・ペット・城の兵装も）に4秒間、与ダメージ+10%のバフをかける。
 ## HPはない（敵から狙われず、攻撃も当たらない）。ステータスは game.drummer_stats を全員で共有している。
 ## 特別強化：
 ##   衝撃の太鼓（叩いた範囲の敵を気絶）・戦の太鼓（叩いた範囲の敵の被ダメージ+20%）・二度打ち（少しあとにもう一度、半分の威力）・
@@ -8,6 +9,8 @@ extends Node2D
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
+## 太鼓を叩くと、範囲内の味方に BUFF_TIME 秒間、与ダメージ+10%のバフ（main.gd の DRUM_BUFF_BONUS）
+const BUFF_TIME := 4.0
 ## 敵がいる方へ寄っていく割合（残りはランダムな場所へ歩く）
 const SEEK_CHANCE := 0.6
 ## 戦の太鼓：叩いた範囲の敵が受けるダメージの倍率・秒数
@@ -107,6 +110,7 @@ func _beat(dmg: float, r: float, src: Dictionary, main_hit: bool = true) -> void
 	var knock: float = PUSH_KNOCK if game.drum_push else 0.0
 	var stun: float = SHOCK_STUN if game.drum_shock else 0.0
 	_hit_area(r, dmg, src, stun, knock)
+	game.drum_buff_area(global_position, r, BUFF_TIME, self)
 	_beat_fx = 0.3
 	_beat_r = r
 	if not main_hit:
@@ -158,6 +162,7 @@ func _big_beat() -> void:
 	var st = game.drummer_stats
 	var r: float = st.radius * ULT_RADIUS_MULT
 	_hit_area(r, st.damage * ULT_DAMAGE_MULT, game.sp_src(record, "sp_ult_drum"), ULT_STUN, 0.0)
+	game.drum_buff_area(global_position, r, BUFF_TIME, self)
 	_beat_fx = 0.6
 	_beat_r = r
 	game.spawn_burst(global_position, Color(1.0, 0.55, 0.45), r * 0.5)

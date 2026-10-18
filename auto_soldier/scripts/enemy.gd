@@ -854,6 +854,8 @@ func stun(seconds: float) -> void:
 func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictionary = {}) -> void:
 	if debuff_left > 0.0:
 		amount *= debuff_mult
+	# 鼓舞部隊のバフ中の味方の攻撃は与ダメージ+10%
+	amount *= game.drum_buff_mult(src)
 	if dead:
 		return
 	if mark_left > 0.0:

@@ -68,7 +68,7 @@ const LIST := [
 	{"id": "archer_pet_multi", "cat": "archer_pet", "name": "連続斬撃", "desc": "弓兵ペットの斬撃発生回数 +1", "max": 3, "req": "archer_pet"},
 	{"id": "archer_size", "cat": "archer", "name": "大矢", "desc": "弓兵の矢のサイズ +20%", "max": 5, "req": "archer"},
 	# 【鼓舞】
-	{"id": "drummer", "cat": "drummer", "name": "鼓舞部隊", "desc": "太鼓を持ってふらふら歩きまわり、一定の間隔で太鼓を叩いて自分のまわりの敵にまとめてダメージを与える鼓舞兵が加わる（敵から狙われない）",
+	{"id": "drummer", "cat": "drummer", "name": "鼓舞部隊", "desc": "太鼓を持ってふらふら歩きまわり、一定の間隔で太鼓を叩いて自分のまわりの敵にまとめてダメージを与える鼓舞兵が加わる（敵から狙われない）。叩いたとき、範囲内の味方の与ダメージが4秒間 +10%",
 		"desc_up": "鼓舞兵が1人増える（最大2人）", "max": 2, "weight": 0.5},
 	{"id": "drum_dmg", "cat": "drummer", "name": "力強い太鼓", "desc": "太鼓のダメージ +20%", "max": 5, "req": "drummer"},
 	{"id": "drum_rate", "cat": "drummer", "name": "早打ち", "desc": "太鼓を叩く間隔 -10%", "max": 5, "req": "drummer"},

@@ -37,6 +37,21 @@ var _punch_target: Node2D = null
 var _punch_done := false
 
 
+## 城ロボの攻撃力を基準に、各攻撃の倍率・城Lv・兵装数補正をかける。全16基でLv×5
+func _robot_damage_scale() -> float:
+	var castle: Node2D = game.castle
+	var equip_count: int = mini(castle.tower_count, 4)
+	equip_count += mini(castle.ballista_level, castle.MAX_BALLISTAS)
+	equip_count += mini(castle.cannon_level, castle.MAX_GUNS)
+	equip_count += mini(castle.catapult_level, castle.MAX_GUNS)
+	equip_count += mini(castle.rapid_level, 2)
+	return float(game.level) * (1.0 + equip_count * 0.25)
+
+
+## 城ロボの攻撃力。通常弾は100%。
+const ATTACK_POWER := 1.5
+
+
 func _ready() -> void:
 	game.spawn_burst(global_position, Color(0.8, 0.8, 0.75), 80.0)
 
@@ -88,7 +103,7 @@ func _process(delta: float) -> void:
 	if _shot_cd <= 0.0:
 		_shot_cd = 0.12
 		_spin += 0.35
-		var dmg: float = 3.0 * game._hp_mult()
+		var dmg: float = ATTACK_POWER * _robot_damage_scale()
 		for k in 4:
 			var dir := Vector2.from_angle(_spin + TAU * k / 4.0)
 			var b := BulletScript.new()
@@ -110,7 +125,7 @@ func _process(delta: float) -> void:
 		if not _punch_done and _punch_t >= PUNCH_HIT:
 			_punch_done = true
 			var hit_pos: Vector2 = global_position + _fist_reach()
-			game.explode(hit_pos, 80.0, 40.0 * game._hp_mult(), _walk_src(), Color(1.0, 0.75, 0.4), 0.0, 600.0)
+			game.explode(hit_pos, 80.0, ATTACK_POWER * (40.0 / 3.0) * _robot_damage_scale(), _walk_src(), Color(1.0, 0.75, 0.4), 0.0, 600.0)
 		if _punch_t >= PUNCH_TIME:
 			_punch_t = -1.0
 	elif _punch_cd <= 0.0:
@@ -282,7 +297,7 @@ func _update_rainbow(delta: float) -> void:
 	if _rainbow_cd > 0.0:
 		return
 	_rainbow_cd = RAINBOW_TICK
-	var dmg: float = RAINBOW_DAMAGE * game._hp_mult()
+	var dmg: float = ATTACK_POWER * (RAINBOW_DAMAGE / 3.0) * _robot_damage_scale()
 	for side in [-1, 1]:
 		var from: Vector2 = global_position + _eye(side)
 		var seg: Vector2 = _rainbow_end(side) - from
@@ -340,7 +355,7 @@ func _update_flight(delta: float) -> void:
 				continue
 			if global_position.distance_to(e.global_position) < r + e.radius:
 				_tackle_hit[e] = true
-				e.take_damage(12.5 * game._hp_mult(), _fly_dir * 500.0, _flight_src())
+			e.take_damage(ATTACK_POWER * (12.5 / 3.0) * _robot_damage_scale(), _fly_dir * 500.0, _flight_src())
 		if _fly_left <= 0.0:
 			_fly_state = "missile"
 			_missiles_left = MISSILE_COUNT
@@ -352,7 +367,7 @@ func _update_flight(delta: float) -> void:
 	if _missiles_left > 0 and _missile_cd <= 0.0:
 		_missile_cd = MISSILE_INTERVAL
 		_missiles_left -= 1
-		_fire_missile(_flight_src(), 3.0 * game._hp_mult())
+		_fire_missile(_flight_src(), ATTACK_POWER * _robot_damage_scale())
 	if _missiles_left <= 0 and _missile_cd <= -0.2:
 		_start_tackle()
 
@@ -427,7 +442,7 @@ func _update_final(delta: float) -> void:
 	_beam_cd -= delta
 	if _beam_cd <= 0.0:
 		_beam_cd = BEAM_TICK
-		var dmg: float = 4.0 / 3.0 * game._hp_mult()
+		var dmg: float = ATTACK_POWER * (4.0 / 9.0) * _robot_damage_scale()
 		var from: Vector2 = global_position + _beam_origin()
 		# ビーム1本ごとに、胸から的までの線の上にいる敵すべてにダメージ
 		for t in _beam_targets.duplicate():
@@ -446,7 +461,7 @@ func _update_final(delta: float) -> void:
 	_missile_cd -= delta
 	if _missile_cd <= 0.0:
 		_missile_cd = FINAL_MISSILE_INTERVAL
-		_fire_missile(_final_src(), 4.0 * game._hp_mult())
+		_fire_missile(_final_src(), ATTACK_POWER * (4.0 / 3.0) * _robot_damage_scale())
 
 
 ## ビームが出る場所（胸の真ん中）
@@ -576,6 +591,13 @@ func _draw() -> void:
 	# 体（城そのもの）
 	draw_rect(Rect2(-half, half * 2.0), wall)
 	draw_rect(Rect2(-half, half * 2.0), dark, false, 3.0)
+	# 現在の城と同じ左右の張り出し
+	var ext_w := half.x * 0.3
+	var ext_h := half.y * 0.7
+	draw_rect(Rect2(Vector2(-half.x - ext_w, -ext_h), Vector2(ext_w, ext_h * 2.0)), wall)
+	draw_rect(Rect2(Vector2(-half.x - ext_w, -ext_h), Vector2(ext_w, ext_h * 2.0)), dark, false, 2.0)
+	draw_rect(Rect2(Vector2(half.x, -ext_h), Vector2(ext_w, ext_h * 2.0)), wall)
+	draw_rect(Rect2(Vector2(half.x, -ext_h), Vector2(ext_w, ext_h * 2.0)), dark, false, 2.0)
 	if mode == "true":
 		# 金色の輝き（ふちが光り、ななめの光の筋が流れる）
 		var shine := 0.5 + 0.3 * sin(_t * 4.0)
@@ -588,6 +610,11 @@ func _draw() -> void:
 	while x < half.x - 1.0:
 		draw_rect(Rect2(Vector2(x, -half.y - 10.0), Vector2(bw * 0.6, 10.0)), wall)
 		x += bw
+	# 現在の城と同じ旗
+	draw_line(Vector2(0, -half.y - 10.0), Vector2(0, -half.y - 50.0), dark, 3.0)
+	var flag_wave := sin(_t * 4.0) * 3.0
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(0, -half.y - 50.0), Vector2(26, -half.y - 44.0 + flag_wave), Vector2(0, -half.y - 36.0)]), Color(0.3, 0.55, 1.0))
 	# 目（光る）
 	var glow := 0.7 + 0.3 * sin(_t * 8.0)
 	draw_circle(Vector2(-24, -6), 9.0, Color(1.0, 0.85, 0.3, glow))

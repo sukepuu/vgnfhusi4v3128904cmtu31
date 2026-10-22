@@ -10,7 +10,8 @@ var shield_taken := 0.2
 ## 槍：リーチは長いが横幅は狭い
 var spear_reach := 110.0
 var spear_width := 10.0
-var spear_damage := 46.0
+## 迎撃兵の攻撃力。通常の槍攻撃は攻撃力の100%。
+var attack_power := 46.0
 var spear_interval := 0.9
 
 # --- 特別強化

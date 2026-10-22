@@ -77,18 +77,17 @@ func _place_trap() -> void:
 			if is_same(p.src, game.sp_src(record, "sp_sentry")):
 				mine += 1
 		if mine < 3:
-			game.spawn_placed("sentry", position - _facing.orthogonal() * 40.0, 5.6 * (1.0 + game.elapsed / 150.0) * game.engineer_stats.power_mult, 0.0, 30.0, game.sp_src(record, "sp_sentry"))
+			game.spawn_placed("sentry", position - _facing.orthogonal() * 40.0, 2.8 * (1.0 + game.elapsed / 150.0) * game.engineer_stats.attack_power / 180.0, 0.0, 30.0, game.sp_src(record, "sp_sentry"))
 	# 二重設置：もう1種類の罠も隣に仕掛ける
 	if game.engineer_stats.double_plant:
-		_spawn_trap("pit" if next_kind == "bomb" else "bomb", game.clamp_to_map(position + _facing.orthogonal() * 45.0, 20.0), "sp_double_plant")
+		_spawn_trap("pit" if next_kind == "bomb" else "bomb", game.clamp_to_map(position + _facing.orthogonal() * 45.0, 20.0))
 
 
-## sp = この罠を出した特別強化（二重設置の2個目など。ふつうの罠なら空）
-func _spawn_trap(kind: String, pos: Vector2, sp: String = "") -> void:
+func _spawn_trap(kind: String, pos: Vector2) -> void:
 	var t := TrapScript.new()
 	t.game = game
 	t.kind = kind
-	t.src = record if sp == "" else game.sp_src(record, sp)
+	t.src = record
 	record["traps"] += 1
 	t.position = pos
 	game.ground.add_child(t)

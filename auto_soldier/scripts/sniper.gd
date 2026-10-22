@@ -9,7 +9,7 @@ extends Node2D
 ## 爆裂矢の爆発は、もとの値（矢3倍×0.5）の1/19になるように調整（矢2.1倍に対して約0.0376倍）
 const BLAST_RATIO := 0.5 * 3.0 / 2.1 / 19.0
 ## 跳弾矢：跳ねたあとの矢の威力の倍率（前は1倍）
-const RICOCHET_MULT := 5.0
+const RICOCHET_MULT := 2.5
 ## 花火矢の花火の威力（基本の威力 × これ。前は7.2）
 const FIREWORK_MULT := 2.4
 
@@ -92,7 +92,7 @@ func _shoot(target: Node2D, st) -> void:
 		b.game = game
 		b.velocity = dir * st.arrow_speed
 		# 通常攻撃の矢は、基本の威力の ARROW_MULT 倍（花火矢・天穿つ一矢は基本の威力から計算するので、この倍率は入らない）
-		var dmg: float = st.damage
+		var dmg: float = st.attack_power
 		# 対砲兵狙撃：遠い敵ほど痛い（100離れるごとに +10%）
 		if st.counter_battery:
 			dmg *= 1.0 + dist / 1000.0
@@ -131,12 +131,12 @@ func _shoot(target: Node2D, st) -> void:
 		var f: Node2D = game.spawn_fun_fx("firework", global_position)
 		f.end = target.global_position
 		f.rise_time = clampf(dist / 900.0, 0.2, 0.9)
-		f.damage = st.damage * FIREWORK_MULT
+		f.damage = st.attack_power * FIREWORK_MULT
 		f.radius = 80.0
 		f.src = game.sp_src(record, "sp_fun_firework_arrow")
 		# 花火爆裂矢：花火が敵に当たったときも爆裂矢が発動（ふつうの矢の爆発と同じ威力）
 		if st.firework_blast and st.blast_arrow:
-			f.blast_damage = st.damage * BLAST_RATIO
+			f.blast_damage = st.attack_power * BLAST_RATIO
 			f.blast_radius = 70.0
 			f.blast_src = game.sp_src(record, "sp_blast_arrow")
 

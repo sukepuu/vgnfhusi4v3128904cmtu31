@@ -1,7 +1,7 @@
 extends Node2D
 ## ペット大合体の合体中に、突撃ペットで体の中心から飛び出すペット。
 ## ふつうの突撃ペットと同じように、HPが一番高い敵へ高速で突進して、行きに触れた敵に1回ずつダメージ
-## （ペットの攻撃力の32倍。pet.gd の CHARGE_MULT。爆裂突撃ペットなら当たった所で小爆発）。そのあと合体ペットの中心へ戻って消える（戻りはダメージなし）。
+## （遊撃ペットは攻撃力の16倍、弓兵ペットは約4.27倍、鼓舞ペットは笛と同じ威力。pet.gd の倍率を使用。爆裂突撃ペットなら当たった所で小爆発）。そのあと合体ペットの中心へ戻って消える（戻りはダメージなし）。
 ## ダメージは合体前のペットの戦績に「突撃ペット」「爆裂突撃ペット」として記録する。
 
 const PetScript := preload("res://scripts/pet.gd")
@@ -15,6 +15,7 @@ var record: Dictionary = {}
 var archer := false
 ## 鼓舞ペット大合体から飛び出したか
 var drum := false
+var damage_mult := 1.0
 var target: Node2D = null
 ## 1 = 突進中 / 2 = 戻り中
 var _state := 1
@@ -73,12 +74,14 @@ func _hit() -> void:
 			continue
 		if global_position.distance_to(e.global_position) < r + e.radius + 3.0:
 			_hits[id] = true
-			var dmg: float = game.archer_pet_damage * PetScript.CHARGE_MULT if archer else \
-				(game.drum_pet_damage * PetScript.DRUM_CHARGE_MULT if drum else game.pet_damage * PetScript.CHARGE_MULT)
+			var dmg: float = game.archer_pet_attack_power * PetScript.ARCHER_CHARGE_MULT if archer else \
+				(game.drum_pet_attack_power * PetScript.DRUM_CHARGE_MULT if drum else game.pet_attack_power * PetScript.CHARGE_MULT)
+			dmg *= damage_mult
 			var hit_pos: Vector2 = e.global_position
 			e.take_damage(dmg, _aim * 260.0, game.sp_src(record, "sp_archer_pet_charge" if archer else ("sp_drum_pet_charge" if drum else "sp_pet_charge")))
 			if game.archer_pet_charge_burst if archer else (false if drum else game.pet_charge_burst):
-				game.explode(hit_pos, PetScript.CHARGE_BURST_RADIUS, dmg * PetScript.CHARGE_BURST_RATIO, game.sp_src(record, "sp_archer_pet_charge_burst" if archer else "sp_pet_charge_burst"), Color(1.0, 0.7, 0.3))
+				var burst_mult := 1.0 if archer else 0.5
+				game.explode(hit_pos, PetScript.CHARGE_BURST_RADIUS, dmg * PetScript.CHARGE_BURST_RATIO * burst_mult, game.sp_src(record, "sp_archer_pet_charge_burst" if archer else "sp_pet_charge_burst"), Color(1.0, 0.7, 0.3))
 
 
 func _draw() -> void:

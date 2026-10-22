@@ -17,6 +17,11 @@ const PetScript := preload("res://scripts/pet.gd")
 const ChargerScript := preload("res://scripts/pet_charger.gd")
 ## 合体中の突撃：1匹ずつ飛び出す間隔
 const LAUNCH_GAP := 0.5
+const FROST_EVERY := 10.0
+const ARCHER_FLOCK_EVERY := 15.0
+const DRUM_DANCE_EVERY := 5.0
+const DRUM_PARADE_EVERY := 15.0
+const DRUM_FUSION_DAMAGE_MULT := 1.0 / 7.0
 
 const CYCLE := 20.0
 const DURATION := 10.0
@@ -49,6 +54,8 @@ var _launch_i := 0
 ## 種類（"pet" / "archer" / "drum"）ごとの、合体したペットの数・攻撃の待ち時間
 var _n_of := {}
 var _shot_cds := {}
+## 合体中に発動する、ペット種類別の特別攻撃の区切り管理
+var _special_ticks := {}
 ## 笛を吹いた直後の見た目
 var _beat_fx := 0.0
 var _beat_r := 0.0
@@ -56,7 +63,7 @@ var _beat_r := 0.0
 
 func _ready() -> void:
 	if triple:
-		record = game.new_record("pet", "合体合体合体ペット")
+		record = game.new_record("triple_pet", "合体合体合体ペット")
 	elif archer:
 		record = game.new_record("archer_pet", "合体弓兵ペット")
 	elif drum:
@@ -107,6 +114,10 @@ func _giant() -> bool:
 	return _kinds().any(func(k: String) -> bool: return _giant_of(k))
 
 
+func _drum_fusion_damage_mult() -> float:
+	return DRUM_FUSION_DAMAGE_MULT if drum else 1.0
+
+
 func _dance() -> bool:
 	for k in _kinds():
 		if (k == "archer" and game.archer_pet_dance) or (k == "drum" and game.drum_pet_dance) or (k == "pet" and game.fun.pet_dance):
@@ -138,6 +149,7 @@ func _process(delta: float) -> void:
 			_hide_pet(p)
 	_update_body(delta)
 	_update_launch(delta)
+	_update_special_attacks()
 	if _left <= 0.0:
 		_split()
 	queue_redraw()
@@ -153,6 +165,8 @@ func _merge() -> void:
 	for k in _kinds():
 		_n_of[k] = _pets_of(k).size()
 		_shot_cds[k] = 0.0
+	for spec in [["pet_frost", FROST_EVERY], ["archer_frost", FROST_EVERY], ["archer_flock", ARCHER_FLOCK_EVERY], ["drum_dance", DRUM_DANCE_EVERY], ["drum_parade", DRUM_PARADE_EVERY]]:
+		_special_ticks[spec[0]] = floori(game.elapsed / spec[1])
 	var center := Vector2.ZERO
 	for p in _pets():
 		center += p.global_position
@@ -191,8 +205,8 @@ const FUSION_SCALE := 0.1874
 const FUSION_BONUS := 1.875
 ## 合体中の爆裂ペット弾の爆発の倍率（ふつうのペットの爆発の割合 × これ。80%）
 const FUSION_BURST_MULT := 0.8
-## 合体弓兵ペットの特大斬撃の威力の倍率
-const ARCHER_SLASH_MULT := 1.0 / 9.0
+## 合体弓兵ペットの特大斬撃の威力の倍率（攻撃力変更前と同じダメージ）
+const ARCHER_SLASH_MULT := 2.0 / 27.0
 
 
 ## 合体ペットの強さの倍率（弾1発 = ペットの攻撃力 × これ）。合体合体合体ペットは種類ごとに、その種類の数で決まる
@@ -309,6 +323,7 @@ func _update_launch(delta: float) -> void:
 	c.record = p.record
 	c.archer = p.archer
 	c.drum = p.drum
+	c.damage_mult = _drum_fusion_damage_mult() if c.drum else 1.0
 	_launch_i += 1
 	c.target = target
 	c.position = global_position
@@ -322,11 +337,11 @@ func _ram() -> void:
 	for k in _kinds():
 		match k:
 			"archer":
-				dmg += game.archer_pet_damage * 2.0 * _power(k) * (4.0 if game.archer_pet_body else 1.0)
+				dmg += game.archer_pet_attack_power * (4.0 / 3.0) * _power(k) * (4.0 if game.archer_pet_body else 1.0)
 			"drum":
-				dmg += game.drum_pet_damage * DRUM_RAM_MULT * _power(k) * (4.0 if game.drum_pet_body else 1.0)
+				dmg += game.drum_pet_attack_power * DRUM_RAM_MULT * _power(k) * (4.0 if game.drum_pet_body else 1.0) * _drum_fusion_damage_mult()
 			_:
-				dmg += game.pet_damage * 2.0 * _power(k) * (4.0 if game.pet_body else 1.0)
+				dmg += game.pet_attack_power * _power(k) * (4.0 if game.pet_body else 1.0)
 	for e in game.enemies_near(global_position, _radius + 40.0):
 		if not is_instance_valid(e) or e.dead or _ram_cd.has(e):
 			continue
@@ -353,7 +368,7 @@ func _shoot_update(delta: float) -> void:
 		b.game = game
 		b.velocity = dir * 560.0
 		# 通常攻撃（以前のSHOT_MULTは基本値に吸収済み）
-		b.damage = game.pet_damage * _power("pet")
+		b.damage = game.pet_attack_power * _power("pet") * 0.5
 		b.radius = 9.0 + minf(_n, 8.0)
 		b.pierce = 2
 		b.color = Color.from_hsv(fmod(_t * 0.7, 1.0), 0.5, 1.0)
@@ -386,8 +401,8 @@ func _slash_update(delta: float) -> void:
 	var dir: Vector2 = (aim.global_position - global_position).normalized()
 	var arc: float = game.stats.sword_arc
 	var radius: float = reach * (1.3 if game.archer_pet_giant else 1.0)
-	# 連続斬撃のぶん、1回の斬撃が強くなる。合体弓兵ペットの斬撃は ARCHER_SLASH_MULT（1/9）倍
-	var dmg: float = game.archer_pet_damage * _power("archer") * game.archer_pet_shots * (1.4 if game.archer_pet_giant else 1.0) * ARCHER_SLASH_MULT
+	# 連続斬撃のぶん、1回の斬撃が強くなる。合体弓兵ペットの斬撃は ARCHER_SLASH_MULT 倍
+	var dmg: float = game.archer_pet_attack_power * _power("archer") * game.archer_pet_shots * (1.4 if game.archer_pet_giant else 1.0) * ARCHER_SLASH_MULT
 	for e in game.enemies_near(global_position, radius + 30.0):
 		if not is_instance_valid(e) or e.dead:
 			continue
@@ -398,7 +413,7 @@ func _slash_update(delta: float) -> void:
 			continue
 		e.take_damage(dmg, to.normalized() * 380.0, record)
 		if game.archer_pet_burst:
-			game.explode(e.global_position, 45.0 + 3.0 * _n, dmg * PetScript.BURST_RATIO * FUSION_BURST_MULT, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
+			game.explode(e.global_position, 45.0 + 3.0 * _n, dmg * PetScript.BURST_RATIO * 0.5 * FUSION_BURST_MULT, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
 	var fx := SlashScript.new()
 	fx.radius = radius
 	fx.arc = arc
@@ -417,10 +432,88 @@ func _beat_update(delta: float) -> void:
 	if game.nearest_enemy(global_position, r) == null:
 		return
 	_shot_cds["drum"] = game.drum_pet_interval * DRUM_BEAT_RATIO
-	var dmg: float = game.drum_pet_damage * _power("drum") * (PetScript.DRUM_GIANT_DAMAGE if game.drum_pet_giant else 1.0)
+	var dmg: float = game.drum_pet_attack_power * _power("drum") * (PetScript.DRUM_GIANT_DAMAGE if game.drum_pet_giant else 1.0) * 10.0 * _drum_fusion_damage_mult()
 	PetScript.drum_pet_area(game, global_position, r, dmg, record, record, self)
 	_beat_fx = 0.3
 	_beat_r = r
+
+
+## 元のペットが停止している合体中も、時間制の特別攻撃を合体体から発動する
+func _update_special_attacks() -> void:
+	if _kinds().has("archer"):
+		if game.archer_pet_frost and _special_due("archer_frost", FROST_EVERY):
+			_fusion_archer_frost()
+		if game.archer_pet_flock and _special_due("archer_flock", ARCHER_FLOCK_EVERY):
+			_fusion_archer_flock()
+	if _kinds().has("drum"):
+		if game.drum_pet_dance and _special_due("drum_dance", DRUM_DANCE_EVERY):
+			_fusion_drum_dance()
+		if game.drum_pet_parade and _special_due("drum_parade", DRUM_PARADE_EVERY):
+			_fusion_drum_parade()
+
+
+func _special_due(key: String, every: float) -> bool:
+	var cycle := floori(game.elapsed / every)
+	var previous := int(_special_ticks.get(key, cycle))
+	_special_ticks[key] = cycle
+	return cycle > previous
+
+
+func _fusion_archer_frost() -> void:
+	for p in _pets_of("archer"):
+		var target: Node2D = game.nearest_enemy(global_position, 700.0)
+		if target == null:
+			continue
+		var b := BulletScript.new()
+		b.game = game
+		b.velocity = (target.global_position - global_position).normalized() * 336.0
+		b.damage = game.archer_pet_attack_power * PetScript.FROST_MULT
+		b.radius = 12.0
+		b.wave = true
+		b.pierce = 2
+		b.color = Color(0.7, 0.95, 1.0)
+		b.aim_target = target
+		b.stun_on_hit = 0.5
+		b.life = 2.5
+		b.position = global_position
+		b.src = game.sp_src(p.record, "sp_archer_pet_frost")
+		game.world.add_child(b)
+
+
+func _fusion_archer_flock() -> void:
+	for p in _pets_of("archer"):
+		for i in 6:
+			var m: Node2D = game.spawn_missile("homing", global_position,
+				Vector2.from_angle(TAU * i / 6.0) * 320.0, game.archer_pet_attack_power * PetScript.FLOCK_MULT * 0.5,
+				10.0, 6.0, game.sp_src(p.record, "sp_archer_pet_flock"))
+			m.look = "blade"
+
+
+func _fusion_drum_dance() -> void:
+	for p in _pets_of("drum"):
+		for i in PetScript.DRUM_DANCE_NOTES:
+			var dir := Vector2.from_angle(TAU * i / PetScript.DRUM_DANCE_NOTES + _t)
+			var b := BulletScript.new()
+			b.game = game
+			b.position = global_position
+			b.velocity = dir * 380.0
+			b.damage = game.drum_pet_attack_power * _power("drum") * (PetScript.DRUM_GIANT_DAMAGE if game.drum_pet_giant else 1.0) * PetScript.DRUM_DANCE_RATIO * 10.0 * _drum_fusion_damage_mult()
+			b.radius = 8.0
+			b.pierce = 1
+			b.color = Color.from_hsv(float(i) / PetScript.DRUM_DANCE_NOTES, 0.6, 1.0)
+			b.life = 1.2
+			b.src = game.sp_src(p.record, "sp_drum_pet_dance")
+			game.world.add_child(b)
+
+
+func _fusion_drum_parade() -> void:
+	for p in _pets_of("drum"):
+		for i in PetScript.DRUM_PARADE_NOTES:
+			var m: Node2D = game.spawn_missile("homing", global_position,
+				Vector2.from_angle(TAU * i / PetScript.DRUM_PARADE_NOTES) * 320.0,
+				game.drum_pet_attack_power * _power("drum") * (PetScript.DRUM_GIANT_DAMAGE if game.drum_pet_giant else 1.0) * PetScript.DRUM_PARADE_RATIO * 10.0 * _drum_fusion_damage_mult(),
+				10.0, 6.0, game.sp_src(p.record, "sp_ult_drum_parade"))
+			m.look = "note"
 
 
 func _draw() -> void:

@@ -2,8 +2,8 @@ extends RefCounted
 ## 狙撃部隊（弓）全員で共有するステータス
 
 var max_hp := 60.0
-## 矢1本のダメージ
-var damage := 141.75
+## 狙撃兵の攻撃力。通常の矢は攻撃力の100%。
+var attack_power := 70.875
 ## 矢を放つ間隔（秒）
 var interval := 1.6
 ## 一度に放つ矢の数

@@ -2,6 +2,7 @@ extends CanvasLayer
 ## レベルアップ時の強化3択画面（ゲームは一時停止中）
 
 signal chosen(id: String)
+signal overtime_notice_closed
 ## リロールボタンが押された（候補の引き直しは main.gd がやる）
 signal reroll_requested
 
@@ -15,6 +16,10 @@ var _locked := {}
 var _reroll_btn: Button
 ## この画面でリロールをもう使ったか（1画面につき1回まで）
 var _rerolled := false
+var _overtime_notice := false
+var _hint: Label
+var _notice_body: Label
+var _notice_close_btn: Button
 
 
 func _ready() -> void:
@@ -41,10 +46,10 @@ func _ready() -> void:
 	_title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
 	_box.add_child(_title)
 
-	var hint := Label.new()
-	hint.text = "強化を1つ選んでください（クリック または 1〜3キー）"
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_box.add_child(hint)
+	_hint = Label.new()
+	_hint.text = "強化を1つ選んでください（クリック または 1〜3キー）"
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_box.add_child(_hint)
 
 	# リロールボタン（3つ目の選択肢のすぐ下。show_choices で一番下に並べ直す）
 	_reroll_btn = Button.new()
@@ -55,9 +60,33 @@ func _ready() -> void:
 	_reroll_btn.pressed.connect(_on_reroll)
 	_box.add_child(_reroll_btn)
 
+	_notice_body = Label.new()
+	_notice_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_notice_body.add_theme_font_size_override("font_size", 25)
+	_notice_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_notice_body.custom_minimum_size = Vector2(600, 150)
+	_notice_body.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_notice_body.visible = false
+	_box.add_child(_notice_body)
+	_notice_close_btn = Button.new()
+	_notice_close_btn.text = "閉じる"
+	_notice_close_btn.custom_minimum_size = Vector2(240, 56)
+	_notice_close_btn.add_theme_font_size_override("font_size", 24)
+	_notice_close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_notice_close_btn.focus_mode = Control.FOCUS_NONE
+	_notice_close_btn.visible = false
+	_notice_close_btn.pressed.connect(_on_overtime_notice_closed)
+	_box.add_child(_notice_close_btn)
+
 
 ## rerolled = true ならリロール後の表示（リロールボタンは使用済みになる）
 func show_choices(choices: Array, levels: Dictionary, player_level: int, special: bool = false, rerolled: bool = false) -> void:
+	_overtime_notice = false
+	_hint.visible = true
+	_notice_body.visible = false
+	_notice_close_btn.visible = false
+	_reroll_btn.visible = true
+	_title.visible = true
 	_rerolled = rerolled
 	_reroll_btn.disabled = rerolled
 	_reroll_btn.text = "リロール済み" if rerolled else "🎲 リロール（R）"
@@ -69,7 +98,7 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int, special
 		_title.text = "LEVEL UP!  Lv %d" % player_level
 		_title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
 	for c in _box.get_children():
-		if c is Button and c != _reroll_btn:
+		if c is Button and c != _reroll_btn and c != _notice_close_btn:
 			c.queue_free()
 	_ids.clear()
 	_locked.clear()
@@ -98,6 +127,40 @@ func show_choices(choices: Array, levels: Dictionary, player_level: int, special
 	# リロールボタンは選択肢の一番下へ
 	_box.move_child(_reroll_btn, -1)
 	visible = true
+
+
+func show_overtime_notice() -> void:
+	_overtime_notice = true
+	_title.text = "ゲームクリア！"
+	_title.add_theme_color_override("font_color", Color(1.0, 0.35, 0.3))
+	_notice_body.text = "ここからは敵のパターンは変わらず、敵の強さが超上がります。"
+	_hint.visible = false
+	_notice_body.visible = true
+	_notice_close_btn.visible = true
+	_reroll_btn.visible = false
+	for c in _box.get_children():
+		if c is Button and c != _reroll_btn and c != _notice_close_btn:
+			c.queue_free()
+	visible = true
+
+
+## ゲーム開始時の部隊・兵装選択。レベルアップと同じ選択肢表示で、リロールは出さない
+func show_starting_choices(choices: Array, levels: Dictionary, pick_number: int) -> void:
+	show_choices(choices, levels, pick_number)
+	_title.text = "連れて行くキャラクターを選ぼう! %d/3" % pick_number
+	_title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
+	_hint.visible = false
+	_reroll_btn.visible = false
+	# 開始時の選択ではリロールできない（Rキーも効かないようにする）
+	_rerolled = true
+
+
+func _on_overtime_notice_closed() -> void:
+	if not visible or not _overtime_notice:
+		return
+	_overtime_notice = false
+	visible = false
+	overtime_notice_closed.emit()
 
 
 
@@ -141,6 +204,11 @@ func _pick(id: String) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
+		return
+	if _overtime_notice:
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE]:
+			get_viewport().set_input_as_handled()
+			_on_overtime_notice_closed()
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		var idx := -1

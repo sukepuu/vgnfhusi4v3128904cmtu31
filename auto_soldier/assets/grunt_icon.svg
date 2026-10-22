@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="-40 -40 80 80">
+  <!-- Shape and colors follow the in-game grunt: a red round body, ground shadow, and two eyes facing down. -->
+  <ellipse cx="0" cy="15" rx="30" ry="12" fill="#000000" fill-opacity="0.30"/>
+  <circle cx="0" cy="0" r="28" fill="#e64d4d"/>
+  <circle cx="0" cy="0" r="28" fill="none" stroke="#a92f35" stroke-width="2"/>
+  <circle cx="-8.4" cy="12.6" r="4.2" fill="#1a0d0d"/>
+  <circle cx="8.4" cy="12.6" r="4.2" fill="#1a0d0d"/>
+</svg>

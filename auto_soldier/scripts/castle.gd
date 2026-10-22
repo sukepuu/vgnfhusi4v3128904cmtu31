@@ -31,7 +31,7 @@ const OVERWORK_FLOOR := 0.4
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0
 var tower_interval := 0.9
-var tower_damage := 134.4
+var tower_attack_power := 94.08
 var tower_range := 520.0
 var _tower_cds: Array = [0.0, 0.3, 0.6, 0.15]
 var _tower_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
@@ -42,8 +42,8 @@ const MAX_GUNS := 3
 const MAX_BALLISTAS := 4
 var cannon_level := 0
 var cannon_interval := 4.0
-## 大砲の基本の威力（前の52の2倍）。通常の砲弾も特別強化も、ぜんぶここから計算する
-var cannon_damage := 104.0
+## 大砲の基本の威力（変更前の104の70%）。通常の砲弾も特別強化も、ぜんぶここから計算する
+var cannon_attack_power := 36.4
 var cannon_radius := 90.0
 var cannon_range := 650.0
 var _cannon_cds: Array = [1.0, 2.3, 3.6]
@@ -57,15 +57,15 @@ var _cannon_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP]
 # --- 投石器（大砲より範囲が広いが、発射間隔が長い）。最大3台
 var catapult_level := 0
 var catapult_interval := 9.0
-## 投石器の基本の威力（前の67.2の2倍）。通常の岩も特別強化も、ぜんぶここから計算する
-var catapult_damage := 268.8
+## 投石器の基本の威力（変更前の70%）。通常の岩も特別強化も、ぜんぶここから計算する
+var catapult_attack_power := 103.488
 var catapult_radius := 150.0
 var _catapult_cds: Array = [2.0, 5.0, 8.0]
 var _catapult_swings: Array = [0.0, 0.0, 0.0]
 # --- バリスタ（矢倉より発射間隔が長いが、高威力・射程無限・貫通無限）。最大3基
 var ballista_level := 0
 var rapid_level := 0
-var rapid_damage := 100.0
+var rapid_attack_power := 55.0
 var rapid_interval := 0.125
 var rapid_shots := 1
 var rapid_pierce := 0
@@ -80,7 +80,7 @@ var rapid_ult := false
 var rapid_level_scale := false
 var rapid_reload := false
 var _rapid_heat := [0.0, 0.0]
-var _rapid_last_fire := [0.0, 0.0]
+var _rapid_heat_cycle := [-1, -1]
 var _rapid_shot_count := [0, 0]
 var _rapid_reload_cd := [0.0, 0.0]
 var _rapid_ult_cd := 0.0
@@ -94,8 +94,8 @@ const RAPID_STUN_EVERY := 10
 var _rapid_aims: Array = [Vector2.UP, Vector2.UP]
 var _rapid_flash: Array = [0.0, 0.0]
 var ballista_interval := 4.0
-## バリスタの基本の威力（前の96の2倍）。通常の矢も特別強化も、ぜんぶここから計算する
-var ballista_damage := 549.12
+## バリスタの基本の威力。通常の矢も特別強化も、ぜんぶここから計算する
+var ballista_attack_power := 274.56
 var _ballista_cds: Array = [1.0, 2.3, 3.6, 4.9]
 var _ballista_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
 var _ballista_recoil: Array = [0.0, 0.0, 0.0, 0.0]
@@ -144,7 +144,7 @@ var rainbow_bolt := false
 var _catapult_shots := 0
 var _catapult_shot_counts := [0, 1, 2]
 ## 8つ目の特別強化
-## 矢倉：爆裂矢（当たった敵が爆発して矢の3倍ダメージ）
+## 矢倉：爆裂矢（当たった敵が爆発して矢の70%ダメージ）
 var tower_blast := false
 ## ビリヤード機雷（跳ねた砲弾も機雷をばらまく）
 var billiard_mines := false
@@ -178,6 +178,8 @@ var iron_chunk := false
 var bolt_momentum := false
 ## 結界・氷像の囮（結界の中で倒された敵が氷像になる）
 var ice_statue := false
+## 氷像の囮が再発動できるまでの残り時間
+var ice_statue_cooldown := 0.0
 
 # --- 城（本体）の特別強化
 ## 生命の泉：城の自然回復が毎秒3になる（regen を変える）
@@ -186,11 +188,11 @@ var rage := false
 ## 不屈の城：HPが0になったとき、ボス以外の敵を全部消してHP20%で立ち直る（1回だけ）
 var last_stand := false
 var _last_stand_used := false
-## 城レーザー：20秒ごとにマップ全体を薙ぎ払う（威力はレベル×10）
+## 城レーザー：40秒ごとにマップ全体を薙ぎ払う（威力はレベル×15）
 var laser := false
 var _laser_cd := 6.0
 ## 城レーザーの間隔（城ロボを持っているときは、城ロボの出撃から LASER_AFTER_ROBOT 秒後に撃つ）
-const LASER_INTERVAL := 30.0
+const LASER_INTERVAL := 40.0
 const LASER_AFTER_ROBOT := 7.0
 var _laser_left := 0.0
 var _laser_angle := 0.0
@@ -250,19 +252,11 @@ func _ready() -> void:
 	record = game.new_record("castle", "城（本体）")
 
 
-## 城ロボ起動中に与ダメージが上がる兵装と、その倍率
-const ROBOT_BOOST_EQUIPS := ["tower", "cannon", "catapult", "ballista"]
-const ROBOT_BOOST := 1.15
-
-
 ## 設備1基ごとの戦績カード（最初に使うときに作る）
 func _equip_record(key: String, label: String, i: int) -> Dictionary:
 	var k := "%s%d" % [key, i]
 	if not _equip_records.has(k):
 		_equip_records[k] = game.new_record("castle", "%s%d" % [label, i + 1])
-		# 城にくっついている兵装（城ロボ起動中は城ロボに付いて、与ダメージ +15%）
-		if key in ROBOT_BOOST_EQUIPS:
-			_equip_records[k]["robot_boost"] = true
 	return _equip_records[k]
 
 
@@ -326,10 +320,10 @@ func heal(amount: float, rec: Dictionary = {}, sp_id: String = "") -> void:
 
 ## from_boss = ボス（の体当たり・ビーム・弾）からのダメージ（今は区別だけで、倍率はかからない）
 func take_damage(amount: float, from_boss: bool = false) -> void:
+	if not game.enemy_damage_enabled:
+		return
 	if hp <= 0.0:
 		return
-	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）。城の被ダメージ倍率より先に足す
-	amount += game.overtime_dmg_bonus()
 	amount *= damage_taken_mult
 	amount *= game.early_damage_mult()
 	record["taken"] += minf(amount, hp)
@@ -391,11 +385,11 @@ func _update_towers(delta: float) -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 760.0
-			b.damage = tower_damage * power
+			b.damage = tower_attack_power * power
 			# 連射・執念の矢・会心の一矢は戦績を分けず、通常攻撃として数える
 			# 会心の一矢：25%でダメージ3倍
 			if tower_crit and randf() < 0.25:
-				b.damage = tower_damage * power * 3.0
+				b.damage = tower_attack_power * power * 3.0
 				b.radius = 6.0
 			b.pierce = tower_pierce
 			b.radius = 4.0
@@ -412,8 +406,8 @@ func _update_towers(delta: float) -> void:
 			b.src = _equip_record("tower", "矢倉", i)
 			if tower_blast:
 				b.explode_radius = 70.0
-				# 爆裂矢：矢の1/8（前は1/16）
-				b.explode_ratio = 0.125
+				# 爆裂矢：矢の約23.3%ダメージ（従来の1/3）
+				b.explode_ratio = 0.7 / 3.0 * 0.7
 				b.explode_src = game.sp_src(b.src, "sp_tower_blast")
 			b.life = tower_range / 760.0 + 0.2
 			b.position = from
@@ -439,34 +433,35 @@ func _update_cannon(delta: float) -> void:
 			var off := Vector2.ZERO
 			if cannon_shots > 1:
 				off = Vector2(randf_range(-40, 40), randf_range(-30, 30))
-			shells.append(_fire_shell(from, best.global_position + off, cannon_damage, cannon_radius, false, rec))
-		# 置き土産：3回に1回、着弾地点に爆弾を置く（大砲の4.5倍）
+			shells.append(_fire_shell(from, best.global_position + off, cannon_attack_power, cannon_radius, false, rec))
+		# 置き土産：3回に1回、着弾地点に爆弾を置く（大砲の9倍）
 		if cannon_bomb and extra_turn:
-			shells[0].leave_bomb = cannon_damage * 4.5
+			shells[0].leave_bomb = cannon_attack_power * 9.0
 		# 吸引砲：5回に1回、着弾地点に0.5秒間まわりの敵を吸い寄せる
 		if suction and _cannon_shot_counts[i] % SUCTION_EVERY == 0:
 			shells[0].suction = true
 		# ビリヤード砲弾：着弾後に2回跳ねる
 		if billiard:
+			shells[0].damage *= 4.0
 			shells[0].bounces = 2
-		# 機雷散布：3回に1回、本命の砲弾が着弾地点に機雷をばらまく（1個 大砲の3.6倍）
+		# 機雷散布：3回に1回、本命の砲弾が着弾地点に機雷をばらまく（1個 大砲の7.2倍）
 		if cannon_mines and extra_turn:
 			shells[0].mines = 3
-			shells[0].mine_damage = cannon_damage * 3.6
+			shells[0].mine_damage = cannon_attack_power * 7.2
 		# 二連砲：もう1発、別の密集地へ撃つ（見つからなければ同じ所の近く）
 		if double_cannon:
 			var second := _densest_enemy(cannon_range, cannon_radius)
 			var to2: Vector2 = second.global_position if second != null else best.global_position + Vector2.from_angle(randf() * TAU) * 80.0
-			shells.append(_fire_shell(from + Vector2(8, 0), to2, cannon_damage, cannon_radius, false, rec))
+			shells.append(_fire_shell(from + Vector2(8, 0), to2, cannon_attack_power, cannon_radius, false, rec))
 		# 散弾砲：着弾地点の周りにも落ちる
 		for k in scatter_level * 2:
 			var off := Vector2.from_angle(randf() * TAU) * randf_range(60.0, 110.0)
-			shells.append(_fire_shell(from, best.global_position + off, cannon_damage * 0.7, cannon_radius * 0.8, false, game.sp_src(rec, "sp_scatter")))
-		# 焼夷弾：3回に1回、着弾地点が燃える（毎秒 大砲の0.45倍）
+			shells.append(_fire_shell(from, best.global_position + off, cannon_attack_power * 1.4, cannon_radius * 0.8, false, game.sp_src(rec, "sp_scatter")))
+		# 焼夷弾：3回に1回、着弾地点が燃える（従来の毎秒ダメージの70%）
 		if fire_level > 0 and extra_turn:
 			for s in shells:
 				s.fire_time = 4.0 + 2.0 * (fire_level - 1)
-				s.fire_dps = cannon_damage * 0.45 * fire_level
+				s.fire_dps = cannon_attack_power * 0.45 * fire_level * 0.7
 		_cannon_cds[i] = cannon_interval
 
 
@@ -485,11 +480,11 @@ func _update_catapult(delta: float) -> void:
 			var off := Vector2.ZERO
 			if catapult_shots > 1:
 				off = Vector2(randf_range(-50, 50), randf_range(-40, 40))
-			var s := _fire_shell(from, best.global_position + off, catapult_damage, catapult_radius, true, _equip_record("catapult", "投石器", i))
+			var s := _fire_shell(from, best.global_position + off, catapult_attack_power, catapult_radius, true, _equip_record("catapult", "投石器", i))
 			if split_level > 0:
 				s.split_count = 2 + 2 * split_level
 			if direct_hit:
-				s.direct_bonus = catapult_damage * 35.0
+				s.direct_bonus = catapult_attack_power * 16.0
 			if stay_rock:
 				s.stay_rock = true
 			last_s = s
@@ -502,20 +497,20 @@ func _update_catapult(delta: float) -> void:
 			var big := _toughest_enemy_in(wpos(), INF)
 			if big != null:
 				# 威力：落ちた所の範囲に投石器×8、追いかけた敵への直撃に投石器×128
-				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_damage * 8.0, 50.0, true, game.sp_src(last_s.src if last_s else {}, "sp_iron_chunk"))
+				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_attack_power * 8.0, 50.0, true, game.sp_src(last_s.src if last_s else {}, "sp_iron_chunk"))
 				iron.iron = true
 				iron.chase = big
-				iron.direct_bonus = catapult_damage * 128.0
+				iron.direct_bonus = catapult_attack_power * 128.0
 		if cow_throw and _catapult_shot_counts[i] % 3 == 0 and last_s != null:
 			last_s.cow = true
 		if rolling_rock and last_s != null:
-			last_s.roll_damage = catapult_damage * 3.6
+			last_s.roll_damage = catapult_attack_power * 3.6 * 6.0 * 2.0
 		# 岩雨：ランダムな敵2体の頭上にも岩が落ちる
 		if rock_rain:
 			var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool: return is_instance_valid(e) and not e.dead)
 			pool.shuffle()
 			for e in pool.slice(0, 2):
-				game.spawn_blast(e.global_position, 1.0, 75.0, catapult_damage * 2.4, game.sp_src(last_s.src if last_s else {}, "sp_rock_rain"), Color(0.75, 0.65, 0.5), "rock")
+				game.spawn_blast(e.global_position, 1.0, 75.0, catapult_attack_power * 2.4 * 3.0 * 2.0, game.sp_src(last_s.src if last_s else {}, "sp_rock_rain"), Color(0.75, 0.65, 0.5), "rock")
 		_catapult_cds[i] = catapult_interval
 		_catapult_swings[i] = 0.4
 
@@ -527,18 +522,18 @@ func _rapid_local_pos(i: int) -> Vector2:
 
 
 ## 連射砲：台座と、狙っている向きへ伸びる3本の砲身（撃った直後は先が光る）
-func _draw_rapid() -> void:
+func _draw_rapid(ci: CanvasItem, offset: Vector2) -> void:
 	for i in mini(rapid_level, 2):
-		var p := _rapid_local_pos(i)
+		var p := _rapid_local_pos(i) + offset
 		var aim: Vector2 = _rapid_aims[i]
 		var side := aim.orthogonal()
 		var hot := Color(1.0, 0.45, 0.2) if _rapid_ult_active > 0.0 else Color(0.25, 0.25, 0.28)
-		draw_circle(p, 11.0, Color(0.3, 0.28, 0.26))
+		ci.draw_circle(p, 11.0, Color(0.3, 0.28, 0.26))
 		for k in [-1.0, 0.0, 1.0]:
-			draw_line(p + side * k * 3.5, p + side * k * 3.5 + aim * 20.0, hot, 3.0)
-		draw_circle(p, 6.0, Color(0.55, 0.5, 0.45))
+			ci.draw_line(p + side * k * 3.5, p + side * k * 3.5 + aim * 20.0, hot, 3.0)
+		ci.draw_circle(p, 6.0, Color(0.55, 0.5, 0.45))
 		if _rapid_flash[i] > 0.0:
-			draw_circle(p + aim * 22.0, 5.0, Color(1.0, 0.85, 0.4, 0.9))
+			ci.draw_circle(p + aim * 22.0, 5.0, Color(1.0, 0.85, 0.4, 0.9))
 
 
 func _update_rapid(delta: float) -> void:
@@ -553,14 +548,18 @@ func _update_rapid(delta: float) -> void:
 		_rapid_cds[i] -= delta * game.atk_speed_mult(_equip_record("rapid", "連射砲", i))
 		_rapid_flash[i] -= delta
 		if rapid_overheat:
-			if game.elapsed - _rapid_last_fire[i] > 1.0:
+			var heat_cycle := floori(game.elapsed / 10.0)
+			if _rapid_heat_cycle[i] < 0:
+				_rapid_heat_cycle[i] = heat_cycle
+			elif _rapid_heat_cycle[i] != heat_cycle:
 				_rapid_heat[i] = 0.0
+				_rapid_heat_cycle[i] = heat_cycle
 		if _rapid_reload_cd[i] > 0.0:
 			_rapid_reload_cd[i] -= delta
 			continue
 		if _rapid_cds[i] > 0.0:
 			continue
-		var pivot := global_position + _rapid_local_pos(i)
+		var pivot := wpos() + _rapid_local_pos(i)
 		var target: Node2D = game.nearest_enemy(pivot, 480.0)
 		if rapid_ult and _rapid_ult_active > 0.0:
 			target = game.nearest_enemy(global_position, 1200.0)
@@ -573,7 +572,6 @@ func _update_rapid(delta: float) -> void:
 		var mult := 1.0
 		if rapid_overheat:
 			_rapid_heat[i] = minf(0.5, _rapid_heat[i] + 0.02)
-			_rapid_last_fire[i] = game.elapsed
 			mult *= 1.0 + _rapid_heat[i]
 		_rapid_fired[i] += 1
 		# 犠牲：5回撃つたびに城のHP -1（HP1より下にはしない）。ダメージはいつも+100%
@@ -583,11 +581,11 @@ func _update_rapid(delta: float) -> void:
 			mult *= 2.0
 		if rapid_swarm:
 			var count: int = game.enemies_cache.size()
-			mult *= 1.0 + 0.5 * clampf(float(count) / 500.0, 0.0, 1.0)
+			mult *= 1.0 + 0.5 * clampf(float(count) / 300.0, 0.0, 1.0)
 		if rapid_level_scale:
 			mult *= 1.0 + 0.6 * clampf(float(game.level) / 150.0, 0.0, 1.0)
 		if rapid_ult and _rapid_ult_active > 0.0:
-			mult *= 1.3
+			mult *= 3.0
 		# 装填：いつも与ダメージ+80%。50回撃つたびに3秒撃てなくなる
 		if rapid_reload:
 			mult *= 1.8
@@ -605,9 +603,9 @@ func _update_rapid(delta: float) -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 1100.0
-			b.damage = rapid_damage * mult
+			b.damage = rapid_attack_power * mult
 			b.pierce = rapid_pierce
-			b.radius = 3.5
+			b.radius = 7.875
 			b.color = Color(0.9, 0.7, 0.4)
 			b.src = _equip_record("rapid", "連射砲", i)
 			b.life = 1.2
@@ -643,7 +641,7 @@ func _update_ballista(delta: float) -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 1000.0
-			b.damage = ballista_damage
+			b.damage = ballista_attack_power
 			b.pierce = 1000000
 			b.radius = 7.0
 			if big_bolt:
@@ -665,12 +663,12 @@ func _update_ballista(delta: float) -> void:
 			b.position = from + offset
 			if blast_bolt:
 				b.first_blast_radius = 140.0
-				b.first_blast_damage = ballista_damage * 1.2
+				b.first_blast_damage = ballista_attack_power * 0.7 * 0.5
 				b.first_blast_src = game.sp_src(b.src, "sp_blast_bolt")
 			if bolt_blast_level > 0:
 				b.explode_radius = 40.0 + 15.0 * bolt_blast_level
 				# 矢の威力（1.3倍）に対する割合。爆発のダメージは前の80%になるように 0.8/1.3 をかける
-				b.explode_ratio = (0.15 + 0.15 * bolt_blast_level) * 0.5 * 0.8 / 1.3
+				b.explode_ratio = (0.15 + 0.15 * bolt_blast_level) * 0.5 * 0.5 * 0.8 / 1.3
 				b.explode_src = game.sp_src(b.src, "sp_ballista_blast")
 			game.world.add_child(b)
 		_ballista_cds[i] = ballista_interval
@@ -726,7 +724,7 @@ func _update_new_specials(delta: float) -> void:
 				if t == null:
 					break
 				var p: Vector2 = t.global_position + Vector2(randf_range(-30, 30), randf_range(-30, 30))
-				game.spawn_blast(p, 0.8, 120.0, tower_damage * 8.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_arrow_rain"), Color(1.0, 0.55, 0.2), "arrow")
+				game.spawn_blast(p, 0.8, 120.0, tower_attack_power * 8.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_arrow_rain"), Color(1.0, 0.55, 0.2), "arrow")
 				_recent_shots.append({"pos": p, "area": 120.0, "until": _t + 1.2})
 	if ap_shell and cannon_level > 0:
 		_ap_cd -= delta
@@ -742,13 +740,13 @@ func _update_new_specials(delta: float) -> void:
 				var b := BulletScript.new()
 				b.game = game
 				b.velocity = dir * 1100.0
-				b.damage = cannon_damage * 160.0
+				b.damage = cannon_attack_power * 160.0
 				b.radius = 10.0
 				b.color = Color(1.0, 0.45, 0.2)
 				b.life = 2.0
 				b.only_target = big
 				b.first_blast_radius = 50.0
-				b.first_blast_damage = cannon_damage * 20.0
+				b.first_blast_damage = cannon_attack_power * 20.0
 				b.position = from
 				b.src = game.sp_src(_equip_record("cannon", "大砲", i), "sp_ap_shell")
 				game.world.add_child(b)
@@ -779,7 +777,7 @@ func _update_eighth_specials(delta: float) -> void:
 					var b := BulletScript.new()
 					b.game = game
 					b.velocity = dir * 1000.0 / 3.0
-					b.damage = ballista_damage * 7.2
+					b.damage = ballista_attack_power * 7.2
 					b.pierce = 1000000
 					b.radius = 21.0
 					b.scale = Vector2(3.0, 3.0)
@@ -809,12 +807,11 @@ func _update_fifth_specials(delta: float) -> void:
 				var from := wpos() + _tower_local_pos(i)
 				for k in 2:
 					var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(-PI / 2.0 + (k - 0.5) * 1.6) * 420.0,
-						tower_damage * 15.0, 8.0, 4.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_homing"))
+						tower_attack_power * 15.0, 8.0, 4.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_homing"))
 					m.target = game.nearest_enemy(from, tower_range * 1.5)
-					# 爆裂追尾火矢：当たった敵の所で、矢倉の爆裂矢の爆発（当たったダメージの1/16。爆裂矢として記録）。
-					# 追尾火矢の威力が2倍になったので、割合はそのままで爆発も前の2倍になる
+					# 爆裂追尾火矢：当たった敵の所で、矢倉の爆裂矢と同じ約23.3%ダメージの爆発
 					if homing_blast and tower_blast:
-						m.blast_ratio = 0.0625
+						m.blast_ratio = 0.7 / 3.0 * 0.7
 						m.blast_src = game.sp_src(_equip_record("tower", "矢倉", i), "sp_tower_blast")
 	if lightning and ballista_level > 0:
 		_lightning_cd -= delta
@@ -828,7 +825,7 @@ func _update_fifth_specials(delta: float) -> void:
 				if pool.is_empty():
 					break
 				var first: Node2D = pool.pick_random()
-				game.chain_lightning(from, first, 7, ballista_damage * 12.8, 200.0, game.sp_src(_equip_record("ballista", "バリスタ", i), "sp_lightning"))
+				game.chain_lightning(from, first, 7, ballista_attack_power * 12.8, 200.0, game.sp_src(_equip_record("ballista", "バリスタ", i), "sp_lightning"))
 	if snowman and frost_radius > 0.0:
 		_snowman_cd -= delta
 		if _snowman_cd <= 0.0:
@@ -964,7 +961,6 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2(-HALF.x - ext_w, -ext_h), Vector2(ext_w, ext_h * 2.0)), dark, false, 2.0)
 	draw_rect(Rect2(Vector2(HALF.x, -ext_h), Vector2(ext_w, ext_h * 2.0)), wall)
 	draw_rect(Rect2(Vector2(HALF.x, -ext_h), Vector2(ext_w, ext_h * 2.0)), dark, false, 2.0)
-	_draw_rapid()
 	# 胸壁（ギザギザ）
 	var bw := 16.0
 	var x := -HALF.x
@@ -993,8 +989,9 @@ func _draw() -> void:
 	draw_rect(Rect2(top, Vector2(w * hp / max_hp, 8)), Color(1.0, 0.6, 0.2))
 
 
-## 兵装（矢倉・大砲・バリスタ・投石器）を ci に描く。offset = 城の中心の位置（ci の座標で）
+## 兵装（連射砲・矢倉・大砲・バリスタ・投石器）を ci に描く。offset = 城の中心の位置（ci の座標で）
 func draw_weapons(ci: CanvasItem, offset: Vector2) -> void:
+	_draw_rapid(ci, offset)
 	# 矢倉
 	for i in tower_count:
 		var p := _tower_local_pos(i) + offset
@@ -1053,7 +1050,7 @@ func robot_active() -> bool:
 
 
 func _update_castle_specials(delta: float) -> void:
-	# 城レーザー：30秒ごとに、城から全方位をぐるっと薙ぎ払う（城ロボを持っていれば、城ロボの出撃から7秒後）
+	# 城レーザー：40秒ごとに、城から全方位をぐるっと薙ぎ払う（城ロボを持っていれば、城ロボの出撃から7秒後）
 	if laser and _laser_endless():
 		# 真・ファイナルモードの間は、上下2本の城レーザーがずっと回り続ける（1周ごとに同じ敵にまた当たる）
 		if not _laser_spin:

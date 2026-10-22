@@ -28,6 +28,7 @@ var _boss_label4: Label
 var _banner: Label
 var _banner_left := 0.0
 var _auto_btn: Button
+var _random_auto_btn: Button
 var _auto_set_btn: Button
 var _debug_btn: Button
 var _changelog_btn: Button
@@ -183,12 +184,22 @@ func _ready() -> void:
 	_banner.visible = false
 	root.add_child(_banner)
 
+	# 戦績まとめボタン（部隊戦績の上）
+	var summary_btn := Button.new()
+	summary_btn.text = "戦績まとめ"
+	summary_btn.add_theme_font_size_override("font_size", 16)
+	summary_btn.position = Vector2(16, 84)
+	summary_btn.size = Vector2(170, 34)
+	summary_btn.focus_mode = Control.FOCUS_NONE
+	summary_btn.pressed.connect(func() -> void: game.summary_ui.open_panel())
+	root.add_child(summary_btn)
+
 	# 部隊戦績ボタン
 	var stats_btn := Button.new()
 	stats_btn.text = "部隊戦績（Tab）"
 	stats_btn.add_theme_font_size_override("font_size", 16)
 	# 城のHPバーのすぐ下（左上）
-	stats_btn.position = Vector2(16, 84)
+	stats_btn.position = Vector2(16, 124)
 	stats_btn.size = Vector2(170, 34)
 	stats_btn.focus_mode = Control.FOCUS_NONE
 	stats_btn.pressed.connect(func() -> void: game.toggle_stats())
@@ -198,16 +209,26 @@ func _ready() -> void:
 	var up_btn := Button.new()
 	up_btn.text = "強化状態（U）"
 	up_btn.add_theme_font_size_override("font_size", 16)
-	up_btn.position = Vector2(16, 124)
+	up_btn.position = Vector2(16, 164)
 	up_btn.size = Vector2(170, 34)
 	up_btn.focus_mode = Control.FOCUS_NONE
 	up_btn.pressed.connect(func() -> void: game.toggle_upgrades())
 	root.add_child(up_btn)
 
-	# オート選択ボタン（強化状態ボタンの下）
+	# 完全ランダムオートモード（常時表示）
+	_random_auto_btn = Button.new()
+	_random_auto_btn.add_theme_font_size_override("font_size", 16)
+	_random_auto_btn.position = Vector2(16, 204)
+	_random_auto_btn.size = Vector2(310, 34)
+	_random_auto_btn.focus_mode = Control.FOCUS_NONE
+	_random_auto_btn.pressed.connect(func() -> void: game.set_random_auto(not game.random_auto))
+	root.add_child(_random_auto_btn)
+	update_random_auto_button()
+
+	# 通常オート選択ボタン（デバッグ表示時のみ）
 	_auto_btn = Button.new()
 	_auto_btn.add_theme_font_size_override("font_size", 16)
-	_auto_btn.position = Vector2(16, 164)
+	_auto_btn.position = Vector2(16, 244)
 	_auto_btn.size = Vector2(230, 34)
 	_auto_btn.focus_mode = Control.FOCUS_NONE
 	_auto_btn.pressed.connect(func() -> void: game.set_auto_pick(not game.auto_pick))
@@ -218,7 +239,7 @@ func _ready() -> void:
 	_auto_set_btn = Button.new()
 	_auto_set_btn.text = "オート選択設定"
 	_auto_set_btn.add_theme_font_size_override("font_size", 16)
-	_auto_set_btn.position = Vector2(16, 204)
+	_auto_set_btn.position = Vector2(16, 284)
 	_auto_set_btn.size = Vector2(170, 34)
 	_auto_set_btn.focus_mode = Control.FOCUS_NONE
 	_auto_set_btn.pressed.connect(func() -> void: game.toggle_auto_pick_settings())
@@ -228,7 +249,7 @@ func _ready() -> void:
 	_debug_btn.text = "デバッグ設定"
 	_debug_btn.add_theme_font_size_override("font_size", 16)
 	_debug_btn.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
-	_debug_btn.position = Vector2(16, 244)
+	_debug_btn.position = Vector2(16, 324)
 	_debug_btn.size = Vector2(170, 34)
 	_debug_btn.focus_mode = Control.FOCUS_NONE
 	_debug_btn.pressed.connect(func() -> void: game.open_debug())
@@ -237,7 +258,7 @@ func _ready() -> void:
 	_changelog_btn = Button.new()
 	_changelog_btn.text = "更新内容"
 	_changelog_btn.add_theme_font_size_override("font_size", 16)
-	_changelog_btn.position = Vector2(16, 284)
+	_changelog_btn.position = Vector2(16, 364)
 	_changelog_btn.size = Vector2(170, 34)
 	_changelog_btn.focus_mode = Control.FOCUS_NONE
 	_changelog_btn.pressed.connect(func() -> void:
@@ -306,6 +327,17 @@ func update_auto_button() -> void:
 		_auto_btn.text = "オート選択：無効中（A）"
 		_auto_btn.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 		_auto_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+
+
+func update_random_auto_button() -> void:
+	if game.random_auto:
+		_random_auto_btn.text = "完全ランダムオートモード：有効中"
+		_random_auto_btn.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6))
+		_random_auto_btn.add_theme_color_override("font_hover_color", Color(0.7, 1.0, 0.8))
+	else:
+		_random_auto_btn.text = "完全ランダムオートモード：無効中"
+		_random_auto_btn.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
+		_random_auto_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1))
 
 
 func update_speed_button() -> void:
@@ -397,8 +429,8 @@ func refresh() -> void:
 		lines_r.append("近衛 %d / %d" % [_alive(game.knights), game.knights.size()])
 	if not game.repairers.is_empty():
 		lines_r.append("修理 %d人（+%d/秒）" % [game.repairers.size(), int(game.repairers.size() * game.repair_stats.heal_per_sec)])
-	if game.heavy != null:
-		lines_r.append("重装 %s" % ("復活待ち" if game.heavy.dead else "戦闘中"))
+	if not game.all_heavies().is_empty():
+		lines_r.append("重装 %d人（%d人復活待ち）" % [game.all_heavies().size(), game.all_heavies().filter(func(h: Node2D) -> bool: return h.dead).size()])
 	if not game.engineers.is_empty():
 		lines_r.append("工兵 %d人 罠 %d個" % [game.engineers.size(), get_tree().get_nodes_in_group("traps").size()])
 	if not game.builders.is_empty():
@@ -494,6 +526,22 @@ func _build_game_over() -> void:
 	stats_btn.pressed.connect(func() -> void: game.stats_ui.open_panel())
 	right.add_child(stats_btn)
 
+	var up_btn := Button.new()
+	up_btn.text = "強化状態を見る"
+	up_btn.custom_minimum_size = Vector2(340, 44)
+	up_btn.add_theme_font_size_override("font_size", 18)
+	up_btn.pressed.connect(func() -> void: game.upgrades_ui.open_panel())
+	right.add_child(up_btn)
+
+	# 被害結果確認（強化状態を見るの下）
+	var dmg_btn := Button.new()
+	dmg_btn.text = "被害結果確認"
+	dmg_btn.custom_minimum_size = Vector2(340, 44)
+	dmg_btn.add_theme_font_size_override("font_size", 18)
+	dmg_btn.add_theme_color_override("font_color", Color(1.0, 0.6, 0.55))
+	dmg_btn.pressed.connect(func() -> void: game.damage_ui.open_panel())
+	right.add_child(dmg_btn)
+
 	var sum_btn := Button.new()
 	sum_btn.text = "戦績まとめ"
 	sum_btn.custom_minimum_size = Vector2(340, 44)
@@ -502,14 +550,7 @@ func _build_game_over() -> void:
 	sum_btn.pressed.connect(func() -> void: game.summary_ui.open_panel())
 	right.add_child(sum_btn)
 
-	var up_btn := Button.new()
-	up_btn.text = "強化状態を見る"
-	up_btn.custom_minimum_size = Vector2(340, 44)
-	up_btn.add_theme_font_size_override("font_size", 18)
-	up_btn.pressed.connect(func() -> void: game.upgrades_ui.open_panel())
-	right.add_child(up_btn)
-
-	# 歴代記録（強化状態を見るの下）
+	# 歴代記録（戦績まとめの下）
 	var rec_btn := Button.new()
 	rec_btn.text = "歴代記録"
 	rec_btn.custom_minimum_size = Vector2(340, 44)
@@ -517,16 +558,6 @@ func _build_game_over() -> void:
 	rec_btn.add_theme_color_override("font_color", Color(1.0, 0.8, 0.5))
 	rec_btn.pressed.connect(func() -> void: game.records_ui.open_panel())
 	right.add_child(rec_btn)
-
-	# 被害状況確認（歴代記録の下）
-	var dmg_btn := Button.new()
-	dmg_btn.text = "被害状況確認"
-	dmg_btn.custom_minimum_size = Vector2(340, 44)
-	dmg_btn.add_theme_font_size_override("font_size", 18)
-	dmg_btn.add_theme_color_override("font_color", Color(1.0, 0.6, 0.55))
-	dmg_btn.pressed.connect(func() -> void: game.damage_ui.open_panel())
-	right.add_child(dmg_btn)
-
 
 ## デバッグ用ボタン（オート選択・オート選択設定・デバッグ設定・更新内容）の表示・非表示
 func set_debug_visible(v: bool) -> void:

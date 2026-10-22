@@ -7,11 +7,15 @@ var move_speed := 110.0
 var plant_time := 6.0
 
 # --- 罠
-## 高性能火薬の倍率（工兵の攻撃すべてにかかる。爆弾・落とし穴の威力には直接かけてある）
-var power_mult := 1.0
-var bomb_damage := 160.0
+## 工兵の攻撃力。爆弾は200%、落とし穴は100%。
+var attack_power := 180.0
+var bomb_damage: float:
+	get:
+		return attack_power * 2.0
 var bomb_radius := 110.0
-var pit_damage := 80.0
+var pit_damage: float:
+	get:
+		return attack_power
 var pit_radius := 90.0
 ## 敵がこの距離まで近づいたら作動開始
 var trigger_radius := 60.0

@@ -1,5 +1,5 @@
 extends Node2D
-## 重装部隊（最大1体）。足は遅いが、耐久力と攻撃力が高い。
+## 重装部隊（最大2体）。足は遅いが、耐久力と攻撃力が高い。
 ## マップの中を自由に歩き回り、マップの真ん中に一番近い敵を最優先で倒しに行く。
 ## 敵がいないときはマップの真ん中で待つ。攻撃は遊撃部隊と同じ扇形の斬撃のみ。
 
@@ -22,7 +22,8 @@ var max_hp := 270.0
 var hp := 270.0
 var regen := 4.0
 var move_speed := 60.0
-var slash_damage := 31.5
+## 重装兵の攻撃力（通常斬撃は攻撃力の100%）
+var attack_power := 31.5
 ## 通常斬撃の威力（以前は基本の1/3だったが、基本値に吸収）
 ## 怒りの闘志・仁王立ちの上乗せの上限
 const RAGE_MAX := 0.4
@@ -107,7 +108,7 @@ func _process(delta: float) -> void:
 			if provoke_ball and iron_ball:
 				for e in _provoked:
 					var pd: Vector2 = (e.global_position - global_position).normalized()
-					game.spawn_missile("ball", global_position + pd * 30.0, pd * 560.0, dmg() * 7.5, 24.0, 3.0, game.sp_src(record, "sp_iron_ball"))
+					game.spawn_missile("ball", global_position + pd * 30.0, pd * 560.0, dmg() * 22.5, 24.0, 3.0, game.sp_src(record, "sp_iron_ball"))
 			_provoked.clear()
 		_count_cd -= delta
 		if _count_cd <= 0.0:
@@ -165,7 +166,7 @@ func _process(delta: float) -> void:
 		if far != null:
 			_ball_cd = 5.0
 			var bd := (far.global_position - global_position).normalized()
-			game.spawn_missile("ball", global_position + bd * 30.0, bd * 560.0, dmg() * 7.5, 24.0, 3.0, game.sp_src(record, "sp_iron_ball"))
+			game.spawn_missile("ball", global_position + bd * 30.0, bd * 560.0, dmg() * 22.5, 24.0, 3.0, game.sp_src(record, "sp_iron_ball"))
 	if quake_level > 0 and _quake_cd <= 0.0 and game.nearest_enemy(global_position, 140.0) != null:
 		_quake()
 		_quake_cd = 5.0
@@ -245,14 +246,14 @@ func _quake() -> void:
 ## 今の攻撃力（怒りの闘志の上乗せ込み）
 func dmg() -> float:
 	var provoke := minf(PROVOKE_MAX, 0.05 * _near_count) if game.heavy_provoke else 0.0
-	return slash_damage * (1.0 + rage) * (1.0 + provoke)
+	return attack_power * (1.0 + rage) * (1.0 + provoke)
 
 
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
+	if not game.enemy_damage_enabled:
+		return
 	if dead or _invuln > 0.0:
 		return
-	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
-	amount += game.overtime_dmg_bonus()
 	# 5分までは、城と同じく受けるダメージが半分（設置物は半分にならない）
 	amount *= game.early_damage_mult()
 	if rage_enabled:

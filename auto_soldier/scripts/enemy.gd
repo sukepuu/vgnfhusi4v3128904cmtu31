@@ -83,21 +83,10 @@ var _contact_cd := 0.0
 var _flash := 0.0
 var _strafe_sign := 1.0
 var speed_mult := 1.0
-## ボスのHPの上乗せ倍率：Lv10で1.3倍から、Lv10ごとに0.1倍ずつ減っていき、1.0倍で止まる
-## （Lv10 1.3 → Lv20 1.2 → Lv30 1.1 → Lv40から1.0）
-## ボス（大司教・分裂の魔獣の分かれた体も）のHPを全体にこの倍率にする
-const BOSS_HP_SCALE := 0.85
-const BOSS_HP_BONUS := 1.3
-const BOSS_HP_BONUS_STEP := 0.1
-const BOSS_HP_BONUS_MIN := 1.0
 ## ボスが出たときのレベル（分裂の魔獣の分かれた体は、最初の体のレベルを引き継ぐ）
 var boss_level := -1
 
 
-## いまのレベルでのボスのHPの上乗せ倍率（大司教も、出たときのレベルで決まる）
-static func boss_hp_bonus_at(lv: int) -> float:
-	var steps := maxi(0, floori(lv / 10.0) - 1)
-	return maxf(BOSS_HP_BONUS_MIN, BOSS_HP_BONUS - BOSS_HP_BONUS_STEP * steps)
 ## ボスの速さ：HP満タンのときの倍率と、1倍になる残りHPの割合
 const BOSS_SLOW_MIN := 0.1
 const BOSS_FULL_SPEED_AT := 0.25
@@ -166,7 +155,7 @@ func setup(k: String, hp_mult: float) -> void:
 			max_hp = 500.0; speed = 20.0; damage = 15.0; castle_damage = 20.0; radius = 24.0; xp_value = 8
 			color = Color(0.35, 0.45, 0.6)
 		"boss":
-			max_hp = 770.0 * (1.0 + 0.3 * (boss_rank - 1)); speed = 20.0; damage = 30.0
+			max_hp = 847.0; speed = 20.0; damage = 30.0
 			castle_damage = 40.0; radius = 46.0; xp_value = 60
 			color = Color(0.4, 0.12, 0.5)
 			is_boss = true
@@ -182,7 +171,7 @@ func setup(k: String, hp_mult: float) -> void:
 			max_hp = 50.0; speed = 0.0; damage = 10.0; castle_damage = 0.0; radius = 16.0; xp_value = 4
 			color = Color(0.3, 0.4, 0.35)
 		"boss2":
-			max_hp = 412.5 * (1.0 + 0.3 * (boss_rank - 1)); speed = 0.0; damage = 20.0
+			max_hp = 453.75; speed = 0.0; damage = 20.0
 			castle_damage = 0.0; radius = 50.0; xp_value = 60
 			color = Color(0.3, 0.32, 0.4)
 			is_boss = true
@@ -192,15 +181,15 @@ func setup(k: String, hp_mult: float) -> void:
 			_pattern_left = 0.0
 		"boss4":
 			# 黒衣の大司教：画面の上のほうに浮かんで漂う。自分では戦わず、ほかの敵を強くする
-			max_hp = 3000.0; speed = 0.0; damage = 10.0; castle_damage = 0.0; radius = 40.0; xp_value = 80
+			max_hp = 3300.0; speed = 0.0; damage = 10.0; castle_damage = 0.0; radius = 40.0; xp_value = 80
 			color = Color(0.16, 0.12, 0.2)
 			is_boss = true
 			boss_title = "黒衣の大司教"
 		"boss3":
 			# 分裂するたびにHPは半分、体は小さく、足は速くなる
-			# 最初の体のHPは 154。分かれた体ぜんぶの合計（最初の体の5倍 = 770）が、破城の魔王（770）と同じになる
+			# 最初の体のHPは 169.4。分かれた体ぜんぶの合計（最初の体の5倍 = 847）が、破城の魔王（847）と同じになる
 			var shrink := pow(0.5, split_gen)
-			max_hp = 154.0 * (1.0 + 0.3 * (boss_rank - 1)) * shrink; speed = 22.0 * pow(1.18, split_gen); damage = 20.0
+			max_hp = 169.4 * shrink; speed = 22.0 * pow(1.18, split_gen); damage = 20.0
 			castle_damage = 20.0; radius = 44.0 * pow(0.78, split_gen)
 			xp_value = [40, 20, 10, 6, 4][split_gen]
 			color = Color(0.35, 0.75, 0.4).lerp(Color(0.6, 0.95, 0.5), split_gen / 4.0)
@@ -209,13 +198,9 @@ func setup(k: String, hp_mult: float) -> void:
 			_skill_cd = randf_range(1.0, 3.0)
 	_hp_mult = hp_mult
 	max_hp *= hp_mult
-	# ボスは、HPがさらに上乗せ（Lv10で1.3倍 → Lv10ごとに-0.1 → 1.0倍まで）
 	if is_boss:
 		if boss_level < 0:
 			boss_level = game.level if game != null else 10
-		max_hp *= boss_hp_bonus_at(boss_level)
-		# ボスのHPは全体に BOSS_HP_SCALE 倍（85%）
-		max_hp *= BOSS_HP_SCALE
 	hp = max_hp
 	if not is_boss:
 		speed *= randf_range(0.9, 1.1)
@@ -299,9 +284,14 @@ func _update(delta: float) -> void:
 			soldier = g
 	# 仁王立ち：挑発されているあいだは重装兵を狙う（ボスは挑発されない）
 	if provoked_left > 0.0 and not is_boss and not castle_only:
-		var h: Node2D = game.heavy
-		if h != null and not h.dead:
-			soldier = h
+		var closest_heavy: Node2D = null
+		var heavy_dist := INF
+		for h in game.all_heavies():
+			if not h.dead and global_position.distance_squared_to(h.global_position) < heavy_dist:
+				closest_heavy = h
+				heavy_dist = global_position.distance_squared_to(h.global_position)
+		if closest_heavy != null:
+			soldier = closest_heavy
 	# 氷像の囮：近くに氷像があれば、何よりも先にそちらを狙う
 	if game.castle.ice_statue and not is_boss and not castle_only:
 		var st: Node2D = _nearest_statue(320.0)
@@ -339,8 +329,11 @@ func _update(delta: float) -> void:
 		move = Vector2.ZERO
 	else:
 		move = dir
-	# 兵士への体当たり
+	# 接触攻撃。氷像を狙っている敵は、近くの兵士に攻撃を吸われず氷像を叩く
 	var touching: Node2D = game.nearest_ally(global_position, radius + 16.0)
+	if soldier != null and is_instance_valid(soldier) and soldier.is_in_group("placed_ice_statue") \
+			and not soldier.dead and global_position.distance_to(soldier.global_position) < radius + soldier.radius:
+		touching = soldier
 	if touching != null and kind == "bomber":
 		_bomber_explode()
 		return
@@ -349,16 +342,15 @@ func _update(delta: float) -> void:
 		_contact_cd = 0.6
 	if is_boss:
 		# ボスは壁を壊して進み、城に着いたら殴り続ける
-		# ボスは壁に触れると壁の耐久を7減らし、大きく弾かれる
+		# 破城の魔王は壁に触れると壁の耐久を7減らす。ノックバックは受けない
 		_wall_cd -= delta
 		var wi: int = game.walls.hit_test(global_position, radius)
 		if wi >= 0 and _wall_cd <= 0.0:
 			game.walls.spike_hit(wi, global_position)
 			game.walls.damage_wall(wi, 7.0)
-			# ボス自身はダメージを受けず、ランダムな方向へ大きく弾かれる（だいたい100くらい・気絶はしない）
-			# 下側（城の方）へは弾かれない
-			# （knock は毎秒1400ずつ弱まるので、進む距離 = 速さ² ÷ 2800）
-			knock = Vector2.from_angle(randf_range(PI + 0.15, TAU - 0.15)) * sqrt(2800.0 * 100.0)
+			# 破城の魔王以外は壁に当たるとランダムな方向へ弾かれる
+			if kind != "boss":
+				knock = Vector2.from_angle(randf_range(PI + 0.15, TAU - 0.15)) * sqrt(2800.0 * 100.0)
 			_wall_cd = 1.0
 		if castle.distance_to_point(global_position) < radius:
 			move = Vector2.ZERO
@@ -387,6 +379,8 @@ func _update(delta: float) -> void:
 			_confuse_dir = Vector2.from_angle(randf() * TAU)
 		move = _confuse_dir
 	speed_mult = castle.slow_factor_at(global_position)
+	# 170overtime：敵の移動速度は現在の城Lvに応じて上昇する
+	speed_mult *= game.overtime_enemy_speed_mult()
 	# ボスはHPが減るほど速くなる（HP満タンで0.1倍 → 残り25%で1倍。それ以上は速くならない）
 	if is_boss:
 		speed_mult *= boss_speed_rate()
@@ -484,8 +478,7 @@ func _boss_skills(delta: float) -> void:
 ## 誘導砲兵の狙い：迎撃と設置物以外で一番近い味方
 func _seeker_target() -> Node2D:
 	var list: Array = game.soldiers + game.knights
-	if game.heavy != null:
-		list.append(game.heavy)
+	list.append_array(game.all_heavies())
 	var best: Node2D = null
 	var best_d := INF
 	for a in list:
@@ -866,9 +859,9 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	# 魔王狩り：遊撃兵からボスへのダメージ +10%
 	if is_boss and game.stats.boss_hunt and src.get("cat", "") == "soldier":
 		amount *= 1.1
-	# 城ロボ起動中：城にくっついている兵装（矢倉・大砲・投石器・バリスタ）の与ダメージ +15%
-	if src.get("robot_boost", false) and game.castle.robot_active():
-		amount *= game.castle.ROBOT_BOOST
+	# 城の兵装は通常攻撃・特別強化・必殺を含め、与ダメージを一律90%にする
+	if src.get("cat", "") == "castle":
+		amount *= 0.9
 	# 黒衣の大司教がいるあいだは、倒されたザコ敵が1回だけその場でHP50%で復活する
 	var revive: bool = hp - amount <= 0.0 and not is_boss and not _revived and game.bishop_alive()
 	if not src.is_empty():

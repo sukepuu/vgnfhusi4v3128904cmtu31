@@ -40,7 +40,7 @@ var max_hp := 0.0
 var dead := false
 var _hurt := 0.0
 ## 耐久を持つ物の耐久
-const DURABILITY := {"watchtower": 50.0, "scarecrow": 60.0, "ice_statue": 1.0}
+const DURABILITY := {"watchtower": 50.0, "scarecrow": 60.0, "ice_statue": 3.0}
 ## 修理玉の大きさ（ボスの半径46の7割くらい）
 const ORB_RADIUS := 32.0
 ## 置いたときの持続時間（残り時間バーの表示用）
@@ -57,7 +57,7 @@ func _ready() -> void:
 		# 敵から味方として狙われる
 		max_hp = DURABILITY[kind]
 		hp = max_hp
-		radius = 16.0
+		radius = 32.0 if kind == "ice_statue" else 16.0
 		add_to_group("attackable")
 	_cd = randf() * 0.5
 
@@ -234,10 +234,10 @@ func _automaton_volley() -> void:
 
 ## 敵の攻撃を受ける（見張り櫓・かかし）
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
+	if not game.enemy_damage_enabled:
+		return
 	if dead or max_hp <= 0.0:
 		return
-	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
-	amount += game.overtime_dmg_bonus()
 	# 氷像は威力に関係なく、1回攻撃されるごとに耐久が1減る
 	if kind == "ice_statue":
 		amount = 1.0
@@ -385,6 +385,7 @@ func _draw() -> void:
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		"ice_statue":
 			# 倒された敵の形の氷像（叩かれるとヒビが増える）
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2(2.0, 2.0))
 			var shake := Vector2(sin(_t * 50.0) * 2.0, 0.0) if _hurt > 0.0 else Vector2.ZERO
 			draw_circle(Vector2(0, 10), 15.0, Color(0, 0, 0, 0.25))
 			draw_circle(shake, 16.0, Color(0.7, 0.9, 1.0, 0.75))
@@ -395,6 +396,7 @@ func _draw() -> void:
 			for i in cracks:
 				var a := TAU * i / 6.0 + 0.4
 				draw_line(shake, shake + Vector2.from_angle(a) * 14.0, Color(0.3, 0.5, 0.7), 1.5)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		"scarecrow":
 			# 揺れるかかし（叩かれると大きく揺れる）
 			var sway := sin(_t * 3.0) * 0.12 + (sin(_t * 40.0) * 0.3 if _hurt > 0.0 else 0.0)

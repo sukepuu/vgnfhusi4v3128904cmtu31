@@ -1,21 +1,21 @@
 extends CanvasLayer
-## 部隊戦績画面。各部隊の個体ごとに、与ダメージ・撃破数・被ダメージ・回復量を一覧表示する。
+## 部隊戦績画面。各部隊の個体ごとに、与ダメージ・撃破数・回復量・取得Lvを一覧表示する。
 ## 個体の行をクリックすると、その下に特別強化ごとの与ダメージ・回復量の内訳が開く（もう一度クリックで閉じる）。
 ## 開いているあいだはゲームを一時停止する。
 
 const Upgrades := preload("res://scripts/upgrades.gd")
 
-const CAT_ORDER := ["soldier", "pet", "guard", "sniper", "knight", "heavy", "engineer", "builder", "repair", "archer", "archer_pet", "drummer", "drum_pet", "castle"]
+const CAT_ORDER := ["soldier", "pet", "triple_pet", "guard", "sniper", "knight", "heavy", "engineer", "builder", "repair", "archer", "archer_pet", "drummer", "drum_pet", "castle"]
 const CAT_LABEL := {
-	"soldier": "遊撃部隊", "pet": "ペット", "guard": "迎撃部隊", "sniper": "狙撃部隊", "knight": "近衛部隊", "heavy": "重装部隊", "repair": "修理部隊",
+	"soldier": "遊撃部隊", "pet": "遊撃ペット", "triple_pet": "合体合体合体ペット", "guard": "迎撃部隊", "sniper": "狙撃部隊", "knight": "近衛部隊", "heavy": "重装部隊", "repair": "修理部隊",
 	"engineer": "工兵部隊", "builder": "築城部隊", "archer": "弓兵部隊", "archer_pet": "弓兵ペット", "drummer": "鼓舞部隊", "drum_pet": "鼓舞ペット", "castle": "城"}
 const CAT_COLOR := {
-	"soldier": Color(0.6, 0.85, 1.0), "pet": Color(0.55, 1.0, 0.75), "guard": Color(0.6, 1.0, 0.65),
+	"soldier": Color(0.6, 0.85, 1.0), "pet": Color(0.55, 1.0, 0.75), "triple_pet": Color(0.4, 0.95, 0.9), "guard": Color(0.6, 1.0, 0.65),
 	"sniper": Color(0.75, 0.95, 0.45), "knight": Color(1.0, 0.82, 0.4), "repair": Color(0.55, 0.75, 1.0),
 	"heavy": Color(0.85, 0.75, 1.0), "engineer": Color(0.8, 0.9, 0.5), "builder": Color(1.0, 0.88, 0.45),
 	"archer": Color(1.0, 0.55, 0.8), "archer_pet": Color(1.0, 0.7, 0.9), "drummer": Color(1.0, 0.45, 0.4), "drum_pet": Color(1.0, 0.68, 0.55),
 	"castle": Color(1.0, 0.7, 0.45)}
-const COL_WIDTHS := [250, 115, 65, 115, 115, 190]
+const COL_WIDTHS := [200, 100, 55, 90, 65, 75, 95, 160]
 
 var game: Node2D
 var _list: VBoxContainer
@@ -52,7 +52,7 @@ func _ready() -> void:
 	title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
 	box.add_child(title)
 
-	box.add_child(_make_row(["名前", "与ダメージ", "撃破", "被ダメージ", "回復", "その他"], Color(0.8, 0.8, 0.8), 16))
+	box.add_child(_make_row(["名前", "与ダメージ", "撃破", "回復", "取得Lv", "強化数", "特別強化数", "その他"], Color(0.8, 0.8, 0.8), 16))
 
 	var hint := Label.new()
 	hint.text = "兵士・兵装の行をクリックすると、特別強化ごとのダメージ・回復量が見られます"
@@ -62,7 +62,7 @@ func _ready() -> void:
 	box.add_child(hint)
 
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(940, 470)
+	scroll.custom_minimum_size = Vector2(1040, 470)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	box.add_child(scroll)
 	_scroll = scroll
@@ -132,18 +132,17 @@ func _rebuild() -> void:
 		# 部隊ごとの見出しと合計
 		var total_dealt := 0.0
 		var total_kills := 0
-		var total_taken := 0.0
 		var total_healed := 0.0
+		var upgrade_counts := _upgrade_counts(cat)
 		for r in recs:
 			total_dealt += r["dealt"]
 			total_kills += r["kills"]
-			total_taken += r["taken"]
 			total_healed += r["healed"]
-		var header := _make_row(["■ " + CAT_LABEL[cat], _fmt(total_dealt), str(total_kills), _fmt(total_taken), _fmt_heal(total_healed), "（部隊合計）"], col, 17)
+		var header := _make_row(["■ " + CAT_LABEL[cat], _fmt(total_dealt), str(total_kills), _fmt_heal(total_healed), "", str(upgrade_counts[0]), "%d/%d" % [upgrade_counts[1], upgrade_counts[2]], "（部隊合計）"], col, 17)
 		_list.add_child(header)
 		for r in recs:
 			var open: bool = _expanded.has(r["idx"])
-			var row := _make_row([("▼ " if open else "▶ ") + r["name"], _fmt(r["dealt"]), str(r["kills"]), _fmt(r["taken"]), _fmt_heal(r["healed"]), _note(r)], Color(0.92, 0.92, 0.92), 15)
+			var row := _make_row([("▼ " if open else "▶ ") + r["name"], _fmt(r["dealt"]), str(r["kills"]), _fmt_heal(r["healed"]), "Lv%d" % int(r.get("acquired_level", 1)), str(upgrade_counts[0]), "%d/%d" % [upgrade_counts[1], upgrade_counts[2]], _note(r)], Color(0.92, 0.92, 0.92), 15)
 			# 行をクリックで内訳を開く・閉じる
 			row.mouse_filter = Control.MOUSE_FILTER_STOP
 			row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -169,6 +168,23 @@ func _on_row_input(event: InputEvent, idx: int) -> void:
 		_scroll.scroll_vertical = keep
 
 
+## 部隊種ごとの強化レベル合計と、取得した特別強化数／総数。
+func _upgrade_counts(cat: String) -> Array:
+	var group := "pet" if cat == "triple_pet" else cat
+	var normal := 0
+	var special := 0
+	var special_total := 0
+	for u in Upgrades.LIST:
+		if group in Upgrades.groups_of(u):
+			normal += int(game.upgrade_levels.get(u["id"], 0))
+	for u in Upgrades.SPECIAL:
+		if group in Upgrades.groups_of(u):
+			special_total += 1
+			if int(game.upgrade_levels.get(u["id"], 0)) > 0:
+				special += 1
+	return [normal, special, special_total]
+
+
 ## 個体の下に、特別強化ごとの与ダメージの内訳を並べる（多い順。残りは「通常攻撃・その他」）。
 ## 回復したことがあれば、回復量の内訳も並べる
 func _add_breakdown(r: Dictionary) -> void:
@@ -181,10 +197,10 @@ func _add_breakdown(r: Dictionary) -> void:
 	for id in ids:
 		var v: float = by[id]
 		sp_sum += v
-		_list.add_child(_make_row(["　　★" + str(_sp_names.get(id, id)), _fmt(v), "", "", "", _pct(v, total)], col, 14))
+		_list.add_child(_make_row(["　　★" + str(_sp_names.get(id, id)), _fmt(v), "", "", _upgrade_acquired_level(id), "", "", _pct(v, total)], col, 14))
 	if total > 0.0 or ids.is_empty():
 		var normal := maxf(0.0, total - sp_sum)
-		_list.add_child(_make_row(["　　通常攻撃・その他", _fmt(normal), "", "", "", _pct(normal, total)], Color(0.75, 0.75, 0.75), 14))
+		_list.add_child(_make_row(["　　通常攻撃・その他", _fmt(normal), "", "", "", "", "", _pct(normal, total)], Color(0.75, 0.75, 0.75), 14))
 	# 回復量の内訳
 	var healed: float = r["healed"]
 	if healed > 0.0:
@@ -196,12 +212,12 @@ func _add_breakdown(r: Dictionary) -> void:
 		for id in hids:
 			var v: float = hby[id]
 			h_sum += v
-			_list.add_child(_make_row(["　　♥" + str(_sp_names.get(id, id)), "", "", "", _fmt(v), _pct(v, healed)], hcol, 14))
+			_list.add_child(_make_row(["　　♥" + str(_sp_names.get(id, id)), "", "", _fmt(v), _upgrade_acquired_level(id), "", "", _pct(v, healed)], hcol, 14))
 		var base := maxf(0.0, healed - h_sum)
 		if base >= 0.5:
-			_list.add_child(_make_row(["　　♥通常の回復", "", "", "", _fmt(base), _pct(base, healed)], Color(0.7, 0.85, 0.7), 14))
+			_list.add_child(_make_row(["　　♥通常の回復", "", "", _fmt(base), "", "", "", _pct(base, healed)], Color(0.7, 0.85, 0.7), 14))
 	if ids.is_empty() and healed <= 0.0:
-		_list.add_child(_make_row(["　　（特別強化のダメージ・回復はまだありません）", "", "", "", "", ""], Color(0.6, 0.6, 0.6), 13))
+		_list.add_child(_make_row(["　　（特別強化のダメージ・回復はまだありません）", "", "", "", "", "", "", ""], Color(0.6, 0.6, 0.6), 13))
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(0, 4)
 	_list.add_child(spacer)
@@ -232,6 +248,12 @@ func _note(r: Dictionary) -> String:
 	return "  ".join(parts)
 
 
+func _upgrade_acquired_level(id: String) -> String:
+	if not game.upgrade_acquired_levels.has(id):
+		return ""
+	return "Lv%d" % int(game.upgrade_acquired_levels[id])
+
+
 func _make_row(texts: Array, col: Color, font_size: int) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 18)
@@ -241,9 +263,9 @@ func _make_row(texts: Array, col: Color, font_size: int) -> HBoxContainer:
 		l.custom_minimum_size = Vector2(COL_WIDTHS[i], 0)
 		l.add_theme_font_size_override("font_size", font_size)
 		l.add_theme_color_override("font_color", col)
-		if i in [1, 2, 3, 4]:
+		if i in [1, 2, 3, 4, 5, 6]:
 			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		if i == 5:
+		if i == 7:
 			l.add_theme_font_size_override("font_size", font_size - 2)
 		row.add_child(l)
 	return row

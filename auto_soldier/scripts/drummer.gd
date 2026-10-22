@@ -40,7 +40,9 @@ const PLACE_DELAY := 4.0
 ## 必殺・大太鼓：間隔・範囲・威力・気絶
 const ULT_EVERY := 15.0
 const ULT_RADIUS_MULT := 3.0
-const ULT_DAMAGE_MULT := 5.0
+const ULT_DAMAGE_MULT := 0.5
+## 置き太鼓の威力（通常の太鼓 × これ）
+const PLACE_DAMAGE_MULT := 10.0
 const ULT_STUN := 1.0
 
 var game: Node2D
@@ -93,11 +95,11 @@ func _process(delta: float) -> void:
 	_cd -= delta * game.atk_speed_mult(record)
 	if _cd <= 0.0:
 		_cd = st.interval
-		_beat(st.damage, st.radius, record)
+		_beat(st.attack_power, st.radius, record)
 	if _double_left > 0.0:
 		_double_left -= delta
 		if _double_left <= 0.0:
-			_beat(st.damage * DOUBLE_RATIO, st.radius, game.sp_src(record, "sp_drum_double"), false)
+			_beat(st.attack_power * DOUBLE_RATIO, st.radius, game.sp_src(record, "sp_drum_double"), false)
 	# 必殺・大太鼓：全鼓舞兵が同じタイミングで
 	if game.drum_ult:
 		var cyc := floori(game.elapsed / ULT_EVERY)
@@ -182,7 +184,7 @@ func _update_placed(delta: float) -> void:
 		p["left"] -= delta
 		if p["left"] <= 0.0:
 			game.drum_buff_area(p["pos"], st.radius, BUFF_TIME, null)
-			_hit_area(p["pos"], st.radius, st.damage, game.sp_src(record, "sp_drum_place"), _beat_stun(), _beat_knock())
+			_hit_area(p["pos"], st.radius, st.attack_power * PLACE_DAMAGE_MULT, game.sp_src(record, "sp_drum_place"), _beat_stun(), _beat_knock())
 			_placed_fx.append({"pos": p["pos"], "left": 0.3})
 	_placed = _placed.filter(func(p) -> bool: return p["left"] > 0.0)
 
@@ -225,7 +227,7 @@ func _shock_waves(dmg: float) -> void:
 func _big_beat() -> void:
 	var st = game.drummer_stats
 	var r: float = st.radius * ULT_RADIUS_MULT
-	_hit_area(global_position, r, st.damage * ULT_DAMAGE_MULT, game.sp_src(record, "sp_ult_drum"), ULT_STUN, 0.0)
+	_hit_area(global_position, r, st.attack_power * ULT_DAMAGE_MULT, game.sp_src(record, "sp_ult_drum"), ULT_STUN, 0.0)
 	game.drum_buff_area(global_position, r, BUFF_TIME, self)
 	_beat_fx = 0.6
 	_beat_r = r

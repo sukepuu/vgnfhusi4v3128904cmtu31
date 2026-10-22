@@ -31,7 +31,7 @@ const SKIP_SCRIPTS := [
 const MAIN_SKIP := [
 	"world", "effects", "camera", "castle", "walls", "ground", "hud", "level_up_ui", "stats_ui", "upgrades_ui",
 	"auto_pick_ui", "summary_ui", "records_ui", "damage_ui", "changelog_ui", "debug_ui", "ultimates", "fun",
-	"last_record_id", "records", "enemies_cache", "_grid", "game_over", "auto_pick", "_shown_choices",
+	"last_record_id", "records", "enemies_cache", "_grid", "game_over", "auto_pick", "random_auto", "_shown_choices",
 	"_autosave_queued", "debug_start", "_retry_auto_pick", "auto_priority", "_load_autosave", "_load_autosave_level", "dmg_attacker",
 ]
 ## ノードそのものの性質で保存するもの
@@ -249,7 +249,7 @@ func _capture() -> Dictionary:
 	out["nodes"] = nodes_out
 	# レベルアップの3択が出ている最中なら、その3択（リロールしたかも）を覚える
 	var choices: Array = []
-	if game.level_up_ui.visible and not game._shown_choices.is_empty():
+	if game.level_up_ui.visible and not game.level_up_ui._overtime_notice and not game._shown_choices.is_empty():
 		for u in game._shown_choices:
 			choices.append(str(u["id"]))
 	out["levelup"] = {"choices": choices, "special": game._shown_special, "for_level": game._shown_level,

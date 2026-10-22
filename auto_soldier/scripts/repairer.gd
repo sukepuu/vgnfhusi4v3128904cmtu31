@@ -108,9 +108,9 @@ func _first_aid(amount: float) -> void:
 	for k in game.knights:
 		if not k.dead:
 			game.heal_unit(k, game.knight_stats.max_hp, amount, record, "sp_first_aid")
-	var h: Node2D = game.heavy
-	if h != null and not h.dead:
-		game.heal_unit(h, h.max_hp, amount, record, "sp_first_aid")
+	for h in game.all_heavies():
+		if not h.dead:
+			game.heal_unit(h, h.max_hp, amount, record, "sp_first_aid")
 
 
 func _draw() -> void:

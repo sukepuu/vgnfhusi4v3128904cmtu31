@@ -19,6 +19,8 @@ const UNIT_IDS := {"soldier": "recruit", "pet": "pet", "guard": "guard", "sniper
 	"catapult": "catapult", "ballista": "ballista", "frost": "frost", "mine_site": "mine_site",
 	"archer": "archer", "archer_pet": "archer_pet", "drummer": "drummer", "drum_pet": "drum_pet", "rapid": "rapid"}
 
+const ENEMY_HP_MULTS := [1.0, 2.0, 3.0, 10.0]
+
 var game: Node2D
 var _was_paused := false
 var _time_edit: LineEdit
@@ -32,6 +34,8 @@ var _arrows := {}
 var _save_note: Label
 var _desc: Label
 var _load_btn: Button
+var _damage_toggle_btn: Button
+var _enemy_hp_btn: Button
 
 
 func _ready() -> void:
@@ -54,10 +58,16 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation", 10)
 	margin.add_child(box)
 
-	# 一番上：この状態で出撃する
+	# 一番上の操作を2行に分ける
+	var top_rows := VBoxContainer.new()
+	top_rows.add_theme_constant_override("separation", 8)
+	box.add_child(top_rows)
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", 16)
-	box.add_child(top)
+	top_rows.add_child(top)
+	var top2 := HBoxContainer.new()
+	top2.add_theme_constant_override("separation", 16)
+	top_rows.add_child(top2)
 	var go := Button.new()
 	go.text = "この状態で出撃する"
 	go.custom_minimum_size = Vector2(300, 48)
@@ -86,19 +96,31 @@ func _ready() -> void:
 	_load_btn.add_theme_font_size_override("font_size", 18)
 	_load_btn.focus_mode = Control.FOCUS_NONE
 	_load_btn.pressed.connect(_load)
-	top.add_child(_load_btn)
+	top2.add_child(_load_btn)
 	var reset := Button.new()
 	reset.text = "部隊戦績リセット"
 	reset.custom_minimum_size = Vector2(180, 48)
 	reset.add_theme_font_size_override("font_size", 18)
 	reset.focus_mode = Control.FOCUS_NONE
 	reset.pressed.connect(_reset_records)
-	top.add_child(reset)
+	top2.add_child(reset)
+	_damage_toggle_btn = Button.new()
+	_damage_toggle_btn.custom_minimum_size = Vector2(300, 48)
+	_damage_toggle_btn.add_theme_font_size_override("font_size", 18)
+	_damage_toggle_btn.focus_mode = Control.FOCUS_NONE
+	_damage_toggle_btn.pressed.connect(_toggle_enemy_damage)
+	top2.add_child(_damage_toggle_btn)
+	_enemy_hp_btn = Button.new()
+	_enemy_hp_btn.custom_minimum_size = Vector2(190, 48)
+	_enemy_hp_btn.add_theme_font_size_override("font_size", 18)
+	_enemy_hp_btn.focus_mode = Control.FOCUS_NONE
+	_enemy_hp_btn.pressed.connect(_cycle_enemy_hp)
+	top2.add_child(_enemy_hp_btn)
 	var title := Label.new()
 	title.text = "デバッグ設定"
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
-	top.add_child(title)
+	top2.add_child(title)
 
 	# 時間とレベル
 	var info := HBoxContainer.new()
@@ -322,6 +344,8 @@ func _refresh() -> void:
 	var t := int(game.elapsed)
 	_time_edit.text = "%02d:%02d" % [t / 60, t % 60]
 	_level_spin.set_value_no_signal(game.level)
+	_update_damage_toggle()
+	_update_enemy_hp_button()
 	for id in _rows:
 		var lv: int = int(game.upgrade_levels.get(id, 0))
 		_rows[id][0].set_pressed_no_signal(lv > 0)
@@ -346,7 +370,31 @@ func _current() -> Dictionary:
 	for id in _rows:
 		if _rows[id][0].button_pressed:
 			levels[id] = int(_rows[id][1].value) if _rows[id][1] != null else 1
-	return {"elapsed": _parse_time(_time_edit.text), "level": int(_level_spin.value), "levels": levels}
+	return {"elapsed": _parse_time(_time_edit.text), "level": int(_level_spin.value), "levels": levels,
+		"enemy_damage_enabled": game.enemy_damage_enabled, "enemy_hp_debug_mult": game.enemy_hp_debug_mult}
+
+
+func _toggle_enemy_damage() -> void:
+	game.enemy_damage_enabled = not game.enemy_damage_enabled
+	_update_damage_toggle()
+
+
+func _update_damage_toggle() -> void:
+	if _damage_toggle_btn == null:
+		return
+	_damage_toggle_btn.text = "敵からのダメージ：有効中" if game.enemy_damage_enabled else "敵からのダメージ：無効中"
+
+
+func _cycle_enemy_hp() -> void:
+	var i := ENEMY_HP_MULTS.find(game.enemy_hp_debug_mult)
+	game.enemy_hp_debug_mult = ENEMY_HP_MULTS[0] if i < 0 or i >= ENEMY_HP_MULTS.size() - 1 else ENEMY_HP_MULTS[i + 1]
+	_update_enemy_hp_button()
+
+
+func _update_enemy_hp_button() -> void:
+	if _enemy_hp_btn == null:
+		return
+	_enemy_hp_btn.text = "敵HP：%d倍" % int(game.enemy_hp_debug_mult)
 
 
 func _sortie() -> void:
@@ -399,6 +447,10 @@ func _apply_saved(entry: Dictionary) -> void:
 	_time_edit.text = "%02d:%02d" % [t / 60, t % 60]
 	_level_spin.set_value_no_signal(int(cfg.get("level", 1)))
 	var levels: Dictionary = cfg.get("levels", {})
+	game.enemy_damage_enabled = bool(cfg.get("enemy_damage_enabled", true))
+	game.enemy_hp_debug_mult = clampf(float(cfg.get("enemy_hp_debug_mult", 1.0)), 1.0, 10.0)
+	_update_damage_toggle()
+	_update_enemy_hp_button()
 	for id in _rows:
 		var lv := int(levels.get(id, 0))
 		_rows[id][0].set_pressed_no_signal(lv > 0)

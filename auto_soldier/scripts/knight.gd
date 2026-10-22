@@ -4,9 +4,9 @@ extends Node2D
 ## 突進中は無敵。倒されても10秒後に城から復活する。ステータスは game.knight_stats を全員で共有。
 
 const RESPAWN_TIME := 10.0
-const DASH_SPEED := 1100.0
+const DASH_SPEED := 1430.0
 ## この距離まで近づいたら突進する
-const DASH_START := 190.0
+const DASH_START := 285.0
 
 var game: Node2D
 var index := 0
@@ -30,6 +30,7 @@ var _dash_killed := false
 var _star_cd := 0.0
 var _hurt_flash := 0.0
 var _invuln := 0.0
+var _execute_buff_left := 0.0
 var _trail: Array = []
 ## 連行突撃で連れていっている敵
 var _carried: Array = []
@@ -55,6 +56,7 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		return
 	var st = game.knight_stats
+	_execute_buff_left = maxf(0.0, _execute_buff_left - delta)
 	_cd -= delta * game.atk_speed_mult(record)
 	_retarget_cd -= delta
 	_hurt_flash -= delta
@@ -137,8 +139,8 @@ func _update_dash(delta: float, st) -> void:
 			c.position = global_position + _dash_dir * (radius + c.radius + 4.0) + _dash_dir.orthogonal() * (k % 3 - 1) * 14.0
 			c.knock = Vector2.ZERO
 			k += 1
-	# 突進の威力（基本80。遊撃兵の強化は乗らない。剛突で上がる）
-	var dmg: float = game.knight_damage()
+	# 突進の威力（基本240。遊撃兵の強化は乗らない。剛突と、とどめの一撃の強化が乗る）
+	var dmg: float = game.knight_damage() * (1.5 if _execute_buff_left > 0.0 else 1.0)
 	# 当たる幅（大槍で広がる）
 	var reach: float = (radius + 6.0) * st.hit_width
 	for e in game.enemies_near(global_position, reach + 50.0):
@@ -146,6 +148,7 @@ func _update_dash(delta: float, st) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < reach + e.radius:
 			_dash_hit[e] = true
+			var hp_before_hit: float = e.hp
 			var hit_dmg := dmg
 			# とどめの一撃：弱った敵（ボス以外）は一撃で倒す
 			if st.execute and not e.is_boss and e.hp <= e.max_hp * 0.2 and e.hp + 1.0 > dmg:
@@ -161,6 +164,9 @@ func _update_dash(delta: float, st) -> void:
 				e.take_damage(hit_dmg, _dash_dir * 350.0, hit_src)
 			if e.dead:
 				_dash_killed = true
+				if st.execute and ((e.kind == "stealth" or e.kind == "elite_stealth") or hp_before_hit <= hit_dmg):
+					_execute_buff_left = 10.0
+					dmg = game.knight_damage() * 1.5
 			if st.carry and not e.is_boss and not e.dead and e.speed > 0.0 and e._kb_mult() > 0.0:
 				_carried.append(e)
 			if st.heal_on_hit:
@@ -170,7 +176,7 @@ func _update_dash(delta: float, st) -> void:
 		_star_cd -= delta
 		if _star_cd <= 0.0:
 			_star_cd = 0.05
-			game.spawn_blast(global_position + Vector2(randf_range(-10, 10), randf_range(-10, 10)), 1.4, 34.0, dmg * 3.0, game.sp_src(record, "sp_fun_star"), Color(1.0, 0.95, 0.4), "star")
+			game.spawn_blast(global_position + Vector2(randf_range(-10, 10), randf_range(-10, 10)), 1.4, 34.0, dmg * 18.0, game.sp_src(record, "sp_fun_star"), Color(1.0, 0.95, 0.4), "star")
 	if _dash_left <= 0.0:
 		_dash_left = 0.0
 		# 運んでいた敵を、勢いよく放り出す（城の方へは飛ばさない）
@@ -180,7 +186,7 @@ func _update_dash(delta: float, st) -> void:
 		_carried.clear()
 		# 突撃の衝撃：止まった所で爆発
 		if st.quake:
-			game.explode(global_position, 90.0, dmg * 1.5, game.sp_src(record, "sp_dash_quake"), Color(1.0, 0.85, 0.4), 0.0, 300.0)
+			game.explode(global_position, 90.0, dmg * 4.5, game.sp_src(record, "sp_dash_quake"), Color(1.0, 0.85, 0.4), 0.0, 300.0)
 		# 疾風怒濤：敵を倒していたら、すぐ次の敵へ突進し直す（最大5連鎖）
 		if st.kill_chain and _dash_killed and _kill_chain_left > 0:
 			var nk := _nearest_unhit(450.0)
@@ -213,10 +219,10 @@ func _nearest_unhit(max_d: float) -> Node2D:
 
 
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
+	if not game.enemy_damage_enabled:
+		return
 	if dead or _invuln > 0.0 or is_dashing():
 		return
-	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
-	amount += game.overtime_dmg_bonus()
 	# 5分までは、城と同じく受けるダメージが半分（設置物は半分にならない）
 	amount *= game.early_damage_mult()
 	record["taken"] += minf(amount, hp)

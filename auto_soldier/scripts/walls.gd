@@ -122,9 +122,11 @@ func hit_test(p: Vector2, r: float) -> int:
 ## 壁 i で攻撃を1発防ぐ（ダメージの大きさに関係なく1回分）。pos = 防いだ場所
 ## amount = 削る耐久（敵の弾は1、敵が体当たりしたら5）
 func absorb(i: int, pos: Vector2 = Vector2.INF, amount: float = 1.0) -> void:
+	if not game.enemy_damage_enabled:
+		return
 	var w: Dictionary = walls[i]
-	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
-	amount += game.overtime_dmg_bonus()
+	# 170overtime：壁への敵のダメージに（レベルの百の位）を加える
+	amount += game.overtime_wall_damage_bonus()
 	if explode_on_block and pos != Vector2.INF:
 		game.explode(pos, 75.0, 40.0 * (1.0 + game.elapsed / 180.0), game.sp_src(w["src"], "sp_wall_blast"), Color(0.9, 0.75, 0.5))
 	if jack and pos != Vector2.INF and randf() < 0.35:
@@ -152,7 +154,7 @@ func spike_hit(i: int, pos: Vector2) -> void:
 		return
 	w["spike_next"] = game.elapsed + SPIKE_COOLDOWN
 	# 敵の硬さに合わせて威力も上がる（基本の威力2）
-	var dmg: float = 2.0 * game._hp_mult()
+	var dmg: float = 2.0 * game.level_hp_mult() * game.overtime_hp_mult()
 	game.explode(pos, SPIKE_RADIUS, dmg, game.sp_src(w["src"], "sp_spike_wall"), Color(0.8, 0.8, 0.85), 0.0, 260.0)
 	game.spawn_fun_fx("spikes", pos)
 
@@ -179,9 +181,11 @@ func counter_shot(pos: Vector2) -> void:
 
 ## 壁 i の耐久を n 減らす（ボス用）
 func damage_wall(i: int, n: float) -> void:
+	if not game.enemy_damage_enabled:
+		return
 	var w: Dictionary = walls[i]
-	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
-	n += game.overtime_dmg_bonus()
+	# 170overtime：壁への敵のダメージに（レベルの百の位）を加える
+	n += game.overtime_wall_damage_bonus()
 	game.note_taken("wall", minf(n, maxf(w["hp"], 0.0)))
 	w["hp"] -= n
 	w["flash"] = 0.2

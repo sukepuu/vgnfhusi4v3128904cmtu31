@@ -9,10 +9,11 @@ const ArcherFxScript := preload("res://scripts/archer_fx.gd")
 const RESPAWN_TIME := 10.0
 const MOVE_SPEED := 140.0
 ## 特別強化の威力（矢1本の威力 × これ）
-const RAIN_MULT := 30.0
+const RAIN_MULT := 15.0
 const ORB_MULT := 7.5
-const TORNADO_ARROW_MULT := 200.0
-const GIANT_TORNADO_MULT := 60.0
+const ORB_DAMAGE_RATIO := 0.125
+const TORNADO_ARROW_MULT := 100.0
+const GIANT_TORNADO_MULT := 30.0
 ## 特別強化の間隔（秒）。全弓兵が同じタイミングで撃つように、ゲームの経過時間の区切りで数える
 const RAIN_EVERY := 8.0
 const ORB_EVERY := 15.0
@@ -56,6 +57,8 @@ func _ready() -> void:
 
 ## 流れ弾などに当たったとき（from_pos は使わない）
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
+	if not game.enemy_damage_enabled:
+		return
 	if dead or _invuln > 0.0:
 		return
 	# 追い討ち：HPが半分以下の敵からの攻撃は受けない
@@ -63,8 +66,7 @@ func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 		var who = game.dmg_attacker
 		if who != null and is_instance_valid(who) and who.hp <= who.max_hp * 0.5:
 			return
-	# 170overtime・序盤の被ダメージ半減は、ほかの兵士と同じ
-	amount += game.overtime_dmg_bonus()
+	# 序盤の被ダメージ半減は、ほかの兵士と同じ
 	amount *= game.early_damage_mult()
 	record["taken"] += minf(amount, hp)
 	game.note_taken("archer", minf(amount, hp))
@@ -173,7 +175,7 @@ func _shoot(target: Node2D) -> void:
 	var st = game.archer_stats
 	for k in st.shots:
 		var dir := aim.rotated((k - (st.shots - 1) / 2.0) * 0.15)
-		var b := _make_arrow(dir, st.damage, record)
+		var b := _make_arrow(dir, st.attack_power, record)
 		b.pierce = st.pierce
 		b.radius = 5.0 * st.arrow_scale
 		b.scale = Vector2(0.5, 0.5) * st.arrow_scale
@@ -203,7 +205,7 @@ func _fire_tornado_arrow() -> void:
 	var target := _nearest_enemy(game.archer_stats.fire_range * 1.5)
 	if target == null:
 		return
-	var b := _make_arrow((target.global_position - global_position).normalized(), game.archer_stats.damage * TORNADO_ARROW_MULT, game.sp_src(record, "sp_archer_tornado"))
+	var b := _make_arrow((target.global_position - global_position).normalized(), game.archer_stats.attack_power * TORNADO_ARROW_MULT, game.sp_src(record, "sp_archer_tornado"))
 	b.radius = 8.0
 	b.scale = Vector2(0.8, 0.8)
 	b.color = Color(0.6, 0.9, 1.0)
@@ -221,7 +223,7 @@ func _giant_tornado() -> void:
 	fx.kind = "giant"
 	fx.radius = GIANT_TORNADO_RADIUS
 	fx.duration = 1.5
-	fx.damage = game.archer_stats.damage * GIANT_TORNADO_MULT
+	fx.damage = game.archer_stats.attack_power * GIANT_TORNADO_MULT
 	fx.src = game.sp_src(record, "sp_archer_giant_tornado")
 	fx.position = game.MAP_RECT.get_center()
 	game.effects.add_child(fx)
@@ -235,7 +237,7 @@ func _fire_orb() -> void:
 	fx.game = game
 	fx.kind = "orb"
 	fx.velocity = dir * 120.0
-	fx.damage = game.archer_stats.damage * ORB_MULT
+	fx.damage = game.archer_stats.attack_power * ORB_MULT * ORB_DAMAGE_RATIO
 	fx.src = game.sp_src(record, "sp_archer_ult")
 	fx.position = global_position
 	game.effects.add_child(fx)
@@ -249,7 +251,7 @@ func _arrow_rain() -> void:
 	for i in n:
 		var x: float = lerpf(r.position.x + 40.0, r.end.x - 40.0, (i + 0.5) / n) + randf_range(-20.0, 20.0)
 		game.spawn_blast(Vector2(x, y + randf_range(-20.0, 20.0)), randf_range(0.3, 0.9), 45.0,
-			game.archer_stats.damage * RAIN_MULT, game.sp_src(record, "sp_archer_rain"), Color(0.75, 0.8, 1.0), "arrow")
+			game.archer_stats.attack_power * RAIN_MULT, game.sp_src(record, "sp_archer_rain"), Color(0.75, 0.8, 1.0), "arrow")
 
 
 func _draw() -> void:

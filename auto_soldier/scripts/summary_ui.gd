@@ -1,6 +1,6 @@
 extends CanvasLayer
 ## 戦績まとめ画面（ゲームオーバー画面のボタンから開く）。
-## 部隊・設備の種類ごとに、与ダメージの合計と、強化・特別強化を何個取ったかを一覧で出す。
+## 部隊・設備の種類ごとに、配置数・与ダメージの合計と、強化・特別強化を何個取ったかを一覧で出す。
 ## 中身は snapshot() で辞書にまとめてから表示する（歴代記録にもこの辞書を保存して、あとで同じ表示を出す）。
 
 const Upgrades := preload("res://scripts/upgrades.gd")
@@ -18,6 +18,7 @@ const EQUIP_PREFIX := {"矢倉": "tower", "大砲": "cannon", "投石器": "cata
 var game: Node2D
 var _grid: GridContainer
 var _header: Label
+var _scroll: ScrollContainer
 var _close: Button
 ## 歴代記録から開いたときの「被害状況」ボタン（被害状況が保存された記録だけ）
 var _damage_btn: Button
@@ -47,6 +48,9 @@ func _ready() -> void:
 
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
+	box.set_anchors_preset(Control.PRESET_CENTER)
+	box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	center.add_child(box)
 
 	var title := Label.new()
@@ -61,18 +65,29 @@ func _ready() -> void:
 	_header.add_theme_font_size_override("font_size", 20)
 	box.add_child(_header)
 
+	_scroll = ScrollContainer.new()
+	_scroll.custom_minimum_size = Vector2(980, 480)
+	_scroll.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(_scroll)
+
+	var content := VBoxContainer.new()
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_scroll.add_child(content)
+
 	_grid = GridContainer.new()
-	_grid.columns = 4
+	_grid.columns = 5
 	_grid.add_theme_constant_override("h_separation", 36)
 	_grid.add_theme_constant_override("v_separation", 4)
-	box.add_child(_grid)
+	content.add_child(_grid)
 
 	_mine_note = Label.new()
 	_mine_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_mine_note.add_theme_font_size_override("font_size", 18)
 	_mine_note.add_theme_color_override("font_color", Color(0.6, 1.0, 0.95))
 	_mine_note.visible = false
-	box.add_child(_mine_note)
+	content.add_child(_mine_note)
 
 	var btns := HBoxContainer.new()
 	btns.add_theme_constant_override("separation", 16)
@@ -140,6 +155,9 @@ func _cell(text: String, col: Color, size: int = 18, right: bool = false) -> Lab
 
 ## 戦績カードが、どの種類のものか
 func _group_of_record(r: Dictionary) -> String:
+	# 合体合体合体ペットは、ペットのダメージに入れる（部隊戦績と同じ）
+	if r["cat"] == "triple_pet":
+		return "pet"
 	if r["cat"] != "castle":
 		return r["cat"]
 	for prefix in EQUIP_PREFIX:
@@ -178,12 +196,41 @@ func snapshot() -> Dictionary:
 		special_total[g] = special_total.get(g, 0) + 1
 		if game.upgrade_levels.get(u["id"], 0) > 0:
 			special[g] = special.get(g, 0) + 1
+	# 配置数（現在数 / 上限）。ペットは担当キャラ数に応じた最大数
+	var placement_counts := {
+		"soldier": [game.soldiers.size(), game.MAX_SOLDIERS],
+		"pet": [game.pets.size(), game.soldiers.size() * game.MAX_PETS],
+		"guard": [game.guards.size(), game.MAX_GUARDS],
+		"sniper": [game.snipers.size(), game.MAX_SNIPERS],
+		"knight": [game.knights.size(), game.MAX_KNIGHTS],
+		"heavy": [game.all_heavies().size(), 2],
+		"engineer": [game.engineers.size(), game.MAX_ENGINEERS],
+		"builder": [game.builders.size(), game.MAX_BUILDERS],
+		"repair": [game.repairers.size(), game.MAX_REPAIRERS],
+		"archer": [game.archers.size(), game.MAX_ARCHERS],
+		"archer_pet": [game.archer_pets.size(), game.archers.size() * game.MAX_PETS],
+		"drummer": [game.drummers.size(), game.MAX_DRUMMERS],
+		"drum_pet": [game.drum_pets.size(), game.drummers.size() * game.MAX_PETS],
+		"tower": [game.castle.tower_count, 4],
+		"cannon": [mini(game.castle.cannon_level, game.castle.MAX_GUNS), game.castle.MAX_GUNS],
+		"catapult": [mini(game.castle.catapult_level, game.castle.MAX_GUNS), game.castle.MAX_GUNS],
+		"ballista": [mini(game.castle.ballista_level, game.castle.MAX_BALLISTAS), game.castle.MAX_BALLISTAS],
+		"rapid": [mini(game.castle.rapid_level, 2), 2],
+		"frost": [1 if game.castle.frost_radius > 0.0 else 0, 1],
+		"mine_site": [game.mine_sites.size(), 2],
+		"castle": [1, 1],
+	}
 	var rows: Array = []
 	for entry in GROUPS:
 		var key: String = entry[1]
+		var count_text := ""
+		if placement_counts.has(key):
+			var counts: Array = placement_counts[key]
+			count_text = "%d/%d" % [int(counts[0]), int(counts[1])]
 		rows.append({"key": key, "name": entry[0], "dealt": float(dealt.get(key, 0.0)),
 			"normal": int(normal.get(key, 0)), "special": int(special.get(key, 0)),
-			"special_total": int(special_total.get(key, 0)), "used": dealt.get(key, 0.0) > 0.0 or normal.has(key) or special.has(key)})
+			"special_total": int(special_total.get(key, 0)), "placement_count": count_text,
+			"used": dealt.get(key, 0.0) > 0.0 or normal.has(key) or special.has(key)})
 	return {"level": int(game.level), "elapsed": float(game.elapsed), "kills": int(game.kills), "rows": rows, "mine_xp": mine_xp, "has_mine": not game.mine_sites.is_empty(),
 		"damage_taken": game.damage_taken.duplicate(true), "damage_recent": game.recent_damage()}
 
@@ -203,17 +250,24 @@ func _render(snap: Dictionary, date: String = "") -> void:
 		c.queue_free()
 	var head_col := Color(0.8, 0.8, 0.8)
 	_grid.add_child(_cell("種類", head_col, 18))
+	_grid.add_child(_cell("配置数", head_col, 18, true))
 	_grid.add_child(_cell("与ダメージ合計", head_col, 18, true))
 	_grid.add_child(_cell("強化", head_col, 18, true))
 	_grid.add_child(_cell("特別強化", head_col, 18, true))
 	for row in snap.get("rows", []):
 		var key: String = str(row.get("key", "castle"))
+		# 通常強化・特別強化のどちらも取っていない種類は表示しない
+		if int(row.get("normal", 0)) <= 0 and int(row.get("special", 0)) <= 0:
+			continue
 		var used: bool = bool(row.get("used", false))
 		var col := Color(1, 1, 1) if used else Color(0.45, 0.45, 0.45)
 		var cat_key := key if Upgrades.CAT_COLOR.has(key) else "castle"
 		if used:
 			col = Upgrades.CAT_COLOR[cat_key]
 		_grid.add_child(_cell(str(row.get("name", "")), col))
+		# unit_count は以前の記録との互換用
+		var placement_count: String = str(row.get("placement_count", row.get("unit_count", "")))
+		_grid.add_child(_cell(placement_count if placement_count != "" else "—", col, 18, true))
 		_grid.add_child(_cell(_fmt(float(row.get("dealt", 0.0))), col, 18, true))
 		_grid.add_child(_cell("%d" % int(row.get("normal", 0)), col, 18, true))
 		_grid.add_child(_cell("%d / %d" % [int(row.get("special", 0)), int(row.get("special_total", 0))], col, 18, true))

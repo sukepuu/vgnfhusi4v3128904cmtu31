@@ -114,7 +114,7 @@ func _process(delta: float) -> void:
 	# 大旋風槍
 	if st.whirl and _whirl_cd <= 0.0 and game.nearest_enemy(global_position, st.spear_reach, true) != null:
 		_whirl_cd = 6.0
-		game.explode(global_position, st.spear_reach * 1.2, st.spear_damage * 3.0, game.sp_src(record, "sp_whirl_spear"), Color(0.7, 1.0, 0.7), 0.0, 320.0)
+		game.explode(global_position, st.spear_reach * 1.2, st.attack_power * 3.0, game.sp_src(record, "sp_whirl_spear"), Color(0.7, 1.0, 0.7), 0.0, 320.0)
 		game.spawn_burst(global_position, Color(1, 1, 1), st.spear_reach / 1.8)
 	# 拒馬の柵：敵が近いとき、盾の前に柵を置く
 	# 黄金の盾：15秒ごとに、今向いている方向へ黄金の盾を飛ばす
@@ -130,7 +130,7 @@ func _process(delta: float) -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 230.0
-			b.damage = st.spear_damage * 5.0
+			b.damage = st.attack_power * 5.0
 			b.pierce = 1000000
 			b.radius = 26.0
 			b.spear = true
@@ -140,7 +140,7 @@ func _process(delta: float) -> void:
 			game.world.add_child(b)
 	if st.spikes and _spike_cd <= 0.0 and game.nearest_enemy(global_position, 260.0, true) != null:
 		_spike_cd = 8.0
-		game.spawn_placed("spikes", global_position + facing * 70.0, st.spear_damage * 0.8, 33.0, 8.0, game.sp_src(record, "sp_spikes"))
+		game.spawn_placed("spikes", global_position + facing * 70.0, st.attack_power * 0.8, 33.0, 8.0, game.sp_src(record, "sp_spikes"))
 	if _spear_cd <= 0.0 and _try_thrust():
 		_spear_cd = st.spear_interval
 	queue_redraw()
@@ -177,7 +177,7 @@ func _throw_golden_shield() -> void:
 	gs.game = game
 	gs.dir = facing
 	gs.half_arc = game.guard_stats.shield_arc / 2.0
-	gs.damage = game.guard_stats.spear_damage * 5.0
+	gs.damage = game.guard_stats.attack_power * 5.0
 	gs.src = game.sp_src(record, "sp_fun_reflect")
 	gs.position = global_position + facing * 20.0
 	game.world.add_child(gs)
@@ -257,19 +257,19 @@ func _try_thrust() -> bool:
 	for e in hits:
 		# 捨て身の構え：突いた敵が爆発
 		if st.berserk:
-			game.explode(e.global_position, 70.0, st.spear_damage * 3.0, game.sp_src(record, "sp_berserk_guard"), Color(1.0, 0.45, 0.3), 0.0, 260.0)
+			game.explode(e.global_position, 70.0, st.attack_power * 3.0, game.sp_src(record, "sp_berserk_guard"), Color(1.0, 0.45, 0.3), 0.0, 260.0)
 		# 三叉槍で増えた向きの槍も、ふつうの突きなので通常攻撃として数える
-		e.take_damage(st.spear_damage, hits[e] * 260.0, record)
+		e.take_damage(st.attack_power, hits[e] * 260.0, record)
 	_thrust = 0.18
 	return true
 
 
 ## from_pos = 攻撃が来た場所。盾の範囲内からならダメージを減らす（大盾が最大なら完全に防ぐ）
 func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
+	if not game.enemy_damage_enabled:
+		return
 	if dead or _invuln > 0.0:
 		return
-	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
-	amount += game.overtime_dmg_bonus()
 	# 5分までは、城と同じく受けるダメージが半分（設置物は半分にならない）
 	amount *= game.early_damage_mult()
 	var blocked := false
@@ -284,7 +284,7 @@ func take_damage(amount: float, from_pos: Vector2 = Vector2.INF) -> void:
 			var bash: int = game.guard_stats.bash_level
 			if bash > 0 and _bash_cd <= 0.0:
 				_bash_cd = 0.4
-				game.explode(global_position, 60.0 + 20.0 * bash, game.guard_stats.spear_damage * (0.7 + 0.3 * bash), game.sp_src(record, "sp_bash"), Color(0.7, 1.0, 0.6), 0.0, 320.0)
+				game.explode(global_position, 60.0 + 20.0 * bash, game.guard_stats.attack_power * (0.7 + 0.3 * bash), game.sp_src(record, "sp_bash"), Color(0.7, 1.0, 0.6), 0.0, 320.0)
 			amount *= taken_ratio
 			blocked = true
 			# 完全に防いだら、ダメージの数字は出さない

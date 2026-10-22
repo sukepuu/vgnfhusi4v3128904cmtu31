@@ -100,7 +100,8 @@ func _activate() -> void:
 		if st.ap_mine:
 			var near: Node2D = game.nearest_enemy(global_position, blast_radius)
 			if near != null:
-				near.take_damage(damage * 40.0, Vector2.ZERO, game.sp_src(src, "sp_ap_mine"))
+				near.stun(2.0)
+				near.take_damage(damage * 400.0, Vector2.ZERO, game.sp_src(src, "sp_ap_mine"))
 		# 子爆弾：周りに小爆弾が散らばって爆発
 		if st.cluster_level > 0:
 			var n: int = 3 * st.cluster_level

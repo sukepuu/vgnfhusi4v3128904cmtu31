@@ -83,7 +83,7 @@ var auto_pick_ui: CanvasLayer
 var summary_ui: CanvasLayer
 ## 歴代記録の画面
 var records_ui: CanvasLayer
-## 被害状況確認の画面
+## 被害結果確認の画面
 var damage_ui: CanvasLayer
 var changelog_ui: CanvasLayer
 ## 今回のゲームオーバーで保存した歴代記録の id（TOP20に入らなかったら ""）
@@ -94,6 +94,10 @@ var last_record_id := ""
 var run_id := ""
 ## デバッグ設定から出撃したゲームか（歴代記録に「デバッグ」と出す）
 var debug_run := false
+## 敵から城・部隊・兵装へのダメージを適用するか
+var enemy_damage_enabled := true
+## デバッグ設定で選ぶ敵HP倍率（次に出現する敵から適用）
+var enemy_hp_debug_mult := 1.0
 var debug_ui: CanvasLayer
 ## デバッグ設定メニューの「この状態で出撃する」の内容（作り直したあとの _ready で使って空にする）
 static var debug_start := {}
@@ -117,8 +121,9 @@ var guard_stats := GuardStats.new()
 var guards: Array = []
 ## 築城部隊
 var builders: Array = []
-## 重装部隊（最大1体）
+## 重装部隊（最大2体）。heavy は後方互換用に1体目を指す
 var heavy: Node2D = null
+var heavies: Array = []
 ## 仁王立ち（重装の特別強化）：近くの敵が重装兵を狙う。重装兵がいなくても取った状態を覚えておく
 var heavy_provoke := false
 ## 仁王立ちで敵を引きつける距離
@@ -147,10 +152,10 @@ var drum_ult := false
 var drum_resonance := false
 var drum_morale := false
 var drum_place := false
-## 鼓舞ペット（鼓舞兵1人あたり pets_per_drummer 匹）。範囲攻撃・攻撃速度のバフ。威力・間隔・範囲は鼓舞兵の基本の80%から
+## 鼓舞ペット（鼓舞兵1人あたり pets_per_drummer 匹）。範囲攻撃・攻撃速度のバフ。威力は鼓舞兵の基本の40%から
 var drum_pets: Array = []
 var pets_per_drummer := 0
-var drum_pet_damage := 215.04
+var drum_pet_attack_power := 107.52
 var drum_pet_interval := 7.2
 var drum_pet_radius := 120.0
 var drum_pet_giant := false
@@ -205,8 +210,8 @@ var archer_pets: Array = []
 ## 弓兵1人あたりのペットの数（「弓兵ペット」を取るたびに+1）
 var pets_per_archer := 0
 ## ペットの攻撃力（あとから付くペットにも反映）
-var pet_damage := 12.0
-var archer_pet_damage := 16.0
+var pet_attack_power := 24.0
+var archer_pet_attack_power := 12.0
 ## ペットの射撃間隔・射程（全ペット共通）
 var pet_interval := 0.8
 var archer_pet_interval := 0.75
@@ -243,7 +248,7 @@ var archer_pet_flock := false
 var archer_pet_body := false
 var archer_pet_fusion := false
 var archer_pet_heal := false
-## 体当たりペット：ペットに触れた敵にペットの12倍ダメージ（pet.gd の BODY_MULT）
+## 体当たりペット：ペットに触れた敵に攻撃力の6倍ダメージ（pet.gd の BODY_MULT）
 var pet_body := false
 ## 突撃ペット（6秒ごとにHPが一番高い敵へ突進）・爆裂突撃ペット（突進が当たった所で小爆発）
 var pet_charge := false
@@ -259,24 +264,32 @@ const XP_GAIN := 1.4
 ## レベルが10上がるごとに経験値の倍率が XP_LEVEL_DROP（0.08）ずつ下がる（最低 XP_LEVEL_MIN = 1.0。Lv50で最低になる）
 const XP_LEVEL_DROP := 0.08
 const XP_LEVEL_MIN := 1.0
-## Lv XP_LATE_FROM からは、入る経験値すべて（採掘場・トロッコも）が +XP_LATE_BONUS、そこから Lv1ごとに +XP_LATE_PER_LV ずつ増える
-## （Lv120で1.10倍、Lv130で1.20倍、Lv200で1.90倍。上限なし。上の倍率とは別にかかる）
-const XP_LATE_FROM := 120
-const XP_LATE_BONUS := 0.10
-const XP_LATE_PER_LV := 0.01
+## 50overtime：Lv50以上は、そのレベルごとに獲得経験値が+0.72%（全経験値に適用）
+const XP_OVERTIME_FROM := 50
+const XP_OVERTIME_PER_LV := 0.0072
 var _xp_frac := 0.0
 var xp_to_next := xp_needed(1)
 var kills := 0
 var elapsed := 0.0
 var upgrade_levels := {}
+## 各強化を初めて取得したときの城Lv（部隊戦績の個別内訳に表示）
+var upgrade_acquired_levels := {}
 var pending_levelups := 0
 ## まだ強化を選んでいないレベル（特別強化のレベルかどうかの判定に使う。BISHOP_BONUS_LEVEL は大司教を倒したぶん）
 var _pending_levels: Array = []
+## Lv170到達メッセージをレベルアップ報酬の前に表示する
+var _pending_overtime_notice := false
+var _overtime_notice_shown := false
+var _starting_draft_active := false
+var _starting_pick_number := 1
 var game_over := false
 ## オート選択モード：レベルアップの強化をランダムで自動的に選ぶ
 var auto_pick := false
+## 優先設定を使わず、候補から完全ランダムに選ぶオート選択
+var random_auto := false
 ## 「もう一度」でやり直すとき、オート選択が有効中だったか（やり直した後も有効中のままにする）
 static var _retry_auto_pick := false
+static var _retry_random_auto := false
 ## オート選択の優先設定（部隊・兵装のキー → 3=最優先、2=優先、1=ちょっと優先）。リトライしても覚えておく
 static var auto_priority := {}
 ## ゲームオーバー画面の「前回のLvからリスタート」：作り直したあとの _ready で、オートセーブを読み込んで始める
@@ -292,8 +305,8 @@ var _shown_level := 1
 var _spawn_acc := 0.0
 ## 横一列の大群が来る間隔（秒）
 const WAVE_EVERY := 30.0
-## 大群は、フィールドの敵がこの数を超えないぶんだけ出す（800体いたら200体だけ）
-const WAVE_FIELD_CAP := 1000
+## 大群は、フィールドの敵がこの数を超えないぶんだけ出す（上限300体）
+const WAVE_FIELD_CAP := MAX_ENEMIES
 var _next_wave := WAVE_EVERY
 ## 黒衣の大司教：BISHOP_EVERY 秒（10分）ごとに出現する（レベルのボスとは別）
 const BISHOP_EVERY := 600.0
@@ -356,7 +369,7 @@ func _ready() -> void:
 	ground.name = "Ground"
 	world.add_child(ground)
 
-	# 最初の部隊・兵装はゲーム開始時に _grant_starting_upgrade() で決める（オートセーブから再開するときは、保存した兵士を戻す）
+	# 最初の部隊・兵装はゲーム開始時に選択してもらう（オートセーブから再開するときは、保存した兵士を戻す）
 	var loading := _load_autosave
 	_load_autosave = false
 	if not loading:
@@ -377,6 +390,7 @@ func _ready() -> void:
 	add_child(level_up_ui)
 	level_up_ui.chosen.connect(_on_upgrade_chosen)
 	level_up_ui.reroll_requested.connect(_on_reroll)
+	level_up_ui.overtime_notice_closed.connect(_on_overtime_notice_closed)
 
 	stats_ui = StatsScript.new()
 	stats_ui.game = self
@@ -414,21 +428,25 @@ func _ready() -> void:
 		_retry_auto_pick = false
 		auto_pick = true
 		hud.update_auto_button()
+	if _retry_random_auto:
+		_retry_random_auto = false
+		random_auto = true
+		hud.update_random_auto_button()
 	# 新しいゲームの番号（オートセーブから再開するときは、セーブの番号に置き換わる）
 	run_id = Records.new_run_id()
 	if loading:
 		debug_start = {}
 		# オートセーブから再開（読み込めなかったら、ふつうに最初から始める）
 		if not _restore_autosave():
-			_grant_starting_upgrade.call_deferred()
+			_begin_starting_draft.call_deferred()
 			milestone_level = 1
 			hud.show_notice("前回のセーブを読み込めなかったので、最初から始めます")
 	elif not debug_start.is_empty():
 		_apply_debug_start.call_deferred(debug_start)
 		debug_start = {}
 	else:
-		# ゲーム開始時（リトライも）、部隊・兵装からランダムで3つを最初から加入した状態にする
-		_grant_starting_upgrade.call_deferred()
+		# ゲーム開始時（リトライも）、部隊・兵装の選択画面を出す
+		_begin_starting_draft.call_deferred()
 
 	queue_redraw()
 
@@ -444,12 +462,13 @@ func _fit_camera() -> void:
 
 
 func _process(delta: float) -> void:
+	if castle.ice_statue_cooldown > 0.0:
+		castle.ice_statue_cooldown = maxf(0.0, castle.ice_statue_cooldown - delta)
 	enemies_cache = get_tree().get_nodes_in_group("enemies")
 	_rebuild_grid()
 	if game_over:
 		return
 	elapsed += delta
-	_update_hp_accel()
 	_update_spawning(delta)
 	hud.refresh()
 
@@ -532,8 +551,7 @@ func nearest_enemy(pos: Vector2, max_dist: float, skip_archer: bool = false) -> 
 ## 敵に狙われる味方（遊撃部隊＋迎撃部隊＋重装部隊）。築城部隊は狙われない
 func allies() -> Array:
 	var list: Array = soldiers + guards + knights
-	if heavy != null:
-		list.append(heavy)
+	list.append_array(all_heavies())
 	# 見張り櫓・かかしなど、耐久のある設置物も敵に狙われる
 	for p in get_tree().get_nodes_in_group("attackable"):
 		if not p.dead:
@@ -583,7 +601,8 @@ func nearest_ally(pos: Vector2, max_dist: float) -> Node2D:
 ## 戦績カードを1枚作る。弾や罠にこのカードを持たせて、与えたダメージを記録する
 func new_record(cat: String, name_text: String) -> Dictionary:
 	var r := {"cat": cat, "name": name_text, "dealt": 0.0, "taken": 0.0, "kills": 0,
-		"blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0, "healed": 0.0, "wall_fixed": 0, "idx": records.size()}
+		"blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0, "healed": 0.0, "wall_fixed": 0,
+		"acquired_level": level, "idx": records.size()}
 	records.append(r)
 	return r
 
@@ -619,8 +638,7 @@ func sp_src(rec: Dictionary, sp_id: String) -> Dictionary:
 	var cache: Dictionary = rec["_sp_src"]
 	if not cache.has(sp_id):
 		cache[sp_id] = {"cat": rec["cat"], "name": rec["name"], "sp_id": sp_id, "rec_idx": rec["idx"],
-			"dealt": 0.0, "taken": 0.0, "kills": 0, "blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0,
-			"robot_boost": rec.get("robot_boost", false)}
+			"dealt": 0.0, "taken": 0.0, "kills": 0, "blocked": 0.0, "walls": 0, "wall_blocks": 0, "traps": 0}
 	return cache[sp_id]
 
 
@@ -691,7 +709,14 @@ func set_auto_pick(on: bool) -> void:
 	hud.update_auto_button()
 	# 選択画面が出ている最中に有効にしたら、その場で自動選択
 	if on and level_up_ui.visible and not _shown_choices.is_empty():
-		level_up_ui._pick(_auto_pick_from(_shown_choices, _shown_special)["id"])
+		level_up_ui._pick(_auto_pick_from(_shown_choices, _shown_special, not random_auto)["id"])
+
+
+func set_random_auto(on: bool) -> void:
+	random_auto = on
+	hud.update_random_auto_button()
+	if on and level_up_ui.visible and not _shown_choices.is_empty():
+		level_up_ui._pick(_auto_pick_from(_shown_choices, _shown_special, false)["id"])
 
 
 func toggle_stats() -> void:
@@ -739,12 +764,40 @@ func add_guard() -> void:
 
 
 func add_heavy() -> void:
-	if heavy != null:
+	var current := all_heavies()
+	if current.size() >= 2:
 		return
-	heavy = HeavyScript.new()
-	heavy.game = self
-	heavy.position = castle.gate_position()
-	world.add_child(heavy)
+	var h := HeavyScript.new()
+	h.game = self
+	h.position = castle.gate_position()
+	world.add_child(h)
+	heavies.append(h)
+	if heavy == null:
+		heavy = h
+	# 2体目も、すでに取得済みの重装強化・特別強化を引き継ぐ
+	var lv := func(id: String) -> int: return int(upgrade_levels.get(id, 0))
+	h.attack_power = 31.5 * (1.0 + 0.2 * lv.call("heavy_dmg"))
+	h.slash_interval = maxf(0.2, 1.1 / (1.0 + 0.2 * lv.call("heavy_haste")))
+	h.slash_radius = 105.0 * (1.0 + 0.2 * lv.call("heavy_range"))
+	h.max_hp = 270.0 * (1.0 + 0.4 * lv.call("heavy_hp"))
+	h.hp = h.max_hp
+	h.regen = 4.0 + 3.0 * lv.call("heavy_hp")
+	h.move_speed = 60.0 * (1.0 + 0.2 * lv.call("heavy_speed"))
+	if lv.call("heavy_whirl") > 0: h.slash_arc = TAU
+	if lv.call("sp_multi_slash") > 0: h.extra_slashes = 1
+	if lv.call("sp_quake") > 0: h.quake_level = 2
+	if lv.call("sp_lifesteal") > 0: h.lifesteal = 0.1
+	if lv.call("sp_execute") > 0: h.execute = true
+	if lv.call("sp_iron_ball") > 0: h.iron_ball = true
+	if lv.call("sp_provoke_ball") > 0: h.provoke_ball = true
+	if lv.call("sp_rage") > 0: h.rage_enabled = true
+
+
+func all_heavies() -> Array:
+	# 旧オートセーブには heavies 配列がないため、従来の singleton を配列へ移す
+	if heavies.is_empty() and heavy != null and is_instance_valid(heavy):
+		heavies.append(heavy)
+	return heavies
 
 
 func add_engineer() -> void:
@@ -803,8 +856,7 @@ func drum_buff_area(pos: Vector2, r: float, seconds: float, from: Node2D, bonus:
 ## 鼓舞のバフ・回復の対象になる味方（生きていて、見えているもの）
 func _drum_allies() -> Array:
 	var units: Array = soldiers + guards + builders + engineers + snipers + knights + repairers + pets + archers + archer_pets + drummers + drum_pets
-	if heavy != null:
-		units.append(heavy)
+	units.append_array(all_heavies())
 	for f in [pet_fusion, archer_fusion, drum_fusion, triple_fusion]:
 		if f != null and is_instance_valid(f) and f.merged():
 			units.append(f)
@@ -814,8 +866,8 @@ func _drum_allies() -> Array:
 ## 癒しの調べ：pos から r 以内の、HPのある味方（遊撃・迎撃・近衛・重装・弓兵）を amount 回復
 func drum_heal_area(pos: Vector2, r: float, amount: float, rec: Dictionary, sp_id: String) -> void:
 	var lists := [[soldiers, stats.max_hp], [guards, guard_stats.max_hp], [knights, knight_stats.max_hp], [archers, archer_stats.max_hp]]
-	if heavy != null:
-		lists.append([[heavy], heavy.max_hp])
+	for h in all_heavies():
+		lists.append([[h], h.max_hp])
 	for entry in lists:
 		for u in entry[0]:
 			if is_instance_valid(u) and not u.dead and pos.distance_to(u.global_position) <= r:
@@ -885,7 +937,7 @@ func _fill_drum_pets() -> void:
 			p.owner_soldier = d
 			p.index = have
 			p.drum = true
-			p.damage = drum_pet_damage
+			p.attack_power = drum_pet_attack_power
 			p.position = d.position
 			world.add_child(p)
 			drum_pets.append(p)
@@ -1097,7 +1149,7 @@ func _fill_pets() -> void:
 			p.game = self
 			p.owner_soldier = s
 			p.index = have
-			p.damage = pet_damage
+			p.attack_power = pet_attack_power
 			p.position = s.position
 			world.add_child(p)
 			pets.append(p)
@@ -1116,7 +1168,7 @@ func _fill_archer_pets() -> void:
 			p.owner_soldier = a
 			p.index = have
 			p.archer = true
-			p.damage = archer_pet_damage
+			p.attack_power = archer_pet_attack_power
 			p.position = a.position
 			world.add_child(p)
 			archer_pets.append(p)
@@ -1242,49 +1294,6 @@ func _random_spawn_pos() -> Vector2:
 	return Vector2(MAP_RECT.end.x - m, y)
 
 
-## ボスのHP倍率。7体目（Lv70）までは、前の「2乗で加速する」HPの曲線の8割にする
-## （ふつうの敵のHPが9分半まで1倍なので、そのままだと序盤〜中盤のボスが柔らかすぎるため）。
-## 8体目からは、7体目の倍率をスタートにして、ふつうの敵の倍率が7体目のときから増えたぶんの
-## BOSS_LATE_RATIO 倍を足していく（切れ目なく、敵と同じ「だんだん加速する」上がり方で続く）
-const BOSS_CURVE_UNTIL := 7
-const BOSS_CURVE_RATIO := 0.8
-const BOSS_LATE_RATIO := 0.75
-## 7体目が出たときの、ボスの倍率とふつうの敵の倍率
-var _boss_last_curve_mult := 0.0
-var _boss_last_curve_hp := 0.0
-
-
-## 序盤のボスをさらに硬くする：BOSS_EARLY_UNTIL 分までは ×BOSS_EARLY_MULT。
-## そのあとは、BOSS_EARLY_UNTIL 分の時点で上乗せしたぶんをずっと足したまま伸び続ける（下がらない）
-const BOSS_EARLY_MULT := 3.0
-const BOSS_EARLY_UNTIL := 10.0
-
-
-func _boss_hp_mult() -> float:
-	var base := _boss_curve_mult()
-	if elapsed / 60.0 <= BOSS_EARLY_UNTIL:
-		return base * BOSS_EARLY_MULT
-	return base + (BOSS_EARLY_MULT - 1.0) * _boss_curve_at_early_until()
-
-
-## BOSS_EARLY_UNTIL 分のときのボス用HP倍率（上乗せ前）
-func _boss_curve_at_early_until() -> float:
-	var t := BOSS_EARLY_UNTIL * 60.0 * 1.3
-	var old := 1.0 + t / 75.0 + pow(t / 170.0, 2.0)
-	return maxf(_hp_mult_at(BOSS_EARLY_UNTIL), BOSS_CURVE_RATIO * old)
-
-
-func _boss_curve_mult() -> float:
-	if bosses_spawned > BOSS_CURVE_UNTIL:
-		return _boss_last_curve_mult + BOSS_LATE_RATIO * maxf(0.0, _boss_table_mult() - _boss_last_curve_hp)
-	var t := elapsed * 1.3
-	var old := 1.0 + t / 75.0 + pow(t / 170.0, 2.0)
-	var mult := maxf(_boss_table_mult(), BOSS_CURVE_RATIO * old)
-	_boss_last_curve_mult = mult
-	_boss_last_curve_hp = _boss_table_mult()
-	return mult
-
-
 ## 敵の出現ペース（1秒に何体）：SPAWN_BASE から毎秒 SPAWN_GROWTH ずつ増え、SPAWN_MAX で頭打ち
 const SPAWN_BASE := 0.8
 ## 5分（300秒）でちょうど上限になる増え方
@@ -1292,89 +1301,28 @@ const SPAWN_GROWTH := 0.034
 const SPAWN_MAX := 11.0
 ## 出現ペースが上限になる時刻（秒）。5分
 const SPAWN_CAP_TIME := (SPAWN_MAX - SPAWN_BASE) / SPAWN_GROWTH
-## ボスのHP倍率のもとにする目安表：[分, 倍率]。あいだは直線でつなぐ
-const HP_POINTS := [[0.0, 1.0], [1.0, 2.0], [5.0, 6.0], [10.0, 12.0], [15.0, 25.0], [20.0, 40.0], [25.0, 55.0], [30.0, 83.0], [40.0, 150.0], [60.0, 400.0], [90.0, 1200.0]]
-## 表の最後（90分）より後は、最後の上がり幅（毎分約+26.7）から、上がり幅が1分ごとに HP_LATE_ACCEL ずつ大きくなる
-const HP_LATE_ACCEL := 0.6
+## 敵とボス共通のLv別HP倍率（Lv1×1、Lv50×4、Lv80×20、Lv100×55、Lv120×130、Lv140×200、Lv160×320）
+func level_hp_mult(lv: int = -1) -> float:
+	var target_lv := level if lv < 1 else lv
+	if target_lv <= 50:
+		return 1.0 + (4.0 - 1.0) * (target_lv - 1) / 49.0
+	# 希望倍率を通る区分線形カーブ。Lv160以降は最後の傾きで延長する。
+	var levels := [50.0, 80.0, 100.0, 120.0, 140.0, 160.0]
+	var multipliers := [4.0, 20.0, 55.0, 130.0, 200.0, 320.0]
+	for i in range(levels.size() - 1):
+		if target_lv <= levels[i + 1]:
+			var t: float = (target_lv - levels[i]) / (levels[i + 1] - levels[i])
+			return lerpf(multipliers[i], multipliers[i + 1], t)
+	return 320.0 + 6.0 * (target_lv - 160.0)
 
 
-## ふつうの敵のHP倍率：0〜10分は1分ごとに +0.5。10分からは上がり幅そのものが1分ごとに +0.2 ずつ大きくなる
-## （1分で×1.5、5分で×3.5、10分で×6、20分で×21、30分で×56、40分で×111、60分で×281、90分で×686）
-## 170overtime（HP加速）：Lv HP_ACCEL_UP_FROM からは、レベル10ごとに上がり幅の増え方が +HP_ACCEL_UP_STEP ずつ大きくなる（Lv170〜で0.3、Lv180〜で0.4、Lv190〜で0.5…上限なし）。
-## そのレベルになった時点から増え方が変わるだけで、倍率がいきなり跳ね上がることはない
-const HP_EARLY_PER_MIN := 0.5
-const HP_SWITCH_MIN := 10.0
-const HP_ACCEL := 0.2
-const HP_ACCEL_UP_FROM := 170
-const HP_ACCEL_UP_STEP := 0.1
-## 増え方が変わった記録：[変わった時刻（分）, 新しい増え方] の並び
-var _hp_accel_changes: Array = []
-var _hp_accel_now := HP_ACCEL
-
-
-static func hp_accel_for_level(lv: int) -> float:
-	if lv < HP_ACCEL_UP_FROM:
-		return HP_ACCEL
-	return HP_ACCEL + HP_ACCEL_UP_STEP * (floori(lv / 10.0) - floori(HP_ACCEL_UP_FROM / 10.0) + 1)
-
-
-func _update_hp_accel() -> void:
-	var want := hp_accel_for_level(level)
-	if not is_equal_approx(want, _hp_accel_now):
-		_hp_accel_changes.append([elapsed / 60.0, want])
-		_hp_accel_now = want
-
-
-func _hp_mult() -> float:
-	var m := elapsed / 60.0
-	var f := 1.0 + HP_EARLY_PER_MIN * minf(m, HP_SWITCH_MIN)
-	if m <= HP_SWITCH_MIN:
-		return f
-	# 10分からは、上がり幅 r が増え方 a で大きくなっていく（a は途中で変わることがある）
-	var t := HP_SWITCH_MIN
-	var r := HP_EARLY_PER_MIN
-	var a := HP_ACCEL
-	for ch in _hp_accel_changes:
-		var t1 := clampf(float(ch[0]), t, m)
-		var dt := t1 - t
-		f += r * dt + a / 2.0 * dt * dt
-		r += a * dt
-		t = t1
-		a = float(ch[1])
-	var rest := m - t
-	f += r * rest + a / 2.0 * rest * rest
-	return f
-
-
-## 目安表どおりの倍率（ボス用。1分で×2、5分で×6、10分で×12、15分で×25、20分で×40、25分で×55、30分で×83、40分で×150、60分で×400、90分で×1200、120分で約×2270）
-func _boss_table_mult() -> float:
-	return _hp_mult_at(elapsed / 60.0)
-
-
-## m 分のときの目安表の倍率（ボス用）
-func _hp_mult_at(m: float) -> float:
-	for i in range(1, HP_POINTS.size()):
-		var p0: Array = HP_POINTS[i - 1]
-		var p1: Array = HP_POINTS[i]
-		if m <= p1[0]:
-			return lerpf(p0[1], p1[1], (m - p0[0]) / (p1[0] - p0[0]))
-	var last: Array = HP_POINTS[HP_POINTS.size() - 1]
-	var prev: Array = HP_POINTS[HP_POINTS.size() - 2]
-	var slope: float = (last[1] - prev[1]) / (last[0] - prev[0])
-	var d: float = m - last[0]
-	return last[1] + slope * d + HP_LATE_ACCEL / 2.0 * d * d
-
-
-## 170overtime：Lv OVERTIME_FROM_LV（170）以降の難易度上昇システム。
-## ・HP加速：Lv170からHP倍率の増え方が加速（詳細は上の HP_ACCEL_UP_FROM 参照）
-## ・時間経過HP増加：Lv170になった時刻から、1分たつごとに、これから出る敵とボス（大司教・手下・鉄甲兵・迫撃砲部隊も）のHPが +OVERTIME_HP_PER_MIN（1%）ずつ増える（足し算・上限なし）。
-##   ほかのHPの倍率とは別に、出るときにかける（もう出ている敵は変わらない。分裂の魔獣の分かれた体・分裂体は親の倍率を引き継ぐ）
+## 170overtime：Lv170到達後、1分ごとにこれから出る敵・ボスのHPへ+10%を加算する。
+## レベル由来の倍率とは別に出現時にかける（既にいる敵は変わらず、分裂体は親の倍率を引き継ぐ）
 const OVERTIME_FROM_LV := 170
-const OVERTIME_HP_PER_MIN := 0.01
-## 170overtime：今のレベルが Lv OVERTIME_FROM_LV 以上のあいだ、敵（ボスも）からのダメージ1回ごとに、
-## キャラクターにも建築物（城・壁・設置物）にも +（レベルの百の位）を足す（Lv170〜199で+1、Lv200〜299で+2…）。
-## 当たったときのレベルで決まる。受ける側の軽減（盾・城の被ダメージ倍率など）より先に足す
-func overtime_dmg_bonus() -> float:
+const OVERTIME_HP_PER_MIN := 0.10
+const OVERTIME_START_HP_MULT := 1.5
+## 170overtime：壁が敵から受ける耐久ダメージに、Lvの百の位を加える（Lv170〜199は+1）
+func overtime_wall_damage_bonus() -> float:
 	if level < OVERTIME_FROM_LV:
 		return 0.0
 	return float(level / 100)
@@ -1390,23 +1338,31 @@ func _check_overtime() -> void:
 		overtime_start = elapsed
 
 
-## 170overtime の、これから出る敵のHPの倍率（始まってからの丸1分ごとに +1%）
+## 170overtime の、これから出る敵のHPの倍率（始まってからの丸1分ごとに +10%）
 func overtime_hp_mult() -> float:
 	if overtime_start < 0.0:
 		return 1.0
-	return 1.0 + OVERTIME_HP_PER_MIN * floorf(maxf(0.0, elapsed - overtime_start) / 60.0)
+	var time_bonus := OVERTIME_HP_PER_MIN * floorf(maxf(0.0, elapsed - overtime_start) / 60.0)
+	return OVERTIME_START_HP_MULT * (1.0 + time_bonus)
+
+
+## 170overtime：敵の移動速度はゲームレベルに応じて上がる（Lv170で1.17倍）
+func overtime_enemy_speed_mult() -> float:
+	if level < OVERTIME_FROM_LV:
+		return 1.0
+	return 1.0 + float(level) / 1000.0
 
 
 func _spawn_enemy(kind: String, pos: Vector2) -> void:
 	spawn_enemy_at(kind, pos)
 
 
-## 指定した場所に敵を出す（hp_mult を省略すると今の時間に合わせた強さ）
+## 指定した場所に敵を出す（hp_mult を省略すると現在レベルと170overtimeに合わせた強さ）
 func spawn_enemy_at(kind: String, pos: Vector2, hp_mult: float = -1.0) -> Node2D:
 	var e := EnemyScript.new()
 	e.game = self
 	# hp_mult を渡したとき（分裂体など）は親の倍率をそのまま使う（170overtime も親のぶんが入っている）
-	e.setup(kind, hp_mult if hp_mult > 0.0 else _hp_mult() * overtime_hp_mult())
+	e.setup(kind, hp_mult if hp_mult > 0.0 else level_hp_mult() * overtime_hp_mult() * enemy_hp_debug_mult)
 	e.position = clamp_to_map(pos, 20.0)
 	world.add_child(e)
 	return e
@@ -1451,7 +1407,7 @@ func _spawn_boss() -> void:
 		e.boss_rank = level / BOSS_EVERY
 		var kind: String = ["boss3", "boss", "boss2"][bosses_spawned % 3]
 		# 2体同時なら1体のHPは半分、3体同時なら1/3
-		e.setup(kind, _boss_hp_mult() / n * overtime_hp_mult())
+		e.setup(kind, level_hp_mult() / n * overtime_hp_mult() * enemy_hp_debug_mult)
 		# 横に並べる（1体なら真ん中、2体なら左右、3体なら左・真ん中・右）
 		var x: float = MAP_RECT.get_center().x + (i - (n - 1) / 2.0) * (520.0 if n == 2 else 360.0)
 		e.position = Vector2(x, MAP_RECT.position.y + (110.0 if kind == "boss2" else 60.0))
@@ -1463,18 +1419,13 @@ func _spawn_boss() -> void:
 	hud.show_banner("⚠ BOSS%s出現！ ⚠" % "＆".join(titles), Color(1.0, 0.4, 0.5))
 
 
-## 黒衣の大司教を出す（HPは時間の倍率に合わせる）
+## 黒衣の大司教を出す
 func _spawn_bishop() -> void:
 	var e := EnemyScript.new()
 	e.game = self
 	e.boss_rank = maxi(1, int(elapsed / BISHOP_EVERY))
-	# HPはほかのボスと同じボス用の倍率（呼んだときに覚える値は書き換えないよう、元に戻す）
-	var keep_mult := _boss_last_curve_mult
-	var keep_hp := _boss_last_curve_hp
-	var mult := _boss_hp_mult()
-	_boss_last_curve_mult = keep_mult
-	_boss_last_curve_hp = keep_hp
-	e.setup("boss4", mult * overtime_hp_mult())
+	# 大司教もほかの敵・ボスと同じLv別倍率を使う
+	e.setup("boss4", level_hp_mult() * overtime_hp_mult() * enemy_hp_debug_mult)
 	e.position = Vector2(MAP_RECT.get_center().x, MAP_RECT.position.y + 60.0)
 	world.add_child(e)
 	if boss == null or not is_instance_valid(boss) or boss.dead:
@@ -1482,13 +1433,9 @@ func _spawn_bishop() -> void:
 	hud.show_banner("⚠ BOSS「黒衣の大司教」出現！ ⚠", Color(0.75, 0.45, 1.0))
 
 
-## 近衛の突進の基本の威力（遊撃兵の強化は乗らない）
-const KNIGHT_BASE_DAMAGE := 80.0
-
-
-## 近衛兵の突進の威力：基本の威力に剛突の倍率をかける
+## 近衛兵の攻撃力（剛突で上がる）
 func knight_damage() -> float:
-	return KNIGHT_BASE_DAMAGE * knight_stats.damage
+	return knight_stats.attack_power
 
 
 ## 黒衣の大司教が生きているか
@@ -1518,11 +1465,12 @@ func on_enemy_killed(e: Node2D) -> void:
 			hud.show_banner("BOSS「%s」撃破！" % e.boss_title, Color(1.0, 0.85, 0.3))
 		spawn_burst(e.global_position, Color(1.0, 0.85, 0.3), 60.0)
 	spawn_burst(e.global_position, e.color, e.radius)
-	# 氷像の囮：結界の中で倒された敵（ボス以外）が20%の確率で氷像になる（同時に12体まで）
-	if castle.ice_statue and not e.is_boss and castle.frost_radius > 0.0 and randf() < 0.2 \
+	# 氷像の囮：結界内で敵を倒すと氷像を作る（発動後20秒待ち、同時に12体まで）
+	if castle.ice_statue and castle.ice_statue_cooldown <= 0.0 and not e.is_boss and castle.frost_radius > 0.0 \
 			and castle.global_position.distance_to(e.global_position) < castle.frost_radius \
 			and get_tree().get_nodes_in_group("placed_ice_statue").size() < 12:
-		spawn_placed("ice_statue", e.global_position, 0.0, 16.0, 20.0, castle.record)
+		spawn_placed("ice_statue", e.global_position, 0.0, 16.0, 0.0, castle.record)
+		castle.ice_statue_cooldown = 20.0
 	add_xp(e.xp_value)
 	# 黒衣の大司教を倒したら、特別強化の3択が1回ぶん出る（レベルアップと同じ順番待ちに入る）
 	if e.kind == "boss4" and not game_over:
@@ -1553,20 +1501,20 @@ func xp_mult() -> float:
 	return maxf(XP_LEVEL_MIN, XP_GAIN - XP_LEVEL_DROP * floorf(level / 10.0))
 
 
-## Lv XP_LATE_FROM からの経験値の倍率（それより前は1倍）
-func xp_late_mult() -> float:
-	if level < XP_LATE_FROM:
+## 50overtime の経験値倍率（Lv50で+0.72%、以降1レベルごとにさらに+0.72%）
+func xp_overtime_mult() -> float:
+	if level < XP_OVERTIME_FROM:
 		return 1.0
-	return 1.0 + XP_LATE_BONUS + XP_LATE_PER_LV * (level - XP_LATE_FROM)
+	return 1.0 + XP_OVERTIME_PER_LV * (level - XP_OVERTIME_FROM + 1)
 
 
 func add_xp(amount: int) -> void:
-	_add_xp_scaled(amount * xp_mult() * xp_late_mult())
+	_add_xp_scaled(amount * xp_mult() * xp_overtime_mult())
 
 
-## 経験値を amount だけ入れる（レベルの倍率なし。採掘場・トロッコで使う）。Lv XP_LATE_FROM からは xp_late_mult() 倍
+## 経験値を amount だけ入れる（通常のレベル倍率なし。採掘場・トロッコでも50overtimeは適用）
 func add_raw_xp(amount: int) -> void:
-	_add_xp_scaled(amount * xp_late_mult())
+	_add_xp_scaled(amount * xp_overtime_mult())
 
 
 ## 倍率をかけたあとの経験値を入れる。端数はためておいて、1たまったら入る
@@ -1590,10 +1538,13 @@ func _gain_xp(amount: int) -> void:
 		xp_to_next = xp_needed(level)
 		pending_levelups += 1
 		_pending_levels.append(level)
-		_spawn_level_milestone()
 		_check_overtime()
+		if level == OVERTIME_FROM_LV and not _overtime_notice_shown:
+			_pending_overtime_notice = true
+			_overtime_notice_shown = true
+		_spawn_level_milestone()
 	if pending_levelups > 0 and not level_up_ui.visible and not game_over:
-		_open_level_up()
+		_open_next_level_reward()
 	# レベルが上がったらオートセーブ（3択を出したあと、このフレームの最後に保存する）
 	if leveled:
 		request_autosave()
@@ -1634,6 +1585,7 @@ func restart_from_autosave(level: int = -1) -> void:
 	if AutosaveScript.peek(level).is_empty():
 		return
 	_retry_auto_pick = auto_pick
+	_retry_random_auto = random_auto
 	_load_autosave = true
 	_load_autosave_level = level
 	restart()
@@ -1652,6 +1604,8 @@ func _restore_autosave() -> bool:
 	if info.is_empty():
 		run_id = new_id
 		return false
+	# 古いセーブにも残っている、ペット数強化由来の威力上昇を取り除く
+	Upgrades._update_pet_attack_power(self)
 	if run_id == "":
 		run_id = "save_%d" % int(head.get("saved_at", 0))
 	# 170overtime がない前の形式のセーブで、もう Lv OVERTIME_FROM_LV 以上なら、ロードした時刻から始める
@@ -1675,9 +1629,9 @@ func _restore_autosave() -> bool:
 				break
 	if pending_levelups > 0:
 		if choices.is_empty():
-			_open_level_up()
-		elif auto_pick:
-			var u: Dictionary = _auto_pick_from(choices, bool(info.get("special", false)))
+			_open_next_level_reward()
+		elif auto_pick or random_auto:
+			var u: Dictionary = _auto_pick_from(choices, bool(info.get("special", false)), not random_auto)
 			hud.show_notice("オート選択：【%s】%s%s" % [Upgrades.CAT_LABEL[u["cat"]], "★" if u.get("special", false) else "", u["name"]])
 			_on_upgrade_chosen(u["id"])
 		else:
@@ -1708,10 +1662,9 @@ func _open_level_up() -> void:
 		_pending_levels.clear()
 		castle.hp = castle.max_hp
 		return
-	if auto_pick:
-		# オート選択：画面を止めずに選ぶ（オート選択設定で優先にしたものを先に取る。同じならランダム。
-		# 優先のものが1つもなければ1回リロール）
-		var u: Dictionary = _auto_pick_from(choices, special)
+	if auto_pick or random_auto:
+		# 完全ランダムが有効なら優先設定を無視。それ以外は通常オートの優先設定を使う
+		var u: Dictionary = _auto_pick_from(choices, special, not random_auto)
 		hud.show_notice("オート選択：【%s】%s%s" % [Upgrades.CAT_LABEL[u["cat"]], "★" if u.get("special", false) else "", u["name"]])
 		_on_upgrade_chosen(u["id"])
 		return
@@ -1721,6 +1674,22 @@ func _open_level_up() -> void:
 	_shown_special = special
 	_shown_level = for_level
 	level_up_ui.show_choices(choices, upgrade_levels, for_level, special)
+
+
+## Lv170到達メッセージを先に見せ、その後に通常の強化報酬を開く
+func _open_next_level_reward() -> void:
+	if _pending_overtime_notice:
+		_shown_choices.clear()
+		_shown_level = OVERTIME_FROM_LV
+		get_tree().paused = true
+		level_up_ui.show_overtime_notice()
+		return
+	_open_level_up()
+
+
+func _on_overtime_notice_closed() -> void:
+	_pending_overtime_notice = false
+	_open_next_level_reward()
 
 
 ## リロール：今出ている候補とはなるべく別のものを3つ引き直す（1画面1回まで）
@@ -1749,12 +1718,14 @@ func _rerolled_choices(old: Array, special: bool) -> Array:
 	return choices
 
 
-## オート選択で1つ選ぶ。3つの中に、設定してある一番上の段（最優先 → 優先 → ちょっと優先）がなければ、1回だけリロールして引き直す
-func _auto_pick_from(choices: Array, special: bool) -> Dictionary:
+## オート選択で1つ選ぶ。use_priority が false なら優先設定・優先用リロールを使わない
+func _auto_pick_from(choices: Array, special: bool, use_priority: bool = true) -> Dictionary:
 	# まだ取れない候補（条件未達成）はオート選択でも選ばない
 	var open: Array = choices.filter(func(c: Dictionary) -> bool: return not Upgrades.is_locked(c, upgrade_levels))
 	if not open.is_empty():
 		choices = open
+	if not use_priority:
+		return Upgrades.auto_choose(choices, {})
 	var u: Dictionary = Upgrades.auto_choose(choices, auto_priority)
 	var want := 0
 	for v in auto_priority.values():
@@ -1767,15 +1738,35 @@ func _auto_pick_from(choices: Array, special: bool) -> Dictionary:
 
 
 func _on_upgrade_chosen(id: String) -> void:
+	if _starting_draft_active:
+		var starting_upgrade := _upgrade_def(id)
+		if starting_upgrade.is_empty():
+			return
+		var starting_level: int = int(upgrade_levels.get(id, 0)) + 1
+		upgrade_levels[id] = starting_level
+		if starting_level == 1:
+			upgrade_acquired_levels[id] = level
+		Upgrades.apply(id, starting_level, self)
+		_starting_pick_number += 1
+		if _starting_pick_number <= STARTING_PICKS:
+			_open_starting_pick()
+		else:
+			_starting_draft_active = false
+			level_up_ui.hide()
+			get_tree().paused = false
+			hud.refresh()
+		return
 	var lv: int = upgrade_levels.get(id, 0) + 1
 	upgrade_levels[id] = lv
+	if lv == 1:
+		upgrade_acquired_levels[id] = level
 	Upgrades.apply(id, lv, self)
 	pending_levelups -= 1
 	if not _pending_levels.is_empty():
 		_pending_levels.pop_front()
 	level_up_ui.hide()
 	if pending_levelups > 0:
-		_open_level_up()
+		_open_next_level_reward()
 	else:
 		get_tree().paused = false
 
@@ -1980,31 +1971,31 @@ func start_debug(cfg: Dictionary) -> void:
 	restart()
 
 
-## ゲーム開始時にランダムで1つ加入した状態にする部隊・兵装
-## ゲーム開始時に最初から加入する部隊・兵装の候補（遊撃・迎撃・狙撃・近衛・重装・弓兵・矢倉・大砲・投石器・バリスタ・連射砲）
+## ゲーム開始時に最初から加入する部隊・兵装の候補（遊撃・迎撃・狙撃・近衛・重装・弓兵・鼓舞・矢倉・大砲・投石器・バリスタ・連射砲）
 const STARTING_UPGRADE_POOL := ["recruit", "guard", "sniper", "knight", "heavy", "archer",
-	"tower", "cannon", "catapult", "ballista", "rapid"]
+	"drummer", "tower", "cannon", "catapult", "ballista", "rapid"]
 ## 最初から加入する数
 const STARTING_PICKS := 3
 
 
-## 候補からランダムで3回選んで加入させる（同じものが選ばれたら、その強化をもう1回取ったことにする＝1人・1基増える）。
-## もう上限まで取っているもの（重装は1人まで）が選ばれたら、まだ取れるものから選び直す
-func _grant_starting_upgrade() -> void:
-	var names := PackedStringArray()
-	for n in STARTING_PICKS:
-		var open: Array = STARTING_UPGRADE_POOL.filter(func(id: String) -> bool:
-			var u := _upgrade_def(id)
-			return not u.is_empty() and int(upgrade_levels.get(id, 0)) < int(u["max"]))
-		if open.is_empty():
-			break
-		var id: String = open[randi() % open.size()]
-		var lv: int = int(upgrade_levels.get(id, 0)) + 1
-		upgrade_levels[id] = lv
-		Upgrades.apply(id, lv, self)
-		names.append(_upgrade_def(id)["name"])
-	hud.show_notice("最初から加入：%s" % "・".join(names))
-	hud.refresh()
+## 開始前に3回、重複なしの候補3つから部隊・兵装を選ぶ
+func _begin_starting_draft() -> void:
+	_starting_draft_active = true
+	_starting_pick_number = 1
+	get_tree().paused = true
+	_open_starting_pick()
+
+
+func _open_starting_pick() -> void:
+	var available: Array = STARTING_UPGRADE_POOL.filter(func(id: String) -> bool:
+		var u := _upgrade_def(id)
+		return not u.is_empty() and int(upgrade_levels.get(id, 0)) < int(u["max"]))
+	var choices: Array = []
+	while choices.size() < 3 and not available.is_empty():
+		var idx := randi() % available.size()
+		choices.append(_upgrade_def(available[idx]))
+		available.remove_at(idx)
+	level_up_ui.show_starting_choices(choices, upgrade_levels, _starting_pick_number)
 
 
 func _upgrade_def(id: String) -> Dictionary:
@@ -2015,23 +2006,18 @@ func _upgrade_def(id: String) -> Dictionary:
 
 
 func _apply_debug_start(cfg: Dictionary) -> void:
+	enemy_damage_enabled = bool(cfg.get("enemy_damage_enabled", true))
+	enemy_hp_debug_mult = clampf(float(cfg.get("enemy_hp_debug_mult", 1.0)), 1.0, 10.0)
 	debug_run = true
 	elapsed = float(cfg["elapsed"])
 	level = int(cfg["level"])
 	xp = 0
 	_xp_frac = 0.0
 	xp_to_next = xp_needed(level)
-	# ボスの出現順・強さの段階、大司教・大群の時刻を、このレベル・時間に合わせる
+	# ボスの出現順と大司教・大群の時刻を、このレベル・時間に合わせる
 	var n_boss := 0
 	for lv in range(BOSS_EVERY, level + 1, BOSS_EVERY):
 		n_boss += 3 if lv >= TRIPLE_BOSS_FROM else (2 if lv >= DOUBLE_BOSS_FROM else 1)
-	if n_boss > BOSS_CURVE_UNTIL:
-		# 7体目のボスが出たころ（今のレベルの割合で見積もった時間）のHP倍率をもとにする
-		var keep := elapsed
-		elapsed = keep * float(BOSS_CURVE_UNTIL * BOSS_EVERY) / float(level)
-		bosses_spawned = BOSS_CURVE_UNTIL
-		_boss_hp_mult()
-		elapsed = keep
 	bosses_spawned = n_boss
 	# 始めるレベルがちょうど Lv刻みの敵のレベル（Lv10・15・20…）なら、そのレベルの分をすぐに出す。
 	# それより前のレベルの分はもう済んだことにする（ボスの出現順は、上の bosses_spawned で合わせてある）
@@ -2045,16 +2031,11 @@ func _apply_debug_start(cfg: Dictionary) -> void:
 	# 強化は、取る前の強化（req）がそろう順に、レベル1から順番に入れる
 	var want: Dictionary = cfg["levels"]
 	for u in Upgrades.LIST + Upgrades.SPECIAL:
-		if u.has("req") and not want.has(u["req"]) and want.has(u["id"]):
-			want[u["req"]] = 1
-		if want.has(u["id"]):
-			for r in u.get("req_all", []):
-				if not want.has(r):
-					want[r] = 1
-	for u in Upgrades.LIST + Upgrades.SPECIAL:
 		var id: String = u["id"]
 		for lv in range(1, int(want.get(id, 0)) + 1):
 			upgrade_levels[id] = lv
+			if lv == 1:
+				upgrade_acquired_levels[id] = level
 			Upgrades.apply(id, lv, self)
 	hud.show_notice("デバッグ：%02d:%02d・Lv%d で出撃" % [int(elapsed) / 60, int(elapsed) % 60, level])
 	# Lv OVERTIME_FROM_LV 以上で出撃したら、170overtime はこの時刻から始まる
@@ -2073,4 +2054,5 @@ func restart() -> void:
 ## ゲームオーバー画面の「もう一度」：オート選択の有効・無効はそのままでやり直す
 func retry() -> void:
 	_retry_auto_pick = auto_pick
+	_retry_random_auto = random_auto
 	restart()

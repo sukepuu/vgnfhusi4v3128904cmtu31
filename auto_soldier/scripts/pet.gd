@@ -17,7 +17,8 @@ var index := 0
 var archer := false
 ## 鼓舞ペットか（main.gd の _fill_drum_pets で true にする）
 var drum := false
-var damage := 3.0
+## ペットの攻撃力（技ごとのダメージはこの値に倍率をかける）
+var attack_power := 24.0
 ## 通常攻撃（ペット弾）の威力の倍率。特別強化のダメージにはかからない
 ## 通常弾の威力（以前は基本の4倍だったが、基本値に吸収）
 ## 爆裂ペット弾の爆発（ペット弾の威力 × これ。前は0.7）
@@ -36,11 +37,13 @@ const CHARGE_EVERY := 6.0
 const CHARGE_SPEED := 900.0
 const CHARGE_RETURN_SPEED := 700.0
 const CHARGE_MAX_TIME := 1.2
-## 突撃ペットの突進の威力（ペットの攻撃力の何倍か。16倍の2倍）
-const CHARGE_MULT := 32.0
-## 体当たりペットの威力（ペットの攻撃力の何倍か。6倍の2倍）。体当たり弓兵ペットはその3倍
-const BODY_MULT := 12.0
-const ARCHER_BODY_MULT := 36.0
+## 突撃ペットの突進の威力（ペットの攻撃力の16倍）
+const CHARGE_MULT := 16.0
+## 攻撃力の基準値変更後も従来と同じダメージになる倍率
+const ARCHER_CHARGE_MULT := CHARGE_MULT / 3.75
+## 体当たりペットの威力（遊撃は攻撃力の6倍、弓兵は24倍）
+const BODY_MULT := 6.0
+const ARCHER_BODY_MULT := 24.0
 ## 爆裂突撃ペット：突進が当たった敵の位置で小爆発（突進の70%）
 const CHARGE_BURST_RADIUS := 50.0
 const CHARGE_BURST_RATIO := 0.7
@@ -108,7 +111,7 @@ func _process(delta: float) -> void:
 	# 癒しのさえずり：担当の遊撃兵のHPを少しずつ回復
 	if game.pet_heal and not owner_soldier.dead:
 		game.heal_unit(owner_soldier, game.stats.max_hp, 2.0 * delta, record, "sp_pet_heal")
-	# 体当たりペット：触れた敵にペットの BODY_MULT（12）倍ダメージ（同じ敵は0.5秒に1回）
+	# 体当たりペット：触れた敵にペットの BODY_MULT 倍ダメージ（同じ敵は0.5秒に1回）
 	if game.pet_body:
 		_body_slam(delta)
 	_cd -= delta * game.atk_speed_mult(record)
@@ -134,7 +137,7 @@ func _giant() -> bool:
 
 ## このペットの攻撃力（突撃・体当たりの元になる値）
 func _base_damage() -> float:
-	return game.archer_pet_damage if archer else (game.drum_pet_damage if drum else game.pet_damage)
+	return game.archer_pet_attack_power if archer else (game.drum_pet_attack_power if drum else game.pet_attack_power)
 
 
 # ---------------------------------------------------------------- 鼓舞ペット
@@ -156,7 +159,7 @@ const DRUM_SLOW_RATIO := 0.4
 const DRUM_HEAL := 10.0
 ## 連吹き：二吹き目までの時間・威力
 const DRUM_DOUBLE_DELAY := 0.3
-const DRUM_DOUBLE_RATIO := 0.5
+const DRUM_DOUBLE_RATIO := 1.0
 ## 鼓舞ペットの舞：間隔・音符の数・威力
 const DRUM_DANCE_EVERY := 5.0
 const DRUM_DANCE_NOTES := 12
@@ -164,7 +167,7 @@ const DRUM_DANCE_RATIO := 0.3
 ## 必殺・鼓笛隊：間隔・音符の数・威力
 const DRUM_PARADE_EVERY := 15.0
 const DRUM_PARADE_NOTES := 6
-const DRUM_PARADE_RATIO := 0.3
+const DRUM_PARADE_RATIO := 0.03
 var _drum_double_left := -1.0
 var _beat_fx := 0.0
 var _beat_r := 0.0
@@ -198,7 +201,7 @@ func _drum_radius() -> float:
 
 
 func _drum_damage() -> float:
-	return damage * (DRUM_GIANT_DAMAGE if game.drum_pet_giant else 1.0)
+	return attack_power * (DRUM_GIANT_DAMAGE if game.drum_pet_giant else 1.0)
 
 
 func _enemy_in_range(r: float) -> bool:
@@ -241,7 +244,7 @@ func _note_ring() -> void:
 		b.game = game
 		b.position = global_position
 		b.velocity = dir * 380.0
-		b.damage = _drum_damage() * DRUM_DANCE_RATIO
+		b.damage = _drum_damage() * DRUM_DANCE_RATIO * 10.0
 		b.radius = 8.0
 		b.pierce = 1
 		b.color = Color.from_hsv(float(i) / DRUM_DANCE_NOTES, 0.6, 1.0)
@@ -254,7 +257,7 @@ func _note_ring() -> void:
 func _note_parade() -> void:
 	for i in DRUM_PARADE_NOTES:
 		var m: Node2D = game.spawn_missile("homing", global_position,
-			Vector2.from_angle(TAU * i / DRUM_PARADE_NOTES) * 320.0, _drum_damage() * DRUM_PARADE_RATIO, 10.0, 6.0, game.sp_src(record, "sp_ult_drum_parade"))
+			Vector2.from_angle(TAU * i / DRUM_PARADE_NOTES) * 320.0, _drum_damage() * DRUM_PARADE_RATIO * 10.0, 10.0, 6.0, game.sp_src(record, "sp_ult_drum_parade"))
 		m.look = "note"
 
 
@@ -271,10 +274,10 @@ const GIANT_MULT := 1.4
 const FROST_EVERY := 10.0
 const DANCE_EVERY := 5.0
 const FLOCK_EVERY := 15.0
-## 凍える爪の威力（攻撃力 × これ）・弓兵ペットの舞（20倍）・刃の大群（12倍）
-const FROST_MULT := 2.0
-const DANCE_MULT := 20.0
-const FLOCK_MULT := 12.0
+## 弓兵ペット特殊攻撃の倍率（攻撃力の基準値変更後も従来と同じダメージになるよう調整）
+const FROST_MULT := 4.0 / 3.0
+const DANCE_MULT := 40.0 / 3.0
+const FLOCK_MULT := 8.0
 ## 連続斬撃の残り回数・次の斬撃までの時間
 var _slashes_left := 0
 var _slash_gap := 0.0
@@ -353,7 +356,7 @@ func _due(every: float) -> bool:
 func _do_slash() -> void:
 	var radius: float = attack_range
 	var arc: float = game.stats.sword_arc
-	var dmg := damage
+	var dmg := attack_power
 	if game.archer_pet_giant:
 		radius *= 1.3
 		dmg *= GIANT_MULT
@@ -368,7 +371,7 @@ func _do_slash() -> void:
 		e.take_damage(dmg, to.normalized() * 380.0, record)
 		# 爆裂ペット斬撃：当たった敵の所で小爆発（斬撃の35%）
 		if game.archer_pet_burst:
-			game.explode(e.global_position, 45.0, dmg * BURST_RATIO, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
+			game.explode(e.global_position, 45.0, dmg * BURST_RATIO * 0.5, game.sp_src(record, "sp_archer_pet_burst"), Color(1.0, 0.7, 0.4), 0.0, 120.0)
 	var fx := SlashScript.new()
 	fx.radius = radius
 	fx.arc = arc
@@ -384,7 +387,7 @@ func _frost_slash() -> void:
 		t = game.nearest_enemy(global_position, 700.0)
 	if t == null:
 		return
-	var b := _slash_bullet((t.global_position - global_position).normalized(), damage * FROST_MULT, Color(0.7, 0.95, 1.0), "sp_archer_pet_frost")
+	var b := _slash_bullet((t.global_position - global_position).normalized(), attack_power * FROST_MULT, Color(0.7, 0.95, 1.0), "sp_archer_pet_frost")
 	b.aim_target = t
 	b.stun_on_hit = 0.5
 	b.velocity *= 0.8
@@ -396,7 +399,7 @@ func _frost_slash() -> void:
 func _dance_slashes() -> void:
 	for i in 12:
 		var dir := Vector2.from_angle(TAU * i / 12.0 + _t)
-		var b := _slash_bullet(dir, damage * DANCE_MULT, Color.from_hsv(i / 12.0, 0.7, 1.0), "sp_archer_pet_dance")
+		var b := _slash_bullet(dir, attack_power * DANCE_MULT * 0.5, Color.from_hsv(i / 12.0, 0.7, 1.0), "sp_archer_pet_dance")
 		b.life = 1.0
 		game.world.add_child(b)
 
@@ -405,7 +408,7 @@ func _dance_slashes() -> void:
 func _blade_flock() -> void:
 	for i in 6:
 		var m: Node2D = game.spawn_missile("homing", global_position,
-			Vector2.from_angle(TAU * i / 6.0) * 320.0, damage * FLOCK_MULT, 10.0, 6.0, game.sp_src(record, "sp_archer_pet_flock"))
+			Vector2.from_angle(TAU * i / 6.0) * 320.0, attack_power * FLOCK_MULT * 0.5, 10.0, 6.0, game.sp_src(record, "sp_archer_pet_flock"))
 		m.look = "blade"
 
 
@@ -431,7 +434,7 @@ func _shoot_one(target: Node2D, k: int, shots: int) -> void:
 	var b := BulletScript.new()
 	b.game = game
 	b.velocity = dir * 520.0
-	b.damage = damage
+	b.damage = attack_power
 	b.radius = 4.0
 	b.color = Color(0.5, 1.0, 0.7)
 	b.life = attack_range / 520.0 + 0.2
@@ -510,11 +513,13 @@ func _charge_hit() -> void:
 			continue
 		if global_position.distance_to(e.global_position) < r + e.radius + 3.0:
 			_charge_hits[id] = true
-			var dmg: float = _base_damage() * (DRUM_CHARGE_MULT if drum else CHARGE_MULT)
+			var charge_mult: float = DRUM_CHARGE_MULT * 10.0 if drum else (ARCHER_CHARGE_MULT if archer else CHARGE_MULT)
+			var dmg: float = _base_damage() * charge_mult
 			var hit_pos: Vector2 = e.global_position
 			e.take_damage(dmg, _aim * 260.0, game.sp_src(record, charge_sp))
 			if burst_on:
-				game.explode(hit_pos, CHARGE_BURST_RADIUS, dmg * CHARGE_BURST_RATIO, game.sp_src(record, burst_sp), Color(1.0, 0.7, 0.3))
+				var burst_mult := 0.5 if not archer and not drum else 1.0
+				game.explode(hit_pos, CHARGE_BURST_RADIUS, dmg * CHARGE_BURST_RATIO * burst_mult, game.sp_src(record, burst_sp), Color(1.0, 0.7, 0.3))
 
 
 ## HPが一番高い敵（ボスも含む）
@@ -551,7 +556,7 @@ func _body_slam(delta: float) -> void:
 			_slam_cd[e] = 0.5
 			var body_mult: float = ARCHER_BODY_MULT if archer else (DRUM_BODY_MULT if drum else BODY_MULT)
 			var body_sp := "sp_archer_pet_body" if archer else ("sp_drum_pet_body" if drum else "sp_pet_body")
-			e.take_damage(_base_damage() * body_mult, (e.global_position - global_position).normalized() * 200.0, game.sp_src(record, body_sp))
+			e.take_damage(_base_damage() * body_mult * (10.0 if drum else 1.0), (e.global_position - global_position).normalized() * 200.0, game.sp_src(record, body_sp))
 
 
 func _nearest_enemy() -> Node2D:
@@ -611,3 +616,4 @@ func _draw() -> void:
 		if _beat_fx > 0.1:
 			draw_circle(tip, 3.0, Color(1.0, 0.95, 0.6, 0.9))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+

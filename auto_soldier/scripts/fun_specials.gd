@@ -39,9 +39,9 @@ var _frost_cd := 3.0
 
 func _process(delta: float) -> void:
 	var castle: Node2D = game.castle
-	if roar and game.heavy != null and not game.heavy.dead:
+	if roar and game.all_heavies().any(func(h: Node2D) -> bool: return not h.dead):
 		_roar_cd -= delta
-		if _roar_cd <= 0.0 and game.nearest_enemy(game.heavy.global_position, 220.0) != null:
+		if _roar_cd <= 0.0 and game.all_heavies().any(func(h: Node2D) -> bool: return not h.dead and game.nearest_enemy(h.global_position, 220.0) != null):
 			_roar_cd = 10.0
 			_do_roar()
 	if doves and castle.tower_count > 0:
@@ -51,7 +51,7 @@ func _process(delta: float) -> void:
 			for i in castle.tower_count:
 				var from: Vector2 = castle.wpos() + castle._tower_local_pos(i)
 				var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(randf_range(-PI * 0.8, -PI * 0.2)) * 260.0,
-					castle.tower_damage * 32.0, 10.0, 6.0, game.sp_src(castle._equip_record("tower", "矢倉", i), "sp_fun_doves"))
+					castle.tower_attack_power * 32.0, 10.0, 6.0, game.sp_src(castle._equip_record("tower", "矢倉", i), "sp_fun_doves"))
 				m.look = "bird"
 	if snowball and castle.frost_radius > 0.0:
 		_snow_cd -= delta
@@ -89,12 +89,14 @@ func _fx(kind: String, pos: Vector2) -> Node2D:
 
 
 func _do_roar() -> void:
-	var h: Node2D = game.heavy
-	var f := _fx("roar", h.global_position)
-	f.radius = 220.0
-	game.effects.add_child(f)
-	# 斬撃（通常攻撃）の3倍のダメージを与えて、思いっきり吹き飛ばす
-	game.explode(h.global_position, 220.0, h.dmg() * 3.0, game.sp_src(h.record, "sp_fun_roar"), Color(1.0, 0.6, 0.3), 0.0, 700.0)
+	for h in game.all_heavies():
+		if h.dead:
+			continue
+		var f := _fx("roar", h.global_position)
+		f.radius = 220.0
+		game.effects.add_child(f)
+		# 斬撃（通常攻撃）の3倍のダメージを与えて、思いっきり吹き飛ばす
+		game.explode(h.global_position, 220.0, h.dmg() * 3.0, game.sp_src(h.record, "sp_fun_roar"), Color(1.0, 0.6, 0.3), 0.0, 700.0)
 
 
 func _throw_snowball() -> void:
@@ -128,7 +130,7 @@ func _do_dance() -> void:
 			var fb := BulletScript.new()
 			fb.game = game
 			fb.velocity = dir * 420.0
-			fb.damage = game.pet_damage * f._n / 2.4 * 20.0 * f.FUSION_BONUS
+			fb.damage = game.pet_attack_power * f._n / 4.8 * 20.0 * f.FUSION_BONUS
 			fb.radius = 8.0
 			fb.color = Color.from_hsv(float(i) / 24.0, 0.75, 1.0)
 			fb.life = 1.2
@@ -145,7 +147,7 @@ func _do_dance() -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 420.0
-			b.damage = game.pet_damage * 20.0
+			b.damage = game.pet_attack_power * 10.0
 			b.radius = 5.0
 			b.color = Color.from_hsv(float(i) / 12.0, 0.75, 1.0)
 			b.life = 0.9
@@ -180,7 +182,7 @@ func _frost_volley() -> void:
 		var b := BulletScript.new()
 		b.game = game
 		b.velocity = (t.global_position - from).normalized() * 380.0
-		b.damage = game.pet_damage * 2.0 * (1.4 if game.pet_giant else 1.0)
+		b.damage = game.pet_attack_power * (1.4 if game.pet_giant else 1.0)
 		b.radius = 8.0
 		b.color = Color(0.7, 0.95, 1.0)
 		b.aim_target = t

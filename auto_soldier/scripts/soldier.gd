@@ -13,9 +13,9 @@ const DASH_DURATION := 0.28
 ## 影分身の弾の威力（射撃 × これ。前は1倍＝本体と同じ）
 const SHADOW_MULT := 2.0
 ## 炸裂弾の爆発（弾の威力 × これ。前は0.275）
-const BURST_RATIO := 0.275 * 0.7
-## 触爆の爆発（射撃 × これ。前は3倍）
-const TOUCH_BLAST_MULT := 1.5
+const BURST_RATIO := 0.275 * 0.7 * 3.0
+## 触爆の爆発（射撃 × これ）
+const TOUCH_BLAST_MULT := 6.0
 const HELMET_COLORS := [
 	Color(0.25, 0.42, 0.25), Color(0.6, 0.25, 0.25), Color(0.55, 0.45, 0.15),
 	Color(0.35, 0.3, 0.6), Color(0.2, 0.5, 0.55)]
@@ -76,7 +76,7 @@ func _process(delta: float) -> void:
 		var f: Node2D = game.spawn_fun_fx("firework", global_position)
 		f.end = global_position + Vector2(randf_range(-60, 60), randf_range(-160, -110))
 		f.rise_time = 0.6
-		f.damage = st.sword_damage * 40.0
+		f.damage = st.sword_attack_power() * 200.0
 		f.radius = 70.0
 		f.src = game.sp_src(record, "sp_fun_fireworks")
 	_last_kills = record["kills"]
@@ -117,7 +117,7 @@ func _process(delta: float) -> void:
 	# ブーメラン：狙っている敵の方へ投げる（行きと帰りで貫く）
 	if st.boomerang and _boomerang_cd <= 0.0 and shoot_at != null:
 		_boomerang_cd = 3.5
-		var m: Node2D = game.spawn_missile("boomerang", global_position, aim_dir * 750.0, st.sword_damage * BOOMERANG_MULT, 32.0, 4.0, game.sp_src(record, "sp_boomerang"))
+		var m: Node2D = game.spawn_missile("boomerang", global_position, aim_dir * 750.0, st.sword_attack_power() * BOOMERANG_MULT, 32.0, 4.0, game.sp_src(record, "sp_boomerang"))
 		m.thrower = self
 	if _sword_cd <= 0.0 and _try_slash():
 		_sword_cd = st.sword_interval
@@ -137,7 +137,7 @@ func _touch_blast(st, delta: float) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < radius + e.radius + 4.0:
 			_touch_cd[e] = 1.0
-			game.explode(e.global_position, 75.0, st.bullet_damage * TOUCH_BLAST_MULT, game.sp_src(record, "sp_touch_blast"), Color(1.0, 0.5, 0.2), 0.0, 260.0)
+			game.explode(e.global_position, 75.0, st.attack_power * TOUCH_BLAST_MULT, game.sp_src(record, "sp_touch_blast"), Color(1.0, 0.5, 0.2), 0.0, 260.0)
 
 
 # ---------------------------------------------------------------- 狙う敵を決める
@@ -289,7 +289,7 @@ func _shoot() -> void:
 		var b := BulletScript.new()
 		b.game = game
 		b.velocity = Vector2.from_angle(base + SPREAD * i) * st.bullet_speed
-		b.damage = st.bullet_damage
+		b.damage = st.attack_power
 		b.pierce = st.bullet_pierce
 		b.radius = 5.0
 		b.color = Color(1.0, 0.92, 0.4)
@@ -308,7 +308,7 @@ func _shoot() -> void:
 			var sb := BulletScript.new()
 			sb.game = game
 			sb.velocity = Vector2.from_angle(base + SPREAD * k) * st.bullet_speed
-			sb.damage = st.bullet_damage * SHADOW_MULT
+			sb.damage = st.attack_power * SHADOW_MULT
 			sb.pierce = st.bullet_pierce
 			sb.radius = 5.0
 			sb.color = Color(0.7, 0.75, 1.0)
@@ -327,7 +327,8 @@ func _shadow_offsets() -> Array:
 	var st = game.stats
 	if not st.shadow:
 		return []
-	return [aim_dir.orthogonal() * 34.0]
+	var side := aim_dir.orthogonal() * 34.0
+	return [side, -side]
 
 
 ## 一斉射撃の1発の威力（射撃の何倍か。20倍の2倍）
@@ -341,11 +342,11 @@ const SWORD_WAVE_MULT := 4.0
 func _volley() -> void:
 	var st = game.stats
 	var count: int = 6 + 6 * st.volley_level
-	_volley_from(global_position, count, st.bullet_damage * VOLLEY_MULT, Color(1.0, 0.75, 0.3), game.sp_src(record, "sp_volley"))
+	_volley_from(global_position, count, st.attack_power * VOLLEY_MULT, Color(1.0, 0.75, 0.3), game.sp_src(record, "sp_volley"))
 	# 影一斉射撃：影分身からも一斉射撃（本体と同じ威力）
 	if st.shadow_volley:
 		for so in _shadow_offsets():
-			_volley_from(global_position + so, count, st.bullet_damage * VOLLEY_MULT, Color(0.7, 0.75, 1.0), game.sp_src(record, "sp_shadow_volley"))
+			_volley_from(global_position + so, count, st.attack_power * VOLLEY_MULT, Color(0.7, 0.75, 1.0), game.sp_src(record, "sp_shadow_volley"))
 
 
 func _volley_from(center: Vector2, count: int, dmg: float, col: Color, src: Dictionary) -> void:
@@ -381,7 +382,7 @@ func _try_slash() -> bool:
 			continue
 		if st.sword_arc < TAU and absf(facing.angle_to(to)) > st.sword_arc / 2.0 + 0.2:
 			continue
-		e.take_damage(st.sword_damage, to.normalized() * 380.0, record)
+		e.take_damage(st.sword_attack_power(), to.normalized() * 380.0, record)
 	# 斬撃で敵の弾もかき消す
 	for b in get_tree().get_nodes_in_group("enemy_bullets"):
 		var to_b: Vector2 = b.global_position - global_position
@@ -393,7 +394,7 @@ func _try_slash() -> bool:
 		w.game = game
 		# 大きな三日月がゆっくり進む（届く距離は前と同じ）
 		w.velocity = facing * 260.0
-		w.damage = st.sword_damage * SWORD_WAVE_MULT
+		w.damage = st.sword_attack_power() * SWORD_WAVE_MULT
 		w.pierce = 1000000
 		w.radius = 32.0
 		w.wave = true
@@ -433,16 +434,16 @@ func _update_dash(delta: float) -> void:
 			continue
 		if global_position.distance_to(e.global_position) < radius + e.radius + 18.0:
 			_dash_hit[e] = true
-			e.take_damage(game.stats.dash_damage, _dash_dir * 500.0, record)
+			e.take_damage(game.stats.dash_attack_power(), _dash_dir * 500.0, record)
 
 
 # ---------------------------------------------------------------- 被ダメージ・復活
 
 func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
+	if not game.enemy_damage_enabled:
+		return
 	if dead or _invuln > 0.0:
 		return
-	# 170overtime：Lv170からは敵のダメージ +（レベルの百の位）
-	amount += game.overtime_dmg_bonus()
 	# 5分までは、城と同じく受けるダメージが半分（設置物は半分にならない）
 	amount *= game.early_damage_mult()
 	record["taken"] += minf(amount, hp)
@@ -514,3 +515,4 @@ func _draw() -> void:
 		var top := Vector2(-w / 2.0, -radius - 10.0)
 		draw_rect(Rect2(top, Vector2(w, 4)), Color(0, 0, 0, 0.6))
 		draw_rect(Rect2(top, Vector2(w * hp / max_hp, 4)), Color(0.3, 0.9, 0.4))
+

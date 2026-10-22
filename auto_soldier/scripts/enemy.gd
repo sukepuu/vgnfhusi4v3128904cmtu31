@@ -859,9 +859,6 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO, src: Dictiona
 	# 魔王狩り：遊撃兵からボスへのダメージ +10%
 	if is_boss and game.stats.boss_hunt and src.get("cat", "") == "soldier":
 		amount *= 1.1
-	# 城の兵装は通常攻撃・特別強化・必殺を含め、与ダメージを一律90%にする
-	if src.get("cat", "") == "castle":
-		amount *= 0.9
 	# 黒衣の大司教がいるあいだは、倒されたザコ敵が1回だけその場でHP50%で復活する
 	var revive: bool = hp - amount <= 0.0 and not is_boss and not _revived and game.bishop_alive()
 	if not src.is_empty():

@@ -555,13 +555,13 @@ static func describe(u: Dictionary, current_level: int) -> String:
 ## ペットの攻撃力 = 基本 ×（1 + 0.2 × 専用の威力強化レベル）。ペット数を増やす強化では威力は変わらない。
 static func _update_pet_attack_power(game: Node2D) -> void:
 	var lv: Dictionary = game.upgrade_levels
-	game.pet_attack_power = 24.0 * (1.0 + 0.2 * int(lv.get("pet_fang", 0)))
+	game.pet_attack_power = 5.0 * (1.0 + 0.2 * int(lv.get("pet_fang", 0)))
 	for p in game.pets:
 		p.attack_power = game.pet_attack_power
-	game.archer_pet_attack_power = 12.0 * (1.0 + 0.2 * int(lv.get("archer_pet_fang", 0)))
+	game.archer_pet_attack_power = 10.0 * (1.0 + 0.2 * int(lv.get("archer_pet_fang", 0)))
 	for p in game.archer_pets:
 		p.attack_power = game.archer_pet_attack_power
-	game.drum_pet_attack_power = 107.52 * (1.0 + 0.2 * int(lv.get("drum_pet_dmg", 0)))
+	game.drum_pet_attack_power = 70.0 * (1.0 + 0.2 * int(lv.get("drum_pet_dmg", 0)))
 	for p in game.drum_pets:
 		p.attack_power = game.drum_pet_attack_power
 
@@ -570,8 +570,8 @@ static func _update_pet_attack_power(game: Node2D) -> void:
 static func _update_castle_damage(game: Node2D) -> void:
 	var lv: Dictionary = game.upgrade_levels
 	# 強化を取得しても、矢倉・バリスタの基礎威力を保ったまま強化分を再計算する
-	game.castle.tower_attack_power = 94.08 * (1.0 + 0.2 * int(lv.get("tower_dmg", 0))) * (1.3 if int(lv.get("sp_tower_ap", 0)) > 0 else 1.0)
-	game.castle.ballista_attack_power = 274.56 * (1.0 + 0.2 * int(lv.get("ballista_dmg", 0))) * (1.5 if int(lv.get("sp_big_bolt", 0)) > 0 else 1.0)
+	game.castle.tower_attack_power = 18.0 * (1.0 + 0.2 * int(lv.get("tower_dmg", 0))) * (1.3 if int(lv.get("sp_tower_ap", 0)) > 0 else 1.0)
+	game.castle.ballista_attack_power = 48.0 * (1.0 + 0.2 * int(lv.get("ballista_dmg", 0))) * (1.5 if int(lv.get("sp_big_bolt", 0)) > 0 else 1.0)
 
 
 static func apply(id: String, new_level: int, game: Node2D) -> void:
@@ -583,13 +583,13 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"multishot":
 			st.shot_count += 1
 		"firerate":
-			st.fire_interval = maxf(0.1, 0.55 / (1.0 + 0.2 * new_level))
+			st.fire_interval = maxf(0.1, 0.5 / (1.0 + 0.2 * new_level))
 		"bullet_dmg":
-			st.attack_power = 5.0 * (1.0 + 0.2 * new_level)
+			st.attack_power = 10.0 * (1.0 + 0.2 * new_level)
 		"pierce":
 			st.bullet_pierce += 1
 		"sword_dmg":
-			st.sword_power_mult = 3.2 * (1.0 + 0.2 * new_level)
+			st.sword_power_mult = 1.6 * (1.0 + 0.2 * new_level)
 		"sword_range":
 			st.sword_radius = 85.0 * (1.0 + 0.2 * new_level)
 		"whirlwind":
@@ -623,7 +623,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"spear_reach":
 			game.guard_stats.spear_reach += 25.0
 		"spear_dmg":
-			game.guard_stats.attack_power = 46.0 * (1.0 + 0.2 * new_level)
+			game.guard_stats.attack_power = 20.0 * (1.0 + 0.2 * new_level)
 		"catapult":
 			castle.catapult_level = new_level
 		"ballista":
@@ -631,9 +631,9 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"rapid":
 			castle.rapid_level = new_level
 		"rapid_dmg":
-			castle.rapid_attack_power = 55.0 * (1.0 + 0.2 * new_level)
+			castle.rapid_attack_power = 3.0 * (1.0 + 0.2 * new_level)
 		"rapid_rate":
-			castle.rapid_interval = maxf(0.03, 0.125 / (1.0 + 0.2 * new_level))
+			castle.rapid_interval = maxf(0.03, 0.2 / (1.0 + 0.2 * new_level))
 		"rapid_pierce":
 			castle.rapid_pierce += 1
 		"rapid_multi":
@@ -645,7 +645,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"ballista_multi":
 			castle.ballista_shots += 1
 		"artillery":
-			castle.cannon_attack_power = 36.4 * (1.0 + 0.2 * new_level)
+			castle.cannon_attack_power = 48.0 * (1.0 + 0.2 * new_level)
 		"cannon_rate":
 			castle.cannon_interval = maxf(0.5, 4.0 / (1.0 + 0.2 * new_level))
 		"cannon_range":
@@ -653,9 +653,9 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"cannon_multi":
 			castle.cannon_shots += 1
 		"catapult_dmg":
-			castle.catapult_attack_power = 103.488 * (1.0 + 0.2 * new_level)
+			castle.catapult_attack_power = 120.0 * (1.0 + 0.2 * new_level)
 		"catapult_rate":
-			castle.catapult_interval = maxf(1.0, 9.0 / (1.0 + 0.2 * new_level))
+			castle.catapult_interval = maxf(1.0, 10.0 / (1.0 + 0.2 * new_level))
 		"catapult_range":
 			castle.catapult_radius = 150.0 * (1.0 + 0.2 * new_level)
 		"catapult_multi":
@@ -666,10 +666,10 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.add_engineer()
 		"heavy_dmg":
 			for h in game.all_heavies():
-				h.attack_power = 31.5 * (1.0 + 0.2 * new_level)
+				h.attack_power = 30.0 * (1.0 + 0.2 * new_level)
 		"heavy_haste":
 			for h in game.all_heavies():
-				h.slash_interval = maxf(0.2, 1.1 / (1.0 + 0.2 * new_level))
+				h.slash_interval = maxf(0.2, 2.0 / (1.0 + 0.2 * new_level))
 		"heavy_range":
 			for h in game.all_heavies():
 				h.slash_radius = 105.0 * (1.0 + 0.2 * new_level)
@@ -688,7 +688,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"trap_dmg":
 			game.engineer_stats.attack_power = 180.0 * (1.0 + 0.2 * new_level)
 		"trap_speed":
-			game.engineer_stats.plant_time = maxf(1.0, 6.0 * (1.0 - 0.1 * new_level))
+			game.engineer_stats.plant_time = maxf(1.0, 12.0 * (1.0 - 0.1 * new_level))
 		"engineer_move":
 			game.engineer_stats.move_speed = 110.0 * (1.0 + 0.15 * new_level)
 		"trap_range":
@@ -811,7 +811,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.snowman = true
 		# ---- ペット
 		"pet_rate":
-			game.pet_interval = maxf(0.1, 0.8 / (1.0 + 0.2 * new_level))
+			game.pet_interval = maxf(0.1, 0.5 / (1.0 + 0.2 * new_level))
 		"pet_fang":
 			_update_pet_attack_power(game)
 		"pet_eye":
@@ -896,9 +896,9 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"knight":
 			game.add_knight()
 		"knight_dmg":
-			game.knight_stats.attack_power = 120.0 * (1.0 + 0.2 * new_level)
+			game.knight_stats.attack_power = 100.0 * (1.0 + 0.2 * new_level)
 		"knight_rate":
-			game.knight_stats.interval = maxf(0.3, 1.6 / (1.0 + 0.2 * new_level))
+			game.knight_stats.interval = maxf(0.3, 1.0 / (1.0 + 0.2 * new_level))
 		"knight_width":
 			game.knight_stats.hit_width = 1.0 * (1.0 + 0.3 * new_level)
 		"knight_move":
@@ -1021,7 +1021,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.add_archer_pet()
 			_update_pet_attack_power(game)
 		"archer_pet_rate":
-			game.archer_pet_interval = maxf(0.2, 0.75 / (1.0 + 0.2 * new_level))
+			game.archer_pet_interval = maxf(0.2, 1.0 / (1.0 + 0.2 * new_level))
 		"archer_pet_fang":
 			_update_pet_attack_power(game)
 		"archer_pet_eye":
@@ -1029,11 +1029,11 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"archer_pet_multi":
 			game.archer_pet_shots += 1
 		"archer_rate":
-			game.archer_stats.interval = maxf(0.1, 0.8 / (1.0 + 0.2 * new_level))
+			game.archer_stats.interval = maxf(0.1, 1.0 / (1.0 + 0.2 * new_level))
 		"archer_multi":
 			game.archer_stats.shots += 1
 		"archer_dmg":
-			game.archer_stats.attack_power = 90.0 * (1.0 + 0.2 * new_level)
+			game.archer_stats.attack_power = 20.0 * (1.0 + 0.2 * new_level)
 		"archer_pierce":
 			game.archer_stats.pierce += 1
 		"archer_size":
@@ -1042,7 +1042,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"drummer":
 			game.add_drummer()
 		"drum_dmg":
-			game.drummer_stats.attack_power = 268.8 * (1.0 + 0.2 * new_level)
+			game.drummer_stats.attack_power = 140.0 * (1.0 + 0.2 * new_level)
 		"drum_rate":
 			game.drummer_stats.interval = maxf(1.0, 9.0 / (1.0 + 0.2 * new_level))
 		"drum_range":
@@ -1072,7 +1072,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"drum_pet_dmg":
 			_update_pet_attack_power(game)
 		"drum_pet_rate":
-			game.drum_pet_interval = maxf(1.0, 7.2 / (1.0 + 0.2 * new_level))
+			game.drum_pet_interval = maxf(1.0, 9.0 / (1.0 + 0.2 * new_level))
 		"drum_pet_range":
 			game.drum_pet_radius = 120.0 * (1.0 + 0.15 * new_level)
 		"sp_drum_pet_giant":
@@ -1102,11 +1102,11 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"sp_drum_place":
 			game.drum_place = true
 		"sniper_rate":
-			game.sniper_stats.interval = maxf(0.2, 1.6 / (1.0 + 0.2 * new_level))
+			game.sniper_stats.interval = maxf(0.2, 2.0 / (1.0 + 0.2 * new_level))
 		"sniper_multi":
 			game.sniper_stats.shots += 1
 		"sniper_dmg":
-			game.sniper_stats.attack_power = 70.875 * (1.0 + 0.2 * new_level)
+			game.sniper_stats.attack_power = 40.0 * (1.0 + 0.2 * new_level)
 		"sniper_pierce":
 			game.sniper_stats.pierce += 1
 		"sniper_size":
@@ -1201,7 +1201,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"tower_dmg":
 			_update_castle_damage(game)
 		"tower_rate":
-			castle.tower_interval = maxf(0.2, 0.9 / (1.0 + 0.2 * new_level))
+			castle.tower_interval = maxf(0.2, 1.0 / (1.0 + 0.2 * new_level))
 		"tower_pierce":
 			castle.tower_pierce += 1
 		"tower_multi":

@@ -4,7 +4,7 @@ extends RefCounted
 
 var move_speed := 110.0
 ## 罠1個の設置にかかる時間（秒）
-var plant_time := 6.0
+var plant_time := 12.0
 
 # --- 罠
 ## 工兵の攻撃力。爆弾は200%、落とし穴は100%。

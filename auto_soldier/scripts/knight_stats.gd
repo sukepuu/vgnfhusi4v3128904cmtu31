@@ -5,9 +5,9 @@ var max_hp := 110.0
 var move_speed := 247.0
 ## 近衛兵の攻撃力（剛突で上がる）。突進はこの攻撃力の100%。
 ## 隠密兵は威力に関係なく、当たったらダメージなしで倒れる
-var attack_power := 120.0
+var attack_power := 100.0
 ## 突進の間隔（秒）
-var interval := 1.6
+var interval := 1.0
 ## 突進で進む距離
 var dash_distance := 338.0
 ## 突進の当たる幅の倍率（大槍で上がる）。近衛兵の体の大きさ＋6px にこれを掛けた幅で当たる

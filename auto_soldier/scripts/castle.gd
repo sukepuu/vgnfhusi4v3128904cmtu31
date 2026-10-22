@@ -30,8 +30,8 @@ const OVERWORK_FLOOR := 0.4
 
 # --- 矢倉（自動で矢を撃つ）
 var tower_count := 0
-var tower_interval := 0.9
-var tower_attack_power := 94.08
+var tower_interval := 1.0
+var tower_attack_power := 18.0
 var tower_range := 520.0
 var _tower_cds: Array = [0.0, 0.3, 0.6, 0.15]
 var _tower_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
@@ -43,7 +43,7 @@ const MAX_BALLISTAS := 4
 var cannon_level := 0
 var cannon_interval := 4.0
 ## 大砲の基本の威力（変更前の104の70%）。通常の砲弾も特別強化も、ぜんぶここから計算する
-var cannon_attack_power := 36.4
+var cannon_attack_power := 48.0
 var cannon_radius := 90.0
 var cannon_range := 650.0
 var _cannon_cds: Array = [1.0, 2.3, 3.6]
@@ -56,17 +56,17 @@ var _cannon_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP]
 
 # --- 投石器（大砲より範囲が広いが、発射間隔が長い）。最大3台
 var catapult_level := 0
-var catapult_interval := 9.0
+var catapult_interval := 10.0
 ## 投石器の基本の威力（変更前の70%）。通常の岩も特別強化も、ぜんぶここから計算する
-var catapult_attack_power := 103.488
+var catapult_attack_power := 120.0
 var catapult_radius := 150.0
 var _catapult_cds: Array = [2.0, 5.0, 8.0]
 var _catapult_swings: Array = [0.0, 0.0, 0.0]
 # --- バリスタ（矢倉より発射間隔が長いが、高威力・射程無限・貫通無限）。最大3基
 var ballista_level := 0
 var rapid_level := 0
-var rapid_attack_power := 55.0
-var rapid_interval := 0.125
+var rapid_attack_power := 3.0
+var rapid_interval := 0.2
 var rapid_shots := 1
 var rapid_pierce := 0
 var rapid_overheat := false
@@ -95,7 +95,7 @@ var _rapid_aims: Array = [Vector2.UP, Vector2.UP]
 var _rapid_flash: Array = [0.0, 0.0]
 var ballista_interval := 4.0
 ## バリスタの基本の威力。通常の矢も特別強化も、ぜんぶここから計算する
-var ballista_attack_power := 274.56
+var ballista_attack_power := 48.0
 var _ballista_cds: Array = [1.0, 2.3, 3.6, 4.9]
 var _ballista_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP, Vector2.UP]
 var _ballista_recoil: Array = [0.0, 0.0, 0.0, 0.0]

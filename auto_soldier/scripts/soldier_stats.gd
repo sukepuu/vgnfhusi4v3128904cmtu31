@@ -7,25 +7,25 @@ var move_speed := 165.0
 
 # --- 射撃（点）
 var shot_count := 1
-var fire_interval := 0.55
+var fire_interval := 0.5
 ## 遊撃兵の攻撃力。通常射撃は攻撃力の100%。
-var attack_power := 5.0
+var attack_power := 10.0
 var bullet_speed := 680.0
 var bullet_pierce := 0
 var fire_range := 460.0
 
 # --- 剣（面）
 ## 剣の攻撃力倍率（剣術の強化を含む）。通常斬撃は攻撃力の320%。
-var sword_power_mult := 3.2
+var sword_power_mult := 1.6
 var sword_radius := 85.0
 var sword_arc := deg_to_rad(150.0)
-var sword_interval := 0.75
+var sword_interval := 0.8
 
 # --- 突進突き（強化で解放）
 var dash_level := 0
 var dash_interval := 4.0
 ## 突進突きの攻撃力倍率（突進突きを重ねて取得すると上がる）。
-var dash_power_mult := 8.0
+var dash_power_mult := 4.0
 
 
 func sword_attack_power() -> float:

@@ -3,9 +3,9 @@ extends RefCounted
 
 var max_hp := 60.0
 ## 狙撃兵の攻撃力。通常の矢は攻撃力の100%。
-var attack_power := 70.875
+var attack_power := 40.0
 ## 矢を放つ間隔（秒）
-var interval := 1.6
+var interval := 2.0
 ## 一度に放つ矢の数
 var shots := 1
 ## 射程

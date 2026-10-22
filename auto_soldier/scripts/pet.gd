@@ -18,13 +18,13 @@ var archer := false
 ## 鼓舞ペットか（main.gd の _fill_drum_pets で true にする）
 var drum := false
 ## ペットの攻撃力（技ごとのダメージはこの値に倍率をかける）
-var attack_power := 24.0
+var attack_power := 5.0
 ## 通常攻撃（ペット弾）の威力の倍率。特別強化のダメージにはかからない
 ## 通常弾の威力（以前は基本の4倍だったが、基本値に吸収）
 ## 爆裂ペット弾の爆発（ペット弾の威力 × これ。前は0.7）
 const BURST_RATIO := 0.35
 var record: Dictionary
-var interval := 0.8
+var interval := 0.5
 var attack_range := 420.0
 
 var _cd := 0.5

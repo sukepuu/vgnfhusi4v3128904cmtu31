@@ -152,11 +152,11 @@ var drum_ult := false
 var drum_resonance := false
 var drum_morale := false
 var drum_place := false
-## 鼓舞ペット（鼓舞兵1人あたり pets_per_drummer 匹）。範囲攻撃・攻撃速度のバフ。威力は鼓舞兵の基本の40%から
+## 鼓舞ペット（鼓舞兵1人あたり pets_per_drummer 匹）。範囲攻撃・攻撃速度のバフ。威力は鼓舞兵の基本の50%から
 var drum_pets: Array = []
 var pets_per_drummer := 0
-var drum_pet_attack_power := 107.52
-var drum_pet_interval := 7.2
+var drum_pet_attack_power := 70.0
+var drum_pet_interval := 9.0
 var drum_pet_radius := 120.0
 var drum_pet_giant := false
 var drum_pet_charge := false
@@ -210,11 +210,11 @@ var archer_pets: Array = []
 ## 弓兵1人あたりのペットの数（「弓兵ペット」を取るたびに+1）
 var pets_per_archer := 0
 ## ペットの攻撃力（あとから付くペットにも反映）
-var pet_attack_power := 24.0
-var archer_pet_attack_power := 12.0
+var pet_attack_power := 5.0
+var archer_pet_attack_power := 10.0
 ## ペットの射撃間隔・射程（全ペット共通）
-var pet_interval := 0.8
-var archer_pet_interval := 0.75
+var pet_interval := 0.5
+var archer_pet_interval := 1.0
 var pet_range := 420.0
 ## 弓兵ペットの斬撃の半径（遊撃兵の剣と同じ85から）
 var archer_pet_range := 85.0
@@ -776,8 +776,8 @@ func add_heavy() -> void:
 		heavy = h
 	# 2体目も、すでに取得済みの重装強化・特別強化を引き継ぐ
 	var lv := func(id: String) -> int: return int(upgrade_levels.get(id, 0))
-	h.attack_power = 31.5 * (1.0 + 0.2 * lv.call("heavy_dmg"))
-	h.slash_interval = maxf(0.2, 1.1 / (1.0 + 0.2 * lv.call("heavy_haste")))
+	h.attack_power = 30.0 * (1.0 + 0.2 * lv.call("heavy_dmg"))
+	h.slash_interval = maxf(0.2, 2.0 / (1.0 + 0.2 * lv.call("heavy_haste")))
 	h.slash_radius = 105.0 * (1.0 + 0.2 * lv.call("heavy_range"))
 	h.max_hp = 270.0 * (1.0 + 0.4 * lv.call("heavy_hp"))
 	h.hp = h.max_hp

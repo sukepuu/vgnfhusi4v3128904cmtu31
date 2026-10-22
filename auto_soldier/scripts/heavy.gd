@@ -23,14 +23,14 @@ var hp := 270.0
 var regen := 4.0
 var move_speed := 60.0
 ## 重装兵の攻撃力（通常斬撃は攻撃力の100%）
-var attack_power := 31.5
+var attack_power := 30.0
 ## 通常斬撃の威力（以前は基本の1/3だったが、基本値に吸収）
 ## 怒りの闘志・仁王立ちの上乗せの上限
 const RAGE_MAX := 0.4
 const PROVOKE_MAX := 0.4
 var slash_radius := 105.0
 var slash_arc := deg_to_rad(150.0)
-var slash_interval := 1.1
+var slash_interval := 2.0
 
 var _slash_cd := 0.0
 var _hurt_flash := 0.0

@@ -11,8 +11,8 @@ var shield_taken := 0.2
 var spear_reach := 110.0
 var spear_width := 10.0
 ## 迎撃兵の攻撃力。通常の槍攻撃は攻撃力の100%。
-var attack_power := 46.0
-var spear_interval := 0.9
+var attack_power := 20.0
+var spear_interval := 1.0
 
 # --- 特別強化
 ## 盾撃（盾で防ぐたびに衝撃波）

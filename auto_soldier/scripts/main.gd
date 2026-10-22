@@ -769,7 +769,8 @@ func add_heavy() -> void:
 		return
 	var h := HeavyScript.new()
 	h.game = self
-	h.position = castle.gate_position()
+	h.index = current.size()
+	h.position = castle.gate_position() + Vector2(-40.0 if h.index == 0 else 40.0, 0.0)
 	world.add_child(h)
 	heavies.append(h)
 	if heavy == null:

@@ -1,7 +1,7 @@
 extends Node2D
 ## 重装部隊（最大2体）。足は遅いが、耐久力と攻撃力が高い。
 ## マップの中を自由に歩き回り、マップの真ん中に一番近い敵を最優先で倒しに行く。
-## 敵がいないときはマップの真ん中で待つ。攻撃は遊撃部隊と同じ扇形の斬撃のみ。
+## 敵がいないときはマップの真ん中で待つ。2体いるときは、別の敵を狙い、待つ場所も左右に分かれ、重ならないように離れる。攻撃は遊撃部隊と同じ扇形の斬撃のみ。
 
 const SlashScript := preload("res://scripts/slash_effect.gd")
 const SlashWaveScript := preload("res://scripts/heavy_slash_wave.gd")
@@ -9,6 +9,10 @@ const SlashWaveScript := preload("res://scripts/heavy_slash_wave.gd")
 const RESPAWN_TIME := 15.0
 
 var game: Node2D
+## 何体目の重装兵か（0から）
+var index := 0
+## 2体いるとき、お互いにこれより近づかない
+const SEPARATION := 70.0
 var radius := 22.0
 var dead := false
 var respawn_left := 0.0
@@ -71,12 +75,14 @@ var _provoke_cd := 1.0
 
 
 func _ready() -> void:
-	record = game.new_record("heavy", "重装兵")
+	record = game.new_record("heavy", "重装兵%d" % (index + 1))
 
 
-## 敵がいないときの待機場所：マップの真ん中
+## 敵がいないときの待機場所：マップの真ん中（2体いるときは左右に分かれる）
 func post_position() -> Vector2:
-	return game.MAP_RECT.get_center()
+	if game.all_heavies().size() < 2:
+		return game.MAP_RECT.get_center()
+	return game.MAP_RECT.get_center() + Vector2(-80.0 if index == 0 else 80.0, 0.0)
 
 
 func _process(delta: float) -> void:
@@ -141,6 +147,7 @@ func _process(delta: float) -> void:
 	var to := desired - global_position
 	if to.length() > stop_dist:
 		position += to.normalized() * minf(move_speed * game.mine_speed_mult(self) * delta, to.length())
+	_keep_apart(delta)
 	position = game.clamp_to_map(position, radius)
 
 	var look: Node2D = game.nearest_enemy(global_position, slash_radius + 60.0)
@@ -177,18 +184,44 @@ func _target_valid() -> bool:
 	return target != null and is_instance_valid(target) and not target.dead
 
 
-## マップの真ん中に一番近い敵
+## ほかの重装兵とSEPARATIONより近いときは、お互いに離れる
+func _keep_apart(delta: float) -> void:
+	for h in game.all_heavies():
+		if h == self or not is_instance_valid(h) or h.dead:
+			continue
+		var away: Vector2 = global_position - h.global_position
+		var d := away.length()
+		if d >= SEPARATION:
+			continue
+		if d < 0.5:
+			away = Vector2.RIGHT if index > h.index else Vector2.LEFT
+		position += away.normalized() * minf(move_speed * 1.5 * delta, SEPARATION - d)
+
+
+## マップの真ん中に一番近い敵（ほかの重装兵が狙っている敵は、ほかにいなければ狙う）
 func _choose_target(center: Vector2) -> Node2D:
+	var taken := []
+	for h in game.all_heavies():
+		if h != self and is_instance_valid(h) and not h.dead and h._target_valid():
+			taken.append(h.target)
 	var best: Node2D = null
 	var best_d := INF
+	var fallback: Node2D = null
+	var fallback_d := INF
 	for e in game.enemies_cache:
 		if not is_instance_valid(e) or e.dead:
+			continue
+		var fd: float = e.global_position.distance_to(center)
+		if fd < fallback_d:
+			fallback_d = fd
+			fallback = e
+		if e in taken:
 			continue
 		var d: float = e.global_position.distance_to(center)
 		if d < best_d:
 			best_d = d
 			best = e
-	return best
+	return best if best != null else fallback
 
 
 ## 遊撃部隊と同じ扇形の斬撃（src を渡すと、そのカードにダメージを記録する。連続斬りの追加の斬撃用）
@@ -275,7 +308,7 @@ func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 func _respawn() -> void:
 	dead = false
 	hp = max_hp
-	position = game.castle.gate_position()
+	position = game.castle.gate_position() + Vector2(-40.0 if index == 0 else 40.0, 0.0)
 	_invuln = 2.0
 	game.spawn_burst(global_position, Color(0.8, 0.7, 1.0), 26.0)
 

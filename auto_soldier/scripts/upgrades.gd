@@ -170,8 +170,8 @@ const SPECIAL := [
 	{"id": "sp_watchtower", "cat": "builder", "special": true, "name": "見張り櫓", "desc": "築城兵が壁の内側に見張り櫓を建てる（最大3基）。壁を建てる仕事がなくて待機しているあいだ、築城兵が櫓に乗って近くの敵へ矢を撃つ", "max": 1, "req": "builder"},
 	{"id": "sp_tower_turret", "cat": "builder", "special": true, "name": "見張り砲台", "desc": "見張り櫓からも砲台壁の射撃が飛ぶようになる\n「見張り櫓」と「砲台壁」を取得している場合のみ出現", "max": 1, "req": "builder", "req_all": ["sp_watchtower", "sp_wall_turret"]},
 	# ---- 工兵部隊
-	{"id": "sp_cluster", "cat": "engineer", "special": true, "name": "子爆弾", "desc": "爆弾が爆発すると、周りに小爆弾が6個散らばって爆発する", "max": 1, "req": "engineer"},
-	{"id": "sp_poison", "cat": "engineer", "special": true, "name": "毒沼", "desc": "作動した落とし穴の跡が9秒間、毒の沼になる", "max": 1, "req": "engineer"},
+	{"id": "sp_cluster", "cat": "engineer", "special": true, "name": "子爆弾", "desc": "爆弾が爆発すると、周りに小爆弾が6個散らばって爆発する（1個 爆弾の125%の威力）", "max": 1, "req": "engineer"},
+	{"id": "sp_poison", "cat": "engineer", "special": true, "name": "毒沼", "desc": "作動した落とし穴の跡が9秒間、毒の沼になる（毎秒 落とし穴の75%のダメージ）", "max": 1, "req": "engineer"},
 	{"id": "sp_double_plant", "cat": "engineer", "special": true, "name": "二重設置", "desc": "1回で爆弾と落とし穴を両方仕掛ける（罠の上限も30個に）", "max": 1, "req": "engineer"},
 	{"id": "sp_ap_mine", "cat": "engineer", "special": true, "name": "徹甲地雷", "desc": "爆弾の真上近くにいる敵1体に、追加で爆弾400倍のダメージを与え、2秒間気絶させる", "max": 1, "req": "engineer"},
 	{"id": "sp_sentry", "cat": "engineer", "special": true, "name": "自動砲台", "desc": "罠と一緒に自動砲台を置く（30秒間、近くの敵を連射。工兵1人につき3台まで）", "max": 1, "req": "engineer"},

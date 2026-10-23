@@ -257,7 +257,7 @@ func _do_thousand() -> void:
 		else:
 			# 敵が少なければ、城の前の広い範囲にばらまく
 			p = castle.global_position + Vector2(randf_range(-600, 600), randf_range(-700, -150))
-		game.spawn_blast(p, 0.5 + randf() * 1.3, 60.0, castle.tower_attack_power * 6.0, game.sp_src(castle._equip_record("tower", "矢倉", i % castle.tower_count), "sp_ult_thousand"), Color(1.0, 0.6, 0.25), "arrow")
+		game.spawn_blast(p, 0.5 + randf() * 1.3, 60.0, castle.tower_attack_power * 12.0, game.sp_src(castle._equip_record("tower", "矢倉", i % castle.tower_count), "sp_ult_thousand"), Color(1.0, 0.6, 0.25), "arrow")
 
 
 func _do_barrage() -> void:

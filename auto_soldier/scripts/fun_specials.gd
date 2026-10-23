@@ -51,7 +51,7 @@ func _process(delta: float) -> void:
 			for i in castle.tower_count:
 				var from: Vector2 = castle.wpos() + castle._tower_local_pos(i)
 				var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(randf_range(-PI * 0.8, -PI * 0.2)) * 260.0,
-					castle.tower_attack_power * 32.0, 10.0, 6.0, game.sp_src(castle._equip_record("tower", "矢倉", i), "sp_fun_doves"))
+					castle.tower_attack_power * 96.0, 10.0, 6.0, game.sp_src(castle._equip_record("tower", "矢倉", i), "sp_fun_doves"))
 				m.look = "bird"
 	if snowball and castle.frost_radius > 0.0:
 		_snow_cd -= delta

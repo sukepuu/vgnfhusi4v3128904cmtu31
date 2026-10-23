@@ -724,7 +724,7 @@ func _update_new_specials(delta: float) -> void:
 				if t == null:
 					break
 				var p: Vector2 = t.global_position + Vector2(randf_range(-30, 30), randf_range(-30, 30))
-				game.spawn_blast(p, 0.8, 120.0, tower_attack_power * 8.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_arrow_rain"), Color(1.0, 0.55, 0.2), "arrow")
+				game.spawn_blast(p, 0.8, 120.0, tower_attack_power * 16.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_arrow_rain"), Color(1.0, 0.55, 0.2), "arrow")
 				_recent_shots.append({"pos": p, "area": 120.0, "until": _t + 1.2})
 	if ap_shell and cannon_level > 0:
 		_ap_cd -= delta
@@ -807,7 +807,7 @@ func _update_fifth_specials(delta: float) -> void:
 				var from := wpos() + _tower_local_pos(i)
 				for k in 2:
 					var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(-PI / 2.0 + (k - 0.5) * 1.6) * 420.0,
-						tower_attack_power * 15.0, 8.0, 4.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_homing"))
+						tower_attack_power * 30.0, 8.0, 4.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_homing"))
 					m.target = game.nearest_enemy(from, tower_range * 1.5)
 					# 爆裂追尾火矢：当たった敵の所で爆発（追尾火矢の倍率とは別に、矢倉の攻撃力の2.445倍）
 					if homing_blast and tower_blast:

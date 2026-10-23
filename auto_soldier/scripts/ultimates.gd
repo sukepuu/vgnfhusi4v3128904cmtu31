@@ -273,7 +273,7 @@ func _do_barrage() -> void:
 		var gi := i % guns
 		var from: Vector2 = castle.wpos() + castle._cannon_local_pos(gi)
 		var to := e.global_position + Vector2(randf_range(-40, 40), randf_range(-40, 40))
-		var s: Node2D = castle._fire_shell(from, to, castle.cannon_attack_power * 24.0, castle.cannon_radius, false, game.sp_src(castle._equip_record("cannon", "大砲", gi), "sp_ult_barrage"))
+		var s: Node2D = castle._fire_shell(from, to, castle.cannon_attack_power * 12.0, castle.cannon_radius, false, game.sp_src(castle._equip_record("cannon", "大砲", gi), "sp_ult_barrage"))
 		s.flight_time = 0.6 + i * 0.07
 
 

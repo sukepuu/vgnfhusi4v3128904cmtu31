@@ -448,7 +448,7 @@ func _update_cannon(delta: float) -> void:
 			shells[0].sticky = true
 		# ビリヤード砲弾：着弾後に2回跳ねる
 		if billiard:
-			shells[0].damage *= 4.0
+			shells[0].damage *= 2.0
 			shells[0].bounces = 2
 		# 機雷散布：3回に1回、本命の砲弾が着弾地点に機雷をばらまく（1個 大砲の7.2倍）
 		if cannon_mines and extra_turn:

@@ -671,12 +671,12 @@ func _update_ballista(delta: float) -> void:
 			b.position = from + offset
 			if blast_bolt:
 				b.first_blast_radius = 140.0
-				b.first_blast_damage = ballista_attack_power * 0.35
+				b.first_blast_damage = ballista_attack_power * 1.05
 				b.first_blast_src = game.sp_src(b.src, "sp_blast_bolt")
 			if bolt_blast_level > 0:
 				b.explode_radius = 70.0
-				# 爆発は矢の威力の6.9%
-				b.explode_ratio = 0.069
+				# 爆発は矢の威力の13.8%
+				b.explode_ratio = 0.138
 				b.explode_src = game.sp_src(b.src, "sp_ballista_blast")
 			game.world.add_child(b)
 		_ballista_cds[i] = ballista_interval
@@ -785,7 +785,7 @@ func _update_eighth_specials(delta: float) -> void:
 					var b := BulletScript.new()
 					b.game = game
 					b.velocity = dir * 1000.0 / 3.0
-					b.damage = ballista_attack_power * 7.2
+					b.damage = ballista_attack_power * 21.6
 					b.pierce = 1000000
 					b.radius = 21.0
 					b.scale = Vector2(3.0, 3.0)

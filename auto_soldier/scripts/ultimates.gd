@@ -309,7 +309,7 @@ func _do_thunder_spear() -> void:
 	# 破竹の雷槍（条件付き）：城に近い敵から順に当たり、当たるたびに威力 +10%（破竹の大矢と同じ）
 	if castle.thunder_momentum:
 		hits.sort_custom(func(a, b): return (a.global_position - from).dot(dir) < (b.global_position - from).dot(dir))
-	var dmg: float = castle.ballista_attack_power * 4.8
+	var dmg: float = castle.ballista_attack_power * 7.2
 	var dmg_max: float = dmg * 2.0
 	for e in hits:
 		e.stun(1.0)

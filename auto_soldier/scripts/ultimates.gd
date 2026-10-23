@@ -232,8 +232,8 @@ func _do_sky_arrow() -> void:
 		var b := BulletScript.new()
 		b.game = game
 		b.velocity = dir * 1500.0
-		# 基本の威力の180倍（通常の矢の約86倍。前は36倍）
-		b.damage = st.attack_power * 180.0
+		# 攻撃力の864倍
+		b.damage = st.attack_power * 864.0
 		b.pierce = 1000000
 		b.radius = 22.0
 		b.bolt = true

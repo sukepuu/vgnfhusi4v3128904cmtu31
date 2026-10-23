@@ -210,7 +210,7 @@ const SPECIAL := [
 	{"id": "sp_counter_battery", "cat": "sniper", "special": true, "name": "対砲兵狙撃", "desc": "迫撃砲を最優先で狙う。遠くの敵ほど矢が痛い（100離れるごとに威力 +10%）", "max": 1, "req": "sniper"},
 	{"id": "sp_headshot", "cat": "sniper", "special": true, "name": "急所狙い", "desc": "25%の確率で急所に当たり、ダメージ4倍", "max": 1, "req": "sniper"},
 	{"id": "sp_pin", "cat": "sniper", "special": true, "name": "縫い止め矢", "desc": "当たった敵を1秒間その場に縫い止める（動けない・攻撃できない）", "max": 1, "req": "sniper"},
-	{"id": "sp_ricochet", "cat": "sniper", "special": true, "name": "跳弾矢", "desc": "狙った敵に当たった矢が、近くの別の敵へ最大3回跳ねる（跳ねたあとは矢の威力が2.5倍）", "max": 1, "req": "sniper"},
+	{"id": "sp_ricochet", "cat": "sniper", "special": true, "name": "跳弾矢", "desc": "狙った敵に当たった矢が、近くの別の敵へ最大3回跳ねる（跳ねたあとは矢の威力が12倍）", "max": 1, "req": "sniper"},
 	{"id": "sp_mark", "cat": "sniper", "special": true, "name": "弱点看破", "desc": "矢が当たった敵に赤い印。6秒間、味方全員から受けるダメージ +20%", "max": 1, "req": "sniper"},
 	# ---- ペット・近衛・修理
 	{"id": "sp_pet_burst", "cat": "pet", "special": true, "name": "爆裂遊撃ペット弾", "desc": "遊撃ペットの弾が当たると小爆発する（威力63%）", "max": 1, "req": "pet"},
@@ -281,7 +281,7 @@ const SPECIAL := [
 	# ---- おもしろ強化（あまり強くないけど、変で派手なやつ）
 	{"id": "sp_fun_fireworks", "cat": "soldier", "special": true, "name": "勝利の花火", "desc": "遊撃兵が敵を倒すと、30%で花火が打ち上がる（弾けた所に剣の200倍のダメージ）", "max": 1, "req": "recruit"},
 	{"id": "sp_fun_reflect", "cat": "guard", "special": true, "name": "黄金の盾", "desc": "15秒ごとに、迎撃兵が向いている方向へ大きな黄金の盾を飛ばす（ゆっくり進む・盾の2倍の大きさ）。黄金の盾に当たった敵の弾は消え、そのたびに黄金の盾から全方位へ弾を撃つ（槍の5倍の威力）", "max": 1, "req": "guard"},
-	{"id": "sp_fun_firework_arrow", "cat": "sniper", "special": true, "name": "花火矢", "desc": "毎回、矢と一緒に花火も撃ち込む", "max": 1, "req": "sniper"},
+	{"id": "sp_fun_firework_arrow", "cat": "sniper", "special": true, "name": "花火矢", "desc": "毎回、矢と一緒に花火も撃ち込む（攻撃力の11.52倍の威力）", "max": 1, "req": "sniper"},
 	{"id": "sp_fun_roar", "cat": "heavy", "special": true, "name": "雄叫び", "desc": "10秒ごとに雄叫びを上げ、周りの敵に斬撃3倍のダメージを与えて思いっきり吹き飛ばす", "max": 1, "req": "heavy"},
 	{"id": "sp_fun_jack", "cat": "builder", "special": true, "name": "ビックリ箱壁", "desc": "壁が攻撃を防ぐと、35%でビックリ箱が飛び出して敵を吹き飛ばす", "max": 1, "req": "builder"},
 	{"id": "sp_fun_scarecrow", "cat": "engineer", "special": true, "name": "かかし", "desc": "罠と一緒にかかしを立てる。敵の気を引いて、代わりに殴られてくれる（耐久60）", "max": 1, "req": "engineer"},
@@ -304,7 +304,7 @@ const SPECIAL := [
 	# ---- 8つ目の特別強化
 	{"id": "sp_touch_blast", "cat": "soldier", "special": true, "name": "触爆", "desc": "遊撃兵に触れた敵が爆発し、周りの敵に射撃の6倍ダメージ", "max": 1, "req": "recruit"},
 	{"id": "sp_berserk_guard", "cat": "guard", "special": true, "name": "捨て身の構え", "desc": "迎撃兵の最大HPが半分になり、盾で防いでも半分のダメージを受ける。そのかわり槍が当たった敵が爆発し、周りに槍の3倍ダメージ", "max": 1, "req": "guard"},
-	{"id": "sp_blast_arrow", "cat": "sniper", "special": true, "name": "爆裂矢", "desc": "矢が当たった敵が爆発し、周りの敵に小ダメージ（急所狙いの効果は乗らない）", "max": 1, "req": "sniper"},
+	{"id": "sp_blast_arrow", "cat": "sniper", "special": true, "name": "爆裂矢", "desc": "矢が当たった敵が爆発し、周りの敵に矢の約18%のダメージ（急所狙いの効果は乗らない）", "max": 1, "req": "sniper"},
 	{"id": "sp_firework_blast", "cat": "sniper", "special": true, "name": "花火爆裂矢", "desc": "花火矢の花火が敵に当たったときも爆裂矢が発動し、爆裂矢が発動したときに花火のエフェクトが出る\n「爆裂矢」と「花火矢」を取得している場合のみ出現", "max": 1, "req": "sniper", "req_all": ["sp_blast_arrow", "sp_fun_firework_arrow"]},
 	{"id": "sp_rage", "cat": "heavy", "special": true, "name": "怒りの闘志", "desc": "ダメージを受けるたびに重装兵の与ダメージ +5%（最大+40%）。2秒ダメージを受けないと元に戻る", "max": 1, "req": "heavy"},
 	{"id": "sp_counter_wall", "cat": "builder", "special": true, "name": "反撃壁", "desc": "敵の弾が壁に当たると、その場所から近くの敵へ弾を撃ち返す", "max": 1, "req": "builder"},
@@ -323,7 +323,7 @@ const SPECIAL := [
 	{"id": "sp_ult_storm", "cat": "soldier", "special": true, "name": "必殺・剣の大嵐", "desc": "15秒ごとに、遊撃兵全員が周りを巻き込む巨大な回転斬り（剣の40倍の威力・大きく吹き飛ばす）", "max": 1, "req": "recruit"},
 	{"id": "sp_ult_dome", "cat": "guard", "special": true, "name": "必殺・鉄壁の陣", "desc": "15秒ごとに、城をドームで5秒間包む。ドームに入った敵の弾・砲弾は消える。迎撃兵のHPも全回復", "max": 1, "req": "guard"},
 	{"id": "sp_dome_spikes", "cat": "guard", "special": true, "name": "拒馬の陣", "desc": "鉄壁の陣のドームの中にいる敵に、拒馬の柵の効果（移動速度20%ダウン・ダメージ）を与える\n「拒馬の柵」と「必殺・鉄壁の陣」を取得している場合のみ出現", "max": 1, "req": "guard", "req_all": ["sp_spikes", "sp_ult_dome"]},
-	{"id": "sp_ult_sky_arrow", "cat": "sniper", "special": true, "name": "必殺・天穿つ一矢", "desc": "15秒ごとに、狙撃兵が敵が一番多く並ぶ方向へ巨大な矢を放つ（基本の威力の180倍で全部貫く。通常の矢の約86倍）", "max": 1, "req": "sniper"},
+	{"id": "sp_ult_sky_arrow", "cat": "sniper", "special": true, "name": "必殺・天穿つ一矢", "desc": "15秒ごとに、狙撃兵が敵が一番多く並ぶ方向へ巨大な矢を放つ（攻撃力の864倍で全部貫く）", "max": 1, "req": "sniper"},
 	{"id": "sp_ult_leap", "cat": "heavy", "special": true, "name": "必殺・大地砕き", "desc": "15秒ごとに、重装兵が近くの敵の群れへ飛び込み、地面を叩き割る（斬撃4倍の範囲攻撃＋1秒気絶）", "max": 1, "req": "heavy"},
 	{"id": "sp_ult_wall_burst", "cat": "builder", "special": true, "name": "必殺・城壁の大号令", "desc": "15秒ごとに、すべての壁の耐久が10回復し、全部の壁が外側へ大爆発する", "max": 1, "req": "builder"},
 	{"id": "sp_ult_carpet", "cat": "engineer", "special": true, "name": "必殺・絨毯爆撃", "desc": "15秒ごとに、敵が密集した所へ一直線に13個の爆弾が降りそそぐ", "max": 1, "req": "engineer"},

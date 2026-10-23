@@ -574,6 +574,25 @@ static func _update_castle_damage(game: Node2D) -> void:
 	game.castle.ballista_attack_power = 48.0 * (1.0 + 0.2 * int(lv.get("ballista_dmg", 0))) * (1.5 if int(lv.get("sp_big_bolt", 0)) > 0 else 1.0)
 
 
+## 矢倉・大砲・投石器・バリスタの間隔を、強化のレベルから計算し直す（攻撃速度の強化と、整備の -15% の両方が乗るように）
+static func _update_castle_intervals(game: Node2D) -> void:
+	var lv: Dictionary = game.upgrade_levels
+	var castle: Node2D = game.castle
+	var maint := 0.85 if int(lv.get("sp_maintenance", 0)) > 0 else 1.0
+	castle.tower_interval = maxf(0.2, 1.0 / (1.0 + 0.2 * int(lv.get("tower_rate", 0)))) * maint
+	castle.cannon_interval = maxf(0.5, 4.0 / (1.0 + 0.2 * int(lv.get("cannon_rate", 0)))) * maint
+	castle.catapult_interval = maxf(1.0, 10.0 / (1.0 + 0.2 * int(lv.get("catapult_rate", 0)))) * maint
+	castle.ballista_interval = maxf(0.5, 4.0 / (1.0 + 0.2 * int(lv.get("ballista_rate", 0)))) * maint
+
+
+## 狙撃兵の攻撃力・間隔を、強化のレベルから計算し直す（強弓・早撃ちと、速射の極意の両方が乗るように）
+static func _update_sniper_stats(game: Node2D) -> void:
+	var lv: Dictionary = game.upgrade_levels
+	var rapid := int(lv.get("sp_rapid_snipe", 0)) > 0
+	game.sniper_stats.attack_power = 40.0 * (1.0 + 0.2 * int(lv.get("sniper_dmg", 0))) / (3.0 if rapid else 1.0)
+	game.sniper_stats.interval = maxf(0.2, 2.0 / (1.0 + 0.2 * int(lv.get("sniper_rate", 0)))) / (4.0 if rapid else 1.0)
+
+
 static func apply(id: String, new_level: int, game: Node2D) -> void:
 	var st = game.stats
 	var castle: Node2D = game.castle
@@ -641,13 +660,13 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"ballista_dmg":
 			_update_castle_damage(game)
 		"ballista_rate":
-			castle.ballista_interval = maxf(0.5, 4.0 / (1.0 + 0.2 * new_level))
+			_update_castle_intervals(game)
 		"ballista_multi":
 			castle.ballista_shots += 1
 		"artillery":
 			castle.cannon_attack_power = 48.0 * (1.0 + 0.2 * new_level)
 		"cannon_rate":
-			castle.cannon_interval = maxf(0.5, 4.0 / (1.0 + 0.2 * new_level))
+			_update_castle_intervals(game)
 		"cannon_range":
 			castle.cannon_radius = 90.0 * (1.0 + 0.2 * new_level)
 		"cannon_multi":
@@ -655,7 +674,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"catapult_dmg":
 			castle.catapult_attack_power = 120.0 * (1.0 + 0.2 * new_level)
 		"catapult_rate":
-			castle.catapult_interval = maxf(1.0, 10.0 / (1.0 + 0.2 * new_level))
+			_update_castle_intervals(game)
 		"catapult_range":
 			castle.catapult_radius = 150.0 * (1.0 + 0.2 * new_level)
 		"catapult_multi":
@@ -927,10 +946,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"sp_armor":
 			castle.damage_taken_mult *= 0.9
 		"sp_maintenance":
-			castle.tower_interval *= 0.85
-			castle.cannon_interval *= 0.85
-			castle.catapult_interval *= 0.85
-			castle.ballista_interval *= 0.85
+			_update_castle_intervals(game)
 		"sp_ult_cavalry":
 			game.ultimates.cavalry = true
 		# ---- 8つ目の特別強化
@@ -1102,11 +1118,11 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"sp_drum_place":
 			game.drum_place = true
 		"sniper_rate":
-			game.sniper_stats.interval = maxf(0.2, 2.0 / (1.0 + 0.2 * new_level))
+			_update_sniper_stats(game)
 		"sniper_multi":
 			game.sniper_stats.shots += 1
 		"sniper_dmg":
-			game.sniper_stats.attack_power = 40.0 * (1.0 + 0.2 * new_level)
+			_update_sniper_stats(game)
 		"sniper_pierce":
 			game.sniper_stats.pierce += 1
 		"sniper_size":
@@ -1151,8 +1167,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"sp_giant_spear":
 			game.guard_stats.giant_spear = true
 		"sp_rapid_snipe":
-			game.sniper_stats.attack_power /= 3.0
-			game.sniper_stats.interval /= 4.0
+			_update_sniper_stats(game)
 		"sp_kill_chain":
 			game.knight_stats.kill_chain = true
 		"sp_provoke":
@@ -1201,7 +1216,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"tower_dmg":
 			_update_castle_damage(game)
 		"tower_rate":
-			castle.tower_interval = maxf(0.2, 1.0 / (1.0 + 0.2 * new_level))
+			_update_castle_intervals(game)
 		"tower_pierce":
 			castle.tower_pierce += 1
 		"tower_multi":

@@ -9,11 +9,11 @@ const ArcherFxScript := preload("res://scripts/archer_fx.gd")
 const RESPAWN_TIME := 10.0
 const MOVE_SPEED := 140.0
 ## 特別強化の威力（矢1本の威力 × これ）
-const RAIN_MULT := 15.0
-const ORB_MULT := 7.5
+const RAIN_MULT := 120.0
+const ORB_MULT := 60.0
 const ORB_DAMAGE_RATIO := 0.125
-const TORNADO_ARROW_MULT := 100.0
-const GIANT_TORNADO_MULT := 30.0
+const TORNADO_ARROW_MULT := 800.0
+const GIANT_TORNADO_MULT := 240.0
 ## 特別強化の間隔（秒）。全弓兵が同じタイミングで撃つように、ゲームの経過時間の区切りで数える
 const RAIN_EVERY := 8.0
 const ORB_EVERY := 15.0

@@ -195,7 +195,7 @@ const SPECIAL := [
 	{"id": "sp_direct_hit", "cat": "castle", "special": true, "name": "投石器・巨岩直撃", "desc": "着弾地点の真ん中にいる敵1体に、追加で16倍ダメージ", "max": 1, "req": "catapult"},
 	{"id": "sp_rolling", "cat": "castle", "special": true, "name": "投石器・転がり岩", "desc": "着弾した岩がそのまま城と反対の方へ転がり、敵をひいていく（転がる岩は投石器の21.6倍のダメージ）", "max": 1, "req": "catapult"},
 	# ---- バリスタ
-	{"id": "sp_slow_bolt", "cat": "castle", "special": true, "name": "バリスタ・減速ボルト", "desc": "当たった敵の移動速度を2秒間大きく下げる", "max": 1, "req": "ballista"},
+	{"id": "sp_slow_bolt", "cat": "castle", "special": true, "name": "バリスタ・減速ボルト", "desc": "バリスタの矢が当たった敵の移動速度を2秒間 -30%", "max": 1, "req": "ballista"},
 	{"id": "sp_ballista_blast", "cat": "castle", "special": true, "name": "バリスタ・爆裂ボルト", "desc": "貫いた敵ごとに小爆発が起きる（変更前の半分）", "max": 1, "req": "ballista"},
 	{"id": "sp_big_bolt", "cat": "castle", "special": true, "name": "バリスタ・大型弩", "desc": "矢が大きくなって当たり判定が広がり、威力 +50%", "max": 1, "req": "ballista"},
 	{"id": "sp_blast_bolt", "cat": "castle", "special": true, "name": "バリスタ・炸裂大矢", "desc": "矢が最初に当たった敵の場所で大爆発（基本の威力の35%の範囲攻撃）", "max": 1, "req": "ballista"},

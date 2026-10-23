@@ -33,8 +33,10 @@ var first_blast_src: Dictionary = {}
 ## 矢倉・追尾の矢：飛んでいる途中で一度だけ、一番近い敵へ向きを変える
 var homing := false
 var _homed := false
-## 当たった敵の移動速度を、この秒数だけ40%下げる（影縫い・減速ボルト）
+## 当たった敵の移動速度を、この秒数だけ slow_ratio 下げる（影縫い・減速ボルト）
 var slow_on_hit := 0.0
+## 足を遅くする割合（slow_on_hit が0より大きいとき）
+var slow_ratio := 0.4
 ## 弓兵の矢（近城の矢・追い討ちの威力アップがかかる）
 var archer_hit := false
 ## 連携射撃：当たった敵に連携マークを付ける。ほかの弓兵のマークが付いた敵には+60%
@@ -202,7 +204,7 @@ func _step(delta: float) -> void:
 			if confuse_on_hit > 0.0:
 				e.confuse(confuse_on_hit)
 			if slow_on_hit > 0.0:
-				e.slow(slow_on_hit, 0.4)
+				e.slow(slow_on_hit, slow_ratio)
 			if tornado_on_hit:
 				game.spawn_tornado(global_position, 1.0)
 			# 当たった敵によって変わる威力アップは、この1回だけにかける（貫通した次の敵には持ち越さない）

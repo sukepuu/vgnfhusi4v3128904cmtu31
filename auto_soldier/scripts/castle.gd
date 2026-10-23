@@ -661,8 +661,10 @@ func _update_ballista(delta: float) -> void:
 			if rainbow_bolt:
 				b.rainbow = true
 				b.confuse_on_hit = 1.5
+			# 減速ボルト：当たった敵の移動速度を2秒間 -30%
 			if slow_bolt:
 				b.slow_on_hit = 2.0
+				b.slow_ratio = 0.3
 			b.src = _equip_record("ballista", "バリスタ", i)
 			# 連装で増えた矢も、通常攻撃として数える
 			b.life = 2.5

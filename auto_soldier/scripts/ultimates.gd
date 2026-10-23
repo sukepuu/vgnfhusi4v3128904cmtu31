@@ -14,8 +14,8 @@ const DOME_RADIUS := 300.0
 const DOME_TIME := 5.0
 ## 剣の大嵐の威力（剣の何倍か。20倍の2倍）
 const STORM_MULT := 40.0
-## 鳥の大群の鳥の威力（ペットの攻撃力の6倍。攻撃力変更前と同じダメージ）
-const FLOCK_MULT := 6.0
+## 鳥の大群の鳥の威力（ペットの攻撃力の10.8倍）
+const FLOCK_MULT := 10.8
 
 var game: Node2D
 

@@ -130,7 +130,7 @@ func _do_dance() -> void:
 			var fb := BulletScript.new()
 			fb.game = game
 			fb.velocity = dir * 420.0
-			fb.damage = game.pet_attack_power * f._n / 4.8 * 20.0 * f.FUSION_BONUS
+			fb.damage = game.pet_attack_power * f._n / 4.8 * 36.0 * f.FUSION_BONUS
 			fb.radius = 8.0
 			fb.color = Color.from_hsv(float(i) / 24.0, 0.75, 1.0)
 			fb.life = 1.2
@@ -147,7 +147,7 @@ func _do_dance() -> void:
 			var b := BulletScript.new()
 			b.game = game
 			b.velocity = dir * 420.0
-			b.damage = game.pet_attack_power * 10.0
+			b.damage = game.pet_attack_power * 18.0
 			b.radius = 5.0
 			b.color = Color.from_hsv(float(i) / 12.0, 0.75, 1.0)
 			b.life = 0.9
@@ -182,7 +182,7 @@ func _frost_volley() -> void:
 		var b := BulletScript.new()
 		b.game = game
 		b.velocity = (t.global_position - from).normalized() * 380.0
-		b.damage = game.pet_attack_power * (1.4 if game.pet_giant else 1.0)
+		b.damage = game.pet_attack_power * 1.8 * (1.4 if game.pet_giant else 1.0)
 		b.radius = 8.0
 		b.color = Color(0.7, 0.95, 1.0)
 		b.aim_target = t

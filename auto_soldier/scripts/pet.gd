@@ -21,8 +21,9 @@ var drum := false
 var attack_power := 5.0
 ## 通常攻撃（ペット弾）の威力の倍率。特別強化のダメージにはかからない
 ## 通常弾の威力（以前は基本の4倍だったが、基本値に吸収）
-## 爆裂ペット弾の爆発（ペット弾の威力 × これ。前は0.7）
+## 爆裂ペット弾の爆発（ペット弾の威力 × これ）。弓兵ペットの爆裂ペット斬撃は BURST_RATIO、遊撃ペットの爆裂遊撃ペット弾は PET_BURST_RATIO（1.8倍）
 const BURST_RATIO := 0.35
+const PET_BURST_RATIO := BURST_RATIO * 1.8
 var record: Dictionary
 var interval := 0.5
 var attack_range := 420.0
@@ -37,12 +38,12 @@ const CHARGE_EVERY := 6.0
 const CHARGE_SPEED := 900.0
 const CHARGE_RETURN_SPEED := 700.0
 const CHARGE_MAX_TIME := 1.2
-## 突撃ペットの突進の威力（ペットの攻撃力の16倍）
-const CHARGE_MULT := 16.0
+## 突撃ペットの突進の威力（遊撃ペットの攻撃力の28.8倍）
+const CHARGE_MULT := 28.8
 ## 攻撃力の基準値変更後も従来と同じダメージになる倍率
-const ARCHER_CHARGE_MULT := CHARGE_MULT / 3.75
-## 体当たりペットの威力（遊撃は攻撃力の6倍、弓兵は24倍）
-const BODY_MULT := 6.0
+const ARCHER_CHARGE_MULT := 16.0 / 3.75
+## 体当たりペットの威力（遊撃は攻撃力の10.8倍、弓兵は24倍）
+const BODY_MULT := 10.8
 const ARCHER_BODY_MULT := 24.0
 ## 爆裂突撃ペット：突進が当たった敵の位置で小爆発（突進の70%）
 const CHARGE_BURST_RADIUS := 50.0
@@ -448,7 +449,7 @@ func _shoot_one(target: Node2D, k: int, shots: int) -> void:
 	# 爆裂ペット弾：当たると小爆発
 	if game.pet_burst:
 		b.explode_radius = 45.0
-		b.explode_ratio = BURST_RATIO
+		b.explode_ratio = PET_BURST_RATIO
 		b.explode_src = game.sp_src(record, "sp_pet_burst")
 	game.world.add_child(b)
 

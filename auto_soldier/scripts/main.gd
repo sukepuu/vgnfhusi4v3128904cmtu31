@@ -248,7 +248,7 @@ var archer_pet_flock := false
 var archer_pet_body := false
 var archer_pet_fusion := false
 var archer_pet_heal := false
-## 体当たりペット：ペットに触れた敵に攻撃力の6倍ダメージ（pet.gd の BODY_MULT）
+## 体当たりペット：ペットに触れた敵に攻撃力の10.8倍ダメージ（pet.gd の BODY_MULT）
 var pet_body := false
 ## 突撃ペット（6秒ごとにHPが一番高い敵へ突進）・爆裂突撃ペット（突進が当たった所で小爆発）
 var pet_charge := false

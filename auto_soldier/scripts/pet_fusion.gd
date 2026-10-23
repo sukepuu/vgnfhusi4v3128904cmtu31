@@ -381,7 +381,7 @@ func _shoot_update(delta: float) -> void:
 			b.pierce += 2
 		if game.pet_burst:
 			b.explode_radius = 45.0 + 3.0 * _n
-			b.explode_ratio = PetScript.BURST_RATIO * FUSION_BURST_MULT
+			b.explode_ratio = PetScript.PET_BURST_RATIO * FUSION_BURST_MULT
 			b.explode_src = game.sp_src(record, "sp_pet_burst")
 		game.world.add_child(b)
 

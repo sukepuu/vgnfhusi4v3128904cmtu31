@@ -896,7 +896,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 		"knight":
 			game.add_knight()
 		"knight_dmg":
-			game.knight_stats.attack_power = 100.0 * (1.0 + 0.2 * new_level)
+			game.knight_stats.attack_power = 50.0 * (1.0 + 0.2 * new_level)
 		"knight_rate":
 			game.knight_stats.interval = maxf(0.3, 1.0 / (1.0 + 0.2 * new_level))
 		"knight_width":

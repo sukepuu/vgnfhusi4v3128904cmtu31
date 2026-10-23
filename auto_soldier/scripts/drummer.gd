@@ -21,10 +21,10 @@ const WAR_TIME := 5.0
 const SHOCK_STUN := 0.5
 ## 二度打ち：二打目までの時間・威力
 const DOUBLE_DELAY := 0.4
-const DOUBLE_RATIO := 0.5
+const DOUBLE_RATIO := 2.0
 ## 響きの波：衝撃波の数・威力（太鼓の威力 × これ）
 const WAVE_COUNT := 8
-const WAVE_RATIO := 0.3
+const WAVE_RATIO := 7.0
 ## 押し返しの太鼓：押す強さ
 const PUSH_KNOCK := 450.0
 ## 癒しの調べ：1回で城が回復する量・範囲内の味方が回復する量
@@ -40,9 +40,9 @@ const PLACE_DELAY := 4.0
 ## 必殺・大太鼓：間隔・範囲・威力・気絶
 const ULT_EVERY := 15.0
 const ULT_RADIUS_MULT := 3.0
-const ULT_DAMAGE_MULT := 0.5
+const ULT_DAMAGE_MULT := 3.0
 ## 置き太鼓の威力（通常の太鼓 × これ）
-const PLACE_DAMAGE_MULT := 10.0
+const PLACE_DAMAGE_MULT := 0.5
 const ULT_STUN := 1.0
 
 var game: Node2D

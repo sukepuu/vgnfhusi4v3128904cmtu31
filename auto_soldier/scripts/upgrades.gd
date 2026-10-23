@@ -260,7 +260,7 @@ const SPECIAL := [
 	{"id": "sp_rapid_reload", "cat": "castle", "special": true, "name": "連射砲・装填", "desc": "50発射撃する度に3秒間射撃できなくなるが、与ダメージ +80%", "max": 1, "req": "rapid"},
 	{"id": "sp_archer_pet_burst", "cat": "archer_pet", "special": true, "name": "爆裂ペット斬撃", "desc": "弓兵ペットの斬撃が当たると小爆発する（威力35%）", "max": 1, "req": "archer_pet"},
 	{"id": "sp_archer_pet_giant", "cat": "archer_pet", "special": true, "name": "巨大弓兵ペット", "desc": "弓兵ペットが大きくなり、斬撃も大きく2体貫通、威力 +40%", "max": 1, "req": "archer_pet"},
-	{"id": "sp_archer_pet_charge", "cat": "archer_pet", "special": true, "name": "突撃弓兵ペット", "desc": "一定時間ごとに、弓兵ペットが弓兵から離れてHPが一番高い敵へ高速で突進する。突進中に触れた敵に1回ずつダメージ（攻撃力の約4.27倍。攻撃力変更前と同じダメージ）。戻るときはダメージなし", "max": 1, "req": "archer_pet"},
+	{"id": "sp_archer_pet_charge", "cat": "archer_pet", "special": true, "name": "突撃弓兵ペット", "desc": "一定時間ごとに、弓兵ペットが弓兵から離れてHPが一番高い敵へ高速で突進する。突進中に触れた敵に1回ずつダメージ（攻撃力の約21.3倍）。戻るときはダメージなし", "max": 1, "req": "archer_pet"},
 	{"id": "sp_archer_pet_frost", "cat": "archer_pet", "special": true, "name": "凍える爪", "desc": "10秒ごとに、全弓兵ペットが敵を追いかける凍結斬撃を放つ。当たった敵は0.5秒凍る", "max": 1, "req": "archer_pet"},
 	{"id": "sp_archer_pet_heal", "cat": "archer_pet", "special": true, "name": "癒しの羽ばたき", "desc": "弓兵ペット1匹につき、担当の弓兵のHPが毎秒2回復する", "max": 1, "req": "archer_pet"},
 	{"id": "sp_archer_pet_dance", "cat": "archer_pet", "special": true, "name": "弓兵ペットの舞", "desc": "弓兵ペットが虹色に光りながらくるくる回り、5秒ごとに全方位へ虹色の斬撃を12発放つ（攻撃力の約6.67倍）", "max": 1, "req": "archer_pet"},

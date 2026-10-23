@@ -40,8 +40,8 @@ const CHARGE_RETURN_SPEED := 700.0
 const CHARGE_MAX_TIME := 1.2
 ## 突撃ペットの突進の威力（遊撃ペットの攻撃力の28.8倍）
 const CHARGE_MULT := 28.8
-## 攻撃力の基準値変更後も従来と同じダメージになる倍率
-const ARCHER_CHARGE_MULT := 16.0 / 3.75
+## 突撃弓兵ペットの突進の威力（弓兵ペットの攻撃力の約21.3倍）
+const ARCHER_CHARGE_MULT := 16.0 / 3.75 * 5.0
 ## 体当たりペットの威力（遊撃は攻撃力の10.8倍、弓兵は24倍）
 const BODY_MULT := 10.8
 const ARCHER_BODY_MULT := 24.0

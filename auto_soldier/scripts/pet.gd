@@ -151,7 +151,7 @@ func _base_damage() -> float:
 const DRUM_CHARGE_MULT := 10.0
 ## 合体中に鼓舞ペット大合体・合体合体合体ペットから飛び出す鼓舞ペットの突進の威力
 const DRUM_LAUNCH_CHARGE_MULT := 1.0
-const DRUM_BODY_MULT := 2.0
+const DRUM_BODY_MULT := 4.0
 ## 巨大鼓舞ペット：範囲・威力
 const DRUM_GIANT_RADIUS := 1.3
 const DRUM_GIANT_DAMAGE := 1.4
@@ -170,11 +170,11 @@ const DRUM_DOUBLE_RATIO := 1.0
 ## 鼓舞ペットの舞：間隔・音符の数・威力
 const DRUM_DANCE_EVERY := 5.0
 const DRUM_DANCE_NOTES := 12
-const DRUM_DANCE_RATIO := 3.0
+const DRUM_DANCE_RATIO := 1.5
 ## 必殺・鼓笛隊：間隔・音符の数・威力
 const DRUM_PARADE_EVERY := 15.0
 const DRUM_PARADE_NOTES := 6
-const DRUM_PARADE_RATIO := 0.3
+const DRUM_PARADE_RATIO := 1.5
 var _drum_double_left := -1.0
 var _beat_fx := 0.0
 var _beat_r := 0.0

@@ -666,7 +666,7 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			game.add_engineer()
 		"heavy_dmg":
 			for h in game.all_heavies():
-				h.attack_power = 30.0 * (1.0 + 0.2 * new_level)
+				h.attack_power = 15.0 * (1.0 + 0.2 * new_level)
 		"heavy_haste":
 			for h in game.all_heavies():
 				h.slash_interval = maxf(0.2, 2.0 / (1.0 + 0.2 * new_level))

@@ -777,7 +777,7 @@ func add_heavy() -> void:
 		heavy = h
 	# 2体目も、すでに取得済みの重装強化・特別強化を引き継ぐ
 	var lv := func(id: String) -> int: return int(upgrade_levels.get(id, 0))
-	h.attack_power = 30.0 * (1.0 + 0.2 * lv.call("heavy_dmg"))
+	h.attack_power = 15.0 * (1.0 + 0.2 * lv.call("heavy_dmg"))
 	h.slash_interval = maxf(0.2, 2.0 / (1.0 + 0.2 * lv.call("heavy_haste")))
 	h.slash_radius = 105.0 * (1.0 + 0.2 * lv.call("heavy_range"))
 	h.max_hp = 270.0 * (1.0 + 0.4 * lv.call("heavy_hp"))

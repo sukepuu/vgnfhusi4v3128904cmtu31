@@ -296,7 +296,7 @@ const SPECIAL := [
 	{"id": "sp_fun_rainbow", "cat": "castle", "special": true, "name": "バリスタ・虹の矢", "desc": "矢が虹色の尾を引き、当たった敵は1.5秒間混乱してふらふら歩く", "max": 1, "req": "ballista"},
 	{"id": "sp_fun_snowball", "cat": "castle", "special": true, "name": "結界・雪合戦", "desc": "城から近くの敵へ雪玉を投げ続ける（ちょっとだけ止まる）", "max": 1, "req": "frost"},
 	{"id": "sp_fun_dance", "cat": "pet", "special": true, "name": "遊撃ペットの踊り", "desc": "遊撃ペットが虹色に光りながらくるくる回り、5秒ごとに全方位へ虹色の玉を12発撃つ（遊撃ペットの攻撃力の18倍の威力）", "max": 1, "req": "pet"},
-	{"id": "sp_pet_charge_burst", "cat": "pet", "special": true, "name": "爆裂突撃遊撃ペット", "desc": "突進が命中した敵の位置で小爆発が起きる（突進の35%の威力）\n「爆裂遊撃ペット弾」と「突撃遊撃ペット」を取得している場合のみ出現", "max": 1, "req": "pet", "req_all": ["sp_pet_burst", "sp_pet_charge"]},
+	{"id": "sp_pet_charge_burst", "cat": "pet", "special": true, "name": "爆裂突撃遊撃ペット", "desc": "突進が命中した敵の位置で小爆発が起きる（遊撃ペットの攻撃力の10.08倍の威力。突撃遊撃ペットの威力とは別に決まる）\n「爆裂遊撃ペット弾」と「突撃遊撃ペット」を取得している場合のみ出現", "max": 1, "req": "pet", "req_all": ["sp_pet_burst", "sp_pet_charge"]},
 	{"id": "sp_fun_star", "cat": "knight", "special": true, "name": "流れ星突撃", "desc": "突進の跡にキラキラの星が残って弾ける（小ダメージ）", "max": 1, "req": "knight"},
 	{"id": "sp_repair_orb", "cat": "repair", "special": true, "name": "修理玉", "desc": "20秒ごとに城の前へ修理玉を置く（当たり判定なし）。\n置いてから10秒間に回復した城のHPの20倍のダメージの弾を、HPが一番多い敵へゆっくり撃つ（貫通無限）", "max": 1, "req": "repairer"},
 	# ---- 15秒ごとの必殺技（各種類の6つ目）

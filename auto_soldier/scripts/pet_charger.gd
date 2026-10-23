@@ -80,7 +80,7 @@ func _hit() -> void:
 			var hit_pos: Vector2 = e.global_position
 			e.take_damage(dmg, _aim * 260.0, game.sp_src(record, "sp_archer_pet_charge" if archer else ("sp_drum_pet_charge" if drum else "sp_pet_charge")))
 			if game.archer_pet_charge_burst if archer else (false if drum else game.pet_charge_burst):
-				var burst_dmg: float = game.archer_pet_attack_power * PetScript.ARCHER_CHARGE_BURST_MULT if archer else dmg * PetScript.PET_CHARGE_BURST_RATIO
+				var burst_dmg: float = game.archer_pet_attack_power * PetScript.ARCHER_CHARGE_BURST_MULT if archer else game.pet_attack_power * PetScript.PET_CHARGE_BURST_MULT
 				game.explode(hit_pos, PetScript.CHARGE_BURST_RADIUS, burst_dmg, game.sp_src(record, "sp_archer_pet_charge_burst" if archer else "sp_pet_charge_burst"), Color(1.0, 0.7, 0.3))
 
 

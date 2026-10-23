@@ -49,8 +49,8 @@ const BODY_MULT := 10.8
 const ARCHER_BODY_MULT := 24.0
 ## 爆裂突撃ペット：突進が当たった敵の位置で小爆発
 const CHARGE_BURST_RADIUS := 50.0
-## 遊撃ペット：突進のダメージ × これ。弓兵ペット：突進とは別に、弓兵ペットの攻撃力 × ARCHER_CHARGE_BURST_MULT
-const PET_CHARGE_BURST_RATIO := 0.35
+## 突進の倍率とは別に決まる爆発の威力（遊撃ペット・弓兵ペットの攻撃力 × これ）
+const PET_CHARGE_BURST_MULT := 10.08
 const ARCHER_CHARGE_BURST_MULT := 14.93
 ## 0 = ふだん / 1 = 突進中 / 2 = 戻り中
 var _charge_state := 0
@@ -525,7 +525,7 @@ func _charge_hit() -> void:
 			var hit_pos: Vector2 = e.global_position
 			e.take_damage(dmg, _aim * 260.0, game.sp_src(record, charge_sp))
 			if burst_on:
-				var burst_dmg: float = _base_damage() * ARCHER_CHARGE_BURST_MULT if archer else dmg * PET_CHARGE_BURST_RATIO
+				var burst_dmg: float = _base_damage() * (ARCHER_CHARGE_BURST_MULT if archer else PET_CHARGE_BURST_MULT)
 				game.explode(hit_pos, CHARGE_BURST_RADIUS, burst_dmg, game.sp_src(record, burst_sp), Color(1.0, 0.7, 0.3))
 
 

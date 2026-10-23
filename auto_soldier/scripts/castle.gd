@@ -52,6 +52,7 @@ var _cannon_shot_counts: Array = [0, 0, 0]
 ## 焼夷弾・機雷散布・置き土産・吸引砲が何回に1回出るか
 const CANNON_EXTRA_EVERY := 3
 const SUCTION_EVERY := 5
+const STICKY_EVERY := 5
 var _cannon_aims: Array = [Vector2.UP, Vector2.UP, Vector2.UP]
 
 # --- 投石器（大砲より範囲が広いが、発射間隔が長い）。最大3台
@@ -115,6 +116,8 @@ var catapult_shots := 1
 var tower_pierce := 0
 var homing_arrow := false
 var suction := false
+## 大砲・粘着砲：5発に1回、着弾地点を2秒間ねばねばにする
+var sticky_shell := false
 var slow_bolt := false
 var treasure_shoot := false
 var scatter_level := 0
@@ -440,6 +443,9 @@ func _update_cannon(delta: float) -> void:
 		# 吸引砲：5回に1回、着弾地点に0.5秒間まわりの敵を吸い寄せる
 		if suction and _cannon_shot_counts[i] % SUCTION_EVERY == 0:
 			shells[0].suction = true
+		# 粘着砲：5回に1回、着弾地点が2秒間ねばねばになる（中の敵は移動速度 -30%）
+		if sticky_shell and _cannon_shot_counts[i] % STICKY_EVERY == 0:
+			shells[0].sticky = true
 		# ビリヤード砲弾：着弾後に2回跳ねる
 		if billiard:
 			shells[0].damage *= 4.0

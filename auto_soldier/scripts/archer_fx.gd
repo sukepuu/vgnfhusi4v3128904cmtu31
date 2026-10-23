@@ -3,6 +3,7 @@ extends Node2D
 ##   "orb"     … 必殺・連珠の玉。ゆっくりまっすぐ進み、0.5秒ごとに全方位へ16発の矢（貫通1）を放つ。玉そのものは敵に当たらない
 ##   "tornado" … 竜巻（竜巻矢が当たった所にできる）。duration 秒のあいだ、まわりの敵を中心へ吸い寄せる
 ##   "giant"   … 巨大竜巻。出たときに範囲の敵へダメージを与えて外へ押し出し、しばらく渦を巻いて消える
+##   "sticky"  … 大砲・粘着砲のねばねば。duration 秒のあいだ、中にいる敵の移動速度を STICKY_SLOW 遅くする
 
 const BulletScript := preload("res://scripts/bullet.gd")
 
@@ -25,6 +26,8 @@ const ORB_EVERY := 0.5
 const PULL_SPEED := 160.0
 ## 巨大竜巻の押し出しの強さ
 const GIANT_KNOCK := 650.0
+## 粘着砲：遅くする割合
+const STICKY_SLOW := 0.3
 
 
 func _ready() -> void:
@@ -48,6 +51,8 @@ func _process(delta: float) -> void:
 				_orb_volley()
 		"tornado":
 			_pull(delta)
+		"sticky":
+			_stick()
 	queue_redraw()
 
 
@@ -80,6 +85,15 @@ func _pull(delta: float) -> void:
 			e.position += to.normalized() * minf(PULL_SPEED * delta, to.length())
 
 
+## 粘着砲：中にいる敵を遅くする（出たら少しだけ残る）
+func _stick() -> void:
+	for e in game.enemies_near(global_position, radius + 30.0):
+		if not is_instance_valid(e) or e.dead:
+			continue
+		if global_position.distance_to(e.global_position) < radius + e.radius:
+			e.slow(0.1, STICKY_SLOW)
+
+
 ## 巨大竜巻：出た瞬間に範囲の敵へダメージを与えて、外へ押し出す
 func _giant_blast() -> void:
 	for e in game.enemies_near(global_position, radius + 30.0):
@@ -103,6 +117,13 @@ func _draw() -> void:
 			for i in ORB_ARROWS:
 				var a := _t * 2.0 + TAU * i / ORB_ARROWS
 				draw_circle(Vector2.from_angle(a) * 19.0, 2.0, Color(1.0, 0.95, 0.7))
+		"sticky":
+			var fade := clampf((duration - _t) / 0.4, 0.0, 1.0)
+			draw_circle(Vector2.ZERO, radius, Color(0.75, 0.55, 0.95, 0.28 * fade))
+			for k in 6:
+				var a := TAU * k / 6.0 + 0.4
+				draw_circle(Vector2.from_angle(a) * radius * 0.55, radius * 0.18, Color(0.85, 0.65, 1.0, 0.35 * fade))
+			draw_arc(Vector2.ZERO, radius, 0.0, TAU, 32, Color(0.6, 0.4, 0.85, 0.6 * fade), 2.0)
 		"tornado", "giant":
 			# 渦：中心へ向かって回る何本もの弧（消える前は薄くなる）
 			var fade := clampf((duration - _t) / 0.4, 0.0, 1.0)

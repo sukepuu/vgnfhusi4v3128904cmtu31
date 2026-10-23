@@ -185,7 +185,7 @@ const SPECIAL := [
 	{"id": "sp_scatter", "cat": "castle", "special": true, "name": "大砲・散弾砲", "desc": "砲弾が分裂して、着弾地点の周りにも4発落ちる（周囲の砲弾の威力2倍）", "max": 1, "req": "cannon"},
 	{"id": "sp_suction", "cat": "castle", "special": true, "name": "大砲・吸引砲", "desc": "5発に1回、着弾地点に0.5秒間、近くの敵を少し吸い寄せる（ボスには効かない）", "max": 1, "req": "cannon"},
 	{"id": "sp_incendiary", "cat": "castle", "special": true, "name": "大砲・焼夷弾", "desc": "3発に1回、着弾地点が6秒間燃え続ける（燃焼ダメージは変更前の70%）", "max": 1, "req": "cannon"},
-	{"id": "sp_rapid_cannon", "cat": "castle", "special": true, "name": "大砲・速射砲", "desc": "大砲の発射間隔 -40%", "max": 1, "req": "cannon"},
+	{"id": "sp_sticky_shell", "cat": "castle", "special": true, "name": "大砲・粘着砲", "desc": "5発に1回、粘着弾を撃つ。着弾地点が2秒間ねばねばになり、中にいる敵の移動速度 -30%", "max": 1, "req": "cannon"},
 	{"id": "sp_ap_shell", "cat": "castle", "special": true, "name": "大砲・徹甲榴弾", "desc": "6秒ごとに、大砲1門につき1発、一番HPの多い敵へ80倍ダメージの直射弾（間にいる敵はすり抜けて、狙った敵を追いかける）", "max": 1, "req": "cannon"},
 	{"id": "sp_mines", "cat": "castle", "special": true, "name": "大砲・機雷散布", "desc": "3発に1回、砲弾が着弾地点のまわりに機雷を3個ばらまく。敵が触れると爆発（20秒残る。機雷の威力2倍）", "max": 1, "req": "cannon"},
 	# ---- 投石器
@@ -742,8 +742,8 @@ static func apply(id: String, new_level: int, game: Node2D) -> void:
 			castle.suction = true
 		"sp_incendiary":
 			castle.fire_level = 2
-		"sp_rapid_cannon":
-			castle.cannon_interval *= 0.6
+		"sp_sticky_shell":
+			castle.sticky_shell = true
 		"sp_treasure":
 			castle.treasure_shoot = true
 		"sp_split_rock":

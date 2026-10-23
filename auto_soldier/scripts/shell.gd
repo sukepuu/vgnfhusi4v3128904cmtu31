@@ -44,6 +44,8 @@ var stay_rock := false
 var leave_bomb := 0.0
 ## 吸引砲：着弾地点に0.5秒間、まわりの敵（ボス以外）を吸い寄せる
 var suction := false
+## 粘着砲：着弾地点が2秒間ねばねばになり、中の敵の移動速度 -30%
+var sticky := false
 ## 投石器・鉄塊投げ：鉄塊の見た目。chase の敵を追いかけて落ち、その敵に direct_bonus のダメージ
 var iron := false
 var chase: Node2D = null
@@ -88,6 +90,14 @@ func _explode() -> void:
 			near.take_damage(direct_bonus, Vector2.ZERO, src if iron else game.sp_src(src, "sp_direct_hit"))
 			if boulder and game.castle.treasure_shoot and randf() < 0.05:
 				game.add_xp(1)
+	if sticky:
+		var g := ArcherFxScript.new()
+		g.game = game
+		g.kind = "sticky"
+		g.radius = blast_radius + 20.0
+		g.duration = 2.0
+		g.position = target
+		game.effects.add_child(g)
 	if suction:
 		var v := ArcherFxScript.new()
 		v.game = game

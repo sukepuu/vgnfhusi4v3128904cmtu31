@@ -310,7 +310,7 @@ const SPECIAL := [
 	{"id": "sp_counter_wall", "cat": "builder", "special": true, "name": "反撃壁", "desc": "敵の弾が壁に当たると、その場所から近くの敵へ弾を撃ち返す", "max": 1, "req": "builder"},
 	{"id": "sp_automaton", "cat": "engineer", "special": true, "name": "巨大からくり兵", "desc": "20秒ごとに、ボスの2倍の大きさのからくり兵を置く（10秒で消える）。ゆっくり歩き、広い全方位斬り1回→別々の2か所へ大きな弾（10体貫通）の高速連射をくり返す。消えるときに超広範囲の大爆発", "max": 1, "req": "engineer"},
 	{"id": "sp_tower_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂矢", "desc": "矢倉の矢が当たった敵が爆発し、周りの敵に矢の約16.3%のダメージ", "max": 1, "req": "tower"},
-	{"id": "sp_homing_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂追尾火矢", "desc": "追尾火矢が当たった敵にも、爆裂矢の爆発が起きるようになる\n「矢倉・爆裂矢」と「矢倉・追尾火矢」を取得している場合のみ出現", "max": 1, "req": "tower", "req_all": ["sp_tower_blast", "sp_homing"]},
+	{"id": "sp_homing_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂追尾火矢", "desc": "追尾火矢が当たった敵にも、爆裂矢の爆発が起きるようになる（矢倉の攻撃力の2.445倍。追尾火矢の威力とは別に決まる）\n「矢倉・爆裂矢」と「矢倉・追尾火矢」を取得している場合のみ出現", "max": 1, "req": "tower", "req_all": ["sp_tower_blast", "sp_homing"]},
 	{"id": "sp_stay_rock", "cat": "castle", "special": true, "name": "投石器・居座り岩", "desc": "着弾地点に大岩が5秒間残り、上にいる敵にダメージを与え続ける（ダメージは変更前の50%）。移動速度 -30%", "max": 1, "req": "catapult"},
 	{"id": "sp_mega_bolt", "cat": "castle", "special": true, "name": "バリスタ・巨大弩砲", "desc": "8秒ごとに、3倍の大きさ・基本の威力の7.2倍の矢を、HPが一番多い敵へゆっくり（速さ1/3）撃つ", "max": 1, "req": "ballista"},
 	{"id": "sp_frost_ground", "cat": "castle", "special": true, "name": "結界・凍てつく大地", "desc": "結界の中の地面が凍りつき、中にいる敵にずっとダメージを与える（吹雪と重ねがけできる）", "max": 1, "req": "frost"},

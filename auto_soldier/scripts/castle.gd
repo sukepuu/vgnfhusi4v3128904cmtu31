@@ -809,9 +809,9 @@ func _update_fifth_specials(delta: float) -> void:
 					var m: Node2D = game.spawn_missile("homing", from, Vector2.from_angle(-PI / 2.0 + (k - 0.5) * 1.6) * 420.0,
 						tower_attack_power * 15.0, 8.0, 4.0, game.sp_src(_equip_record("tower", "矢倉", i), "sp_homing"))
 					m.target = game.nearest_enemy(from, tower_range * 1.5)
-					# 爆裂追尾火矢：当たった敵の所で、矢倉の爆裂矢と同じ約23.3%ダメージの爆発
+					# 爆裂追尾火矢：当たった敵の所で爆発（追尾火矢の倍率とは別に、矢倉の攻撃力の2.445倍）
 					if homing_blast and tower_blast:
-						m.blast_ratio = 0.163
+						m.blast_damage = tower_attack_power * 2.445
 						m.blast_src = game.sp_src(_equip_record("tower", "矢倉", i), "sp_tower_blast")
 	if lightning and ballista_level > 0:
 		_lightning_cd -= delta

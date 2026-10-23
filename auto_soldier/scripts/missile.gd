@@ -28,8 +28,8 @@ var look := "iron"
 
 ## 流星百騎：通った跡に流れ星を残す（0より大きいとき。星1つのダメージ）
 var star_damage := 0.0
-## 爆裂追尾火矢：当たった敵の所で爆裂矢の爆発（当たったダメージのこの倍率）
-var blast_ratio := 0.0
+## 爆裂追尾火矢：当たった敵の所で爆裂矢の爆発（0より大きいとき。爆発のダメージ）
+var blast_damage := 0.0
 var blast_src: Dictionary = {}
 var star_src: Dictionary = {}
 var _star_cd := 0.0
@@ -120,8 +120,8 @@ func _check_hits() -> void:
 				# 追尾火矢・鳩も射撃のノックバック（下側へは押さない）
 				e.shot_knockback(velocity.normalized() * 100.0)
 				game.explode(global_position, 55.0, damage * 0.5, src, Color(1.0, 0.5, 0.15), 0.0, 120.0)
-				if blast_ratio > 0.0:
-					game.explode(global_position, 70.0, damage * blast_ratio, blast_src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
+				if blast_damage > 0.0:
+					game.explode(global_position, 70.0, blast_damage, blast_src, Color(1.0, 0.7, 0.3), 0.0, 120.0)
 				if (look == "bird" or look == "blade" or look == "note") and is_instance_valid(e) and not e.dead:
 					# 鳩・刃：敵が生き残っていたらくっついて、1秒ごとに2回つつく（斬る）
 					_stuck_on = e

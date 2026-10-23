@@ -193,7 +193,7 @@ const SPECIAL := [
 	{"id": "sp_split_rock", "cat": "castle", "special": true, "name": "投石器・分裂岩", "desc": "着弾した岩が砕けて、周りに6個の岩が落ちる", "max": 1, "req": "catapult"},
 	{"id": "sp_rock_rain", "cat": "castle", "special": true, "name": "投石器・岩雨", "desc": "撃つたびに、ランダムな敵2体の頭上にも岩が落ちる（落下ダメージ6倍）", "max": 1, "req": "catapult"},
 	{"id": "sp_direct_hit", "cat": "castle", "special": true, "name": "投石器・巨岩直撃", "desc": "着弾地点の真ん中にいる敵1体に、追加で16倍ダメージ", "max": 1, "req": "catapult"},
-	{"id": "sp_rolling", "cat": "castle", "special": true, "name": "投石器・転がり岩", "desc": "着弾した岩がそのまま城と反対の方へ転がり、敵をひいていく（転がる岩のダメージ12倍）", "max": 1, "req": "catapult"},
+	{"id": "sp_rolling", "cat": "castle", "special": true, "name": "投石器・転がり岩", "desc": "着弾した岩がそのまま城と反対の方へ転がり、敵をひいていく（転がる岩は投石器の21.6倍のダメージ）", "max": 1, "req": "catapult"},
 	# ---- バリスタ
 	{"id": "sp_slow_bolt", "cat": "castle", "special": true, "name": "バリスタ・減速ボルト", "desc": "当たった敵の移動速度を2秒間大きく下げる", "max": 1, "req": "ballista"},
 	{"id": "sp_ballista_blast", "cat": "castle", "special": true, "name": "バリスタ・爆裂ボルト", "desc": "貫いた敵ごとに小爆発が起きる（変更前の半分）", "max": 1, "req": "ballista"},
@@ -311,7 +311,7 @@ const SPECIAL := [
 	{"id": "sp_automaton", "cat": "engineer", "special": true, "name": "巨大からくり兵", "desc": "20秒ごとに、ボスの2倍の大きさのからくり兵を置く（10秒で消える）。ゆっくり歩き、広い全方位斬り1回→別々の2か所へ大きな弾（10体貫通）の高速連射をくり返す。消えるときに超広範囲の大爆発", "max": 1, "req": "engineer"},
 	{"id": "sp_tower_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂矢", "desc": "矢倉の矢が当たった敵が爆発し、周りの敵に矢の約16.3%のダメージ", "max": 1, "req": "tower"},
 	{"id": "sp_homing_blast", "cat": "castle", "special": true, "name": "矢倉・爆裂追尾火矢", "desc": "追尾火矢が当たった敵にも、爆裂矢の爆発が起きるようになる（矢倉の攻撃力の2.445倍。追尾火矢の威力とは別に決まる）\n「矢倉・爆裂矢」と「矢倉・追尾火矢」を取得している場合のみ出現", "max": 1, "req": "tower", "req_all": ["sp_tower_blast", "sp_homing"]},
-	{"id": "sp_stay_rock", "cat": "castle", "special": true, "name": "投石器・居座り岩", "desc": "着弾地点に大岩が5秒間残り、上にいる敵にダメージを与え続ける（ダメージは変更前の50%）。移動速度 -30%", "max": 1, "req": "catapult"},
+	{"id": "sp_stay_rock", "cat": "castle", "special": true, "name": "投石器・居座り岩", "desc": "着弾地点に大岩が5秒間残り、上にいる敵にダメージを与え続ける（岩の威力の21%）。移動速度 -30%", "max": 1, "req": "catapult"},
 	{"id": "sp_mega_bolt", "cat": "castle", "special": true, "name": "バリスタ・巨大弩砲", "desc": "8秒ごとに、3倍の大きさ・基本の威力の7.2倍の矢を、HPが一番多い敵へゆっくり（速さ1/3）撃つ", "max": 1, "req": "ballista"},
 	{"id": "sp_frost_ground", "cat": "castle", "special": true, "name": "結界・凍てつく大地", "desc": "結界の中の地面が凍りつき、中にいる敵にずっとダメージを与える（吹雪と重ねがけできる）", "max": 1, "req": "frost"},
 	{"id": "sp_pet_body", "cat": "pet", "special": true, "name": "体当たり遊撃ペット", "desc": "遊撃ペットに触れた敵に、遊撃ペットの攻撃力の10.8倍ダメージ", "max": 1, "req": "pet"},
@@ -329,7 +329,7 @@ const SPECIAL := [
 	{"id": "sp_ult_carpet", "cat": "engineer", "special": true, "name": "必殺・絨毯爆撃", "desc": "15秒ごとに、敵が密集した所へ一直線に13個の爆弾が降りそそぐ", "max": 1, "req": "engineer"},
 	{"id": "sp_ult_thousand", "cat": "castle", "special": true, "name": "矢倉・必殺・千本矢", "desc": "15秒ごとに、フィールド中の敵30か所へ一斉に矢の雨が降る（矢倉の攻撃力の12倍の威力）", "max": 1, "req": "tower"},
 	{"id": "sp_ult_barrage", "cat": "castle", "special": true, "name": "大砲・必殺・一斉砲撃", "desc": "15秒ごとに、12発の砲弾を一気に撃ち込む（大砲の12倍の威力）", "max": 1, "req": "cannon"},
-	{"id": "sp_ult_meteor", "cat": "castle", "special": true, "name": "投石器・必殺・隕石落とし", "desc": "15秒ごとに、敵の群れへ巨大な燃える隕石を落とす（投石器の9倍の威力・超広範囲、跡が燃える。威力は変更前の6倍）", "max": 1, "req": "catapult"},
+	{"id": "sp_ult_meteor", "cat": "castle", "special": true, "name": "投石器・必殺・隕石落とし", "desc": "15秒ごとに、敵の群れへ巨大な燃える隕石を落とす（投石器の6.3倍の威力・超広範囲、跡が燃える。燃える跡は毎秒 投石器の0.84倍）", "max": 1, "req": "catapult"},
 	{"id": "sp_ult_thunder", "cat": "castle", "special": true, "name": "バリスタ・必殺・雷神の大槍", "desc": "15秒ごとに、敵が一番多く並ぶ方向へ雷の大槍を放つ（基本の威力の4.8倍＋1秒しびれる）", "max": 1, "req": "ballista"},
 	{"id": "sp_ult_ice_age", "cat": "castle", "special": true, "name": "結界・必殺・氷河期", "desc": "15秒ごとに、結界の2倍以上の広さの敵をまとめて1秒凍らせてダメージ", "max": 1, "req": "frost"},
 	# --- 9つ目の特別強化（面白くてしっかり強いもの）
@@ -346,7 +346,7 @@ const SPECIAL := [
 	{"id": "sp_pet_fusion", "cat": "pet", "special": true, "name": "遊撃ペット大合体", "desc": "20秒ごとに、全遊撃ペットが合体して10秒間巨大ペットになる。立ち止まって特大弾を連射→まっすぐ高速突進をくり返す。\n合体したペットが多いほど強く大きくなり、ペットの強化の効果も乗る。合体中のダメージは1.875倍", "max": 1, "req": "pet"},
 	{"id": "sp_tower_lock", "cat": "castle", "special": true, "name": "矢倉・執念の矢", "desc": "狙った敵を倒せなかったら、次も同じ敵を狙う。同じ敵を狙い続けるほど矢が強くなる（1回ごとに+20%、最大3倍）", "max": 1, "req": "tower"},
 	{"id": "sp_cannon_bomb", "cat": "castle", "special": true, "name": "大砲・置き土産", "desc": "3発に1回、砲弾が着弾した場所に爆弾を置く。近くに敵が来ると爆発する（大砲の9倍の威力）", "max": 1, "req": "cannon"},
-	{"id": "sp_iron_chunk", "cat": "castle", "special": true, "name": "投石器・鉄塊投げ", "desc": "4発に1回、ふつうの岩と一緒に、HPが一番多い敵へ鉄塊を投げる（投石器の128倍の威力）", "max": 1, "req": "catapult"},
+	{"id": "sp_iron_chunk", "cat": "castle", "special": true, "name": "投石器・鉄塊投げ", "desc": "4発に1回、ふつうの岩と一緒に、HPが一番多い敵へ鉄塊を投げる（直撃は投石器の256倍、落ちた所の周りに16倍の威力）", "max": 1, "req": "catapult"},
 	{"id": "sp_bolt_momentum", "cat": "castle", "special": true, "name": "バリスタ・破竹の大矢", "desc": "バリスタの矢が敵に当たるたびに、その矢の威力が +10% ずつ増えていく（最大 +100%）", "max": 1, "req": "ballista"},
 	{"id": "sp_ice_statue", "cat": "castle", "special": true, "name": "結界・氷像の囮", "desc": "結界の中で敵を倒すと氷像になる（発動後20秒間は再発動しない）。氷像はほかの敵に最優先で狙われ、3回攻撃されると砕ける", "max": 1, "req": "frost"},
 	# ---- 採掘場

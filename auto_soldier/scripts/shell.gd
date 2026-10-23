@@ -144,7 +144,7 @@ func _explode() -> void:
 		b.position = target
 		game.ground.add_child(b)
 	if stay_rock:
-		game.spawn_placed("boulder", target, damage * 0.3, blast_radius * 0.6, 5.0, game.sp_src(src, "sp_stay_rock"))
+		game.spawn_placed("boulder", target, damage * 0.21, blast_radius * 0.6, 5.0, game.sp_src(src, "sp_stay_rock"))
 	if roll_damage > 0.0:
 		var away: Vector2 = (target - game.castle.global_position).normalized()
 		var m: Node2D = game.spawn_missile("ball", target, away.rotated(randf_range(-0.3, 0.3)) * 420.0, roll_damage, 30.0, 3.0, game.sp_src(src, "sp_rolling"))

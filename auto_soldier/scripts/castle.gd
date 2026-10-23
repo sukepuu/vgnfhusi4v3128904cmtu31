@@ -503,14 +503,14 @@ func _update_catapult(delta: float) -> void:
 			var big := _toughest_enemy_in(wpos(), INF)
 			if big != null:
 				# 威力：落ちた所の範囲に投石器×8、追いかけた敵への直撃に投石器×128
-				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_attack_power * 8.0, 50.0, true, game.sp_src(last_s.src if last_s else {}, "sp_iron_chunk"))
+				var iron := _fire_shell(from + Vector2(10, 0), big.global_position, catapult_attack_power * 16.0, 50.0, true, game.sp_src(last_s.src if last_s else {}, "sp_iron_chunk"))
 				iron.iron = true
 				iron.chase = big
-				iron.direct_bonus = catapult_attack_power * 128.0
+				iron.direct_bonus = catapult_attack_power * 256.0
 		if cow_throw and _catapult_shot_counts[i] % 3 == 0 and last_s != null:
 			last_s.cow = true
 		if rolling_rock and last_s != null:
-			last_s.roll_damage = catapult_attack_power * 43.2
+			last_s.roll_damage = catapult_attack_power * 21.6
 		# 岩雨：ランダムな敵2体の頭上にも岩が落ちる
 		if rock_rain:
 			var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool: return is_instance_valid(e) and not e.dead)

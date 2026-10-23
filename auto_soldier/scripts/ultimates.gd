@@ -152,7 +152,7 @@ func _do_storm() -> void:
 
 ## 拒馬の陣：ドームの中の敵に、拒馬の柵と同じダメージ（0.5秒ごとに槍の0.4倍）と足止め（20%遅く）
 func _dome_spike_hit() -> void:
-	var dmg: float = game.guard_stats.attack_power * 0.8 * 0.5
+	var dmg: float = game.guard_stats.attack_power * 0.4
 	var src: Dictionary = game.sp_src(game.guards[0].record, "sp_dome_spikes")
 	for e in game.enemies_near(game.castle.global_position, DOME_RADIUS):
 		if not is_instance_valid(e) or e.dead:
@@ -273,7 +273,7 @@ func _do_barrage() -> void:
 		var gi := i % guns
 		var from: Vector2 = castle.wpos() + castle._cannon_local_pos(gi)
 		var to := e.global_position + Vector2(randf_range(-40, 40), randf_range(-40, 40))
-		var s: Node2D = castle._fire_shell(from, to, castle.cannon_attack_power * 6.0 * 4.0, castle.cannon_radius, false, game.sp_src(castle._equip_record("cannon", "大砲", gi), "sp_ult_barrage"))
+		var s: Node2D = castle._fire_shell(from, to, castle.cannon_attack_power * 24.0, castle.cannon_radius, false, game.sp_src(castle._equip_record("cannon", "大砲", gi), "sp_ult_barrage"))
 		s.flight_time = 0.6 + i * 0.07
 
 
@@ -284,13 +284,13 @@ func _do_meteor() -> void:
 		_cds["meteor"] = 1.0
 		return
 	var from: Vector2 = center.global_position + Vector2(-500, -600)
-	var s: Node2D = castle._fire_shell(from, center.global_position, castle.catapult_attack_power * 1.5 * 3.0 * 2.0, 260.0, true, game.sp_src(castle._equip_record("catapult", "投石器", 0), "sp_ult_meteor"))
+	var s: Node2D = castle._fire_shell(from, center.global_position, castle.catapult_attack_power * 9.0, 260.0, true, game.sp_src(castle._equip_record("catapult", "投石器", 0), "sp_ult_meteor"))
 	s.meteor = true
 	s.stay_rock = castle.meteor_rock
 	s.flight_time = 1.8
 	s.fire_time = 5.0
 	s.fire_sp = ""
-	s.fire_dps = castle.catapult_attack_power * 0.2 * 3.0 * 2.0
+	s.fire_dps = castle.catapult_attack_power * 1.2
 
 
 func _do_thunder_spear() -> void:
@@ -353,7 +353,7 @@ func _do_cavalry() -> void:
 	var rect: Rect2 = game.MAP_RECT
 	var from_left := randf() < 0.5
 	var sgn := 1.0 if from_left else -1.0
-	var dmg: float = game.knight_damage() * 37.5 * 6.0
+	var dmg: float = game.knight_damage() * 225.0
 	for i in 8:
 		var y := clampf(low_y + (i - 3.5) * 34.0, rect.position.y + 20.0, rect.end.y - 20.0)
 		var x := (rect.position.x + 10.0 if from_left else rect.end.x - 10.0) - (i % 2) * 40.0 * sgn

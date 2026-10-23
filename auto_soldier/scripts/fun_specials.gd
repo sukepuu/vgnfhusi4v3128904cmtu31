@@ -130,7 +130,7 @@ func _do_dance() -> void:
 			var fb := BulletScript.new()
 			fb.game = game
 			fb.velocity = dir * 420.0
-			fb.damage = game.pet_attack_power * f._n / 4.8 * 36.0 * f.FUSION_BONUS
+			fb.damage = game.pet_attack_power * f._n * 7.5 * f.FUSION_BONUS
 			fb.radius = 8.0
 			fb.color = Color.from_hsv(float(i) / 24.0, 0.75, 1.0)
 			fb.life = 1.2

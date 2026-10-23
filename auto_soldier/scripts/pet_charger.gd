@@ -75,7 +75,7 @@ func _hit() -> void:
 		if global_position.distance_to(e.global_position) < r + e.radius + 3.0:
 			_hits[id] = true
 			var dmg: float = game.archer_pet_attack_power * PetScript.ARCHER_CHARGE_MULT if archer else \
-				(game.drum_pet_attack_power * PetScript.DRUM_CHARGE_MULT if drum else game.pet_attack_power * PetScript.CHARGE_MULT)
+				(game.drum_pet_attack_power * PetScript.DRUM_LAUNCH_CHARGE_MULT if drum else game.pet_attack_power * PetScript.CHARGE_MULT)
 			dmg *= damage_mult
 			var hit_pos: Vector2 = e.global_position
 			e.take_damage(dmg, _aim * 260.0, game.sp_src(record, "sp_archer_pet_charge" if archer else ("sp_drum_pet_charge" if drum else "sp_pet_charge")))

@@ -252,8 +252,8 @@ func take_damage(amount: float, _from_pos: Vector2 = Vector2.INF) -> void:
 		# 毒かかし：壊されたかかしの跡が、落とし穴の毒沼と同じ毒の沼になる（毒沼として記録）
 		var est = game.engineer_stats
 		if kind == "scarecrow" and est.scarecrow_poison and est.poison_level > 0:
-			game.spawn_hazard(global_position, est.pit_radius, est.pit_damage * 0.375 * est.poison_level,
-				6.0 + 3.0 * (est.poison_level - 1), Color(0.5, 0.9, 0.3), game.sp_src(src, "sp_poison"))
+			game.spawn_hazard(global_position, est.pit_radius, est.pit_damage * 0.75,
+				9.0, Color(0.5, 0.9, 0.3), game.sp_src(src, "sp_poison"))
 		queue_free()
 
 

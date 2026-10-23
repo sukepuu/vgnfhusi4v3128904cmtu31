@@ -13,7 +13,7 @@ const DASH_DURATION := 0.28
 ## 影分身の弾の威力（射撃 × これ。前は1倍＝本体と同じ）
 const SHADOW_MULT := 2.0
 ## 炸裂弾の爆発（弾の威力 × これ。前は0.275）
-const BURST_RATIO := 0.275 * 0.7 * 3.0
+const BURST_RATIO := 0.5775
 ## 触爆の爆発（射撃 × これ）
 const TOUCH_BLAST_MULT := 6.0
 const HELMET_COLORS := [

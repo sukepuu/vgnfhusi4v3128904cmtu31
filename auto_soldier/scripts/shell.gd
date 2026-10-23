@@ -114,7 +114,7 @@ func _explode() -> void:
 			s.mine_damage = mine_damage
 	if cow:
 		# 着地した牛が、6秒間近くの敵へ何度も突進する（従来の6倍ダメージ）
-		game.spawn_missile("cow", target, Vector2.ZERO, damage * 1.5 * 6.0, 66.0 * 0.7, 6.0, game.sp_src(src, "sp_fun_cow"))
+		game.spawn_missile("cow", target, Vector2.ZERO, damage * 9.0, 66.0 * 0.7, 6.0, game.sp_src(src, "sp_fun_cow"))
 	if fire_time > 0.0:
 		game.spawn_hazard(target, blast_radius * 0.8, fire_dps, fire_time, Color(1.0, 0.45, 0.1), src if fire_sp == "" else game.sp_src(src, fire_sp))
 	for i in mines:
@@ -134,14 +134,14 @@ func _explode() -> void:
 		b.position = target
 		game.ground.add_child(b)
 	if stay_rock:
-		game.spawn_placed("boulder", target, damage * 0.6 * 0.5, blast_radius * 0.6, 5.0, game.sp_src(src, "sp_stay_rock"))
+		game.spawn_placed("boulder", target, damage * 0.3, blast_radius * 0.6, 5.0, game.sp_src(src, "sp_stay_rock"))
 	if roll_damage > 0.0:
 		var away: Vector2 = (target - game.castle.global_position).normalized()
 		var m: Node2D = game.spawn_missile("ball", target, away.rotated(randf_range(-0.3, 0.3)) * 420.0, roll_damage, 30.0, 3.0, game.sp_src(src, "sp_rolling"))
 		m.look = "rock"
 	for i in split_count:
 		var p := target + Vector2.from_angle(TAU * i / split_count + randf() * 0.5) * randf_range(blast_radius * 0.8, blast_radius * 1.2)
-		game.spawn_blast(p, 0.3 + 0.08 * i, 70.0, damage * 1.2 * 2.0, game.sp_src(src, "sp_split_rock"), Color(0.75, 0.65, 0.5), "rock")
+		game.spawn_blast(p, 0.3 + 0.08 * i, 70.0, damage * 2.4, game.sp_src(src, "sp_split_rock"), Color(0.75, 0.65, 0.5), "rock")
 	queue_free()
 
 

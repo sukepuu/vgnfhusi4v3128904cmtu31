@@ -83,10 +83,10 @@ func _activate() -> void:
 	var st = game.engineer_stats
 	if kind == "pit":
 		game.spawn_burst(global_position, Color(0.45, 0.32, 0.2), blast_radius / 2.2)
-		# 毒沼：跡が毒の沼になる（毎秒 落とし穴の37.5% × poison_level。今は2なので75%）
+		# 毒沼：跡が9秒間毒の沼になる（毎秒 落とし穴の75%）
 		if st.poison_level > 0:
-			game.spawn_hazard(global_position, blast_radius, st.pit_damage * 0.375 * st.poison_level,
-				6.0 + 3.0 * (st.poison_level - 1), Color(0.5, 0.9, 0.3), game.sp_src(src, "sp_poison"))
+			game.spawn_hazard(global_position, blast_radius, st.pit_damage * 0.75,
+				9.0, Color(0.5, 0.9, 0.3), game.sp_src(src, "sp_poison"))
 		remove_from_group("traps")
 		_hole_left = 1.5
 		queue_redraw()
@@ -104,7 +104,7 @@ func _activate() -> void:
 				near.take_damage(damage * 400.0, Vector2.ZERO, game.sp_src(src, "sp_ap_mine"))
 		# 子爆弾：周りに小爆弾が散らばって爆発（1個 爆弾の125%）
 		if st.cluster_level > 0:
-			var n: int = 3 * st.cluster_level
+			var n := 6
 			for i in n:
 				var p: Vector2 = global_position + Vector2.from_angle(TAU * i / n + randf() * 0.4) * randf_range(blast_radius * 0.8, blast_radius * 1.4)
 				game.spawn_blast(p, 0.35 + 0.06 * i, blast_radius * 0.5, damage * 1.25, game.sp_src(src, "sp_cluster"), Color(1.0, 0.55, 0.2), "bomb")

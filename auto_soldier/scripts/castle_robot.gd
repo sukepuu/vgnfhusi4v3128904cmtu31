@@ -125,7 +125,7 @@ func _process(delta: float) -> void:
 		if not _punch_done and _punch_t >= PUNCH_HIT:
 			_punch_done = true
 			var hit_pos: Vector2 = global_position + _fist_reach()
-			game.explode(hit_pos, 80.0, ATTACK_POWER * (40.0 / 3.0) * _robot_damage_scale(), _walk_src(), Color(1.0, 0.75, 0.4), 0.0, 600.0)
+			game.explode(hit_pos, 80.0, ATTACK_POWER * 13.33 * _robot_damage_scale(), _walk_src(), Color(1.0, 0.75, 0.4), 0.0, 600.0)
 		if _punch_t >= PUNCH_TIME:
 			_punch_t = -1.0
 	elif _punch_cd <= 0.0:
@@ -233,8 +233,8 @@ const RAINBOW_STARTS := [10.0, 20.0]
 const RAINBOW_TIME := 4.0
 const RAINBOW_WIDTH := 30.0
 const RAINBOW_TICK := 0.1
-## 1本（片目）・0.1秒ごとのダメージ（× 敵の耐久の倍率）
-const RAINBOW_DAMAGE := 10.0
+## 1本（片目）・0.1秒ごとのダメージ（城ロボの攻撃力 × これ）
+const RAINBOW_DAMAGE := 3.33
 var _rainbow_target: Node2D = null
 var _rainbow_cd := 0.0
 
@@ -297,7 +297,7 @@ func _update_rainbow(delta: float) -> void:
 	if _rainbow_cd > 0.0:
 		return
 	_rainbow_cd = RAINBOW_TICK
-	var dmg: float = ATTACK_POWER * (RAINBOW_DAMAGE / 3.0) * _robot_damage_scale()
+	var dmg: float = ATTACK_POWER * RAINBOW_DAMAGE * _robot_damage_scale()
 	for side in [-1, 1]:
 		var from: Vector2 = global_position + _eye(side)
 		var seg: Vector2 = _rainbow_end(side) - from
@@ -355,7 +355,7 @@ func _update_flight(delta: float) -> void:
 				continue
 			if global_position.distance_to(e.global_position) < r + e.radius:
 				_tackle_hit[e] = true
-			e.take_damage(ATTACK_POWER * (12.5 / 3.0) * _robot_damage_scale(), _fly_dir * 500.0, _flight_src())
+			e.take_damage(ATTACK_POWER * 4.17 * _robot_damage_scale(), _fly_dir * 500.0, _flight_src())
 		if _fly_left <= 0.0:
 			_fly_state = "missile"
 			_missiles_left = MISSILE_COUNT
@@ -442,7 +442,7 @@ func _update_final(delta: float) -> void:
 	_beam_cd -= delta
 	if _beam_cd <= 0.0:
 		_beam_cd = BEAM_TICK
-		var dmg: float = ATTACK_POWER * (4.0 / 9.0) * _robot_damage_scale()
+		var dmg: float = ATTACK_POWER * 0.444 * _robot_damage_scale()
 		var from: Vector2 = global_position + _beam_origin()
 		# ビーム1本ごとに、胸から的までの線の上にいる敵すべてにダメージ
 		for t in _beam_targets.duplicate():
@@ -461,7 +461,7 @@ func _update_final(delta: float) -> void:
 	_missile_cd -= delta
 	if _missile_cd <= 0.0:
 		_missile_cd = FINAL_MISSILE_INTERVAL
-		_fire_missile(_final_src(), ATTACK_POWER * (4.0 / 3.0) * _robot_damage_scale())
+		_fire_missile(_final_src(), ATTACK_POWER * 1.33 * _robot_damage_scale())
 
 
 ## ビームが出る場所（胸の真ん中）

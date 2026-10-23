@@ -407,7 +407,7 @@ func _update_towers(delta: float) -> void:
 			if tower_blast:
 				b.explode_radius = 70.0
 				# 爆裂矢：矢の約23.3%ダメージ（従来の1/3）
-				b.explode_ratio = 0.7 / 3.0 * 0.7
+				b.explode_ratio = 0.163
 				b.explode_src = game.sp_src(b.src, "sp_tower_blast")
 			b.life = tower_range / 760.0 + 0.2
 			b.position = from
@@ -457,11 +457,11 @@ func _update_cannon(delta: float) -> void:
 		for k in scatter_level * 2:
 			var off := Vector2.from_angle(randf() * TAU) * randf_range(60.0, 110.0)
 			shells.append(_fire_shell(from, best.global_position + off, cannon_attack_power * 1.4, cannon_radius * 0.8, false, game.sp_src(rec, "sp_scatter")))
-		# 焼夷弾：3回に1回、着弾地点が燃える（従来の毎秒ダメージの70%）
+		# 焼夷弾：3回に1回、着弾地点が6秒燃える（毎秒 大砲の63%）
 		if fire_level > 0 and extra_turn:
 			for s in shells:
-				s.fire_time = 4.0 + 2.0 * (fire_level - 1)
-				s.fire_dps = cannon_attack_power * 0.45 * fire_level * 0.7
+				s.fire_time = 6.0
+				s.fire_dps = cannon_attack_power * 0.63
 		_cannon_cds[i] = cannon_interval
 
 
@@ -504,13 +504,13 @@ func _update_catapult(delta: float) -> void:
 		if cow_throw and _catapult_shot_counts[i] % 3 == 0 and last_s != null:
 			last_s.cow = true
 		if rolling_rock and last_s != null:
-			last_s.roll_damage = catapult_attack_power * 3.6 * 6.0 * 2.0
+			last_s.roll_damage = catapult_attack_power * 43.2
 		# 岩雨：ランダムな敵2体の頭上にも岩が落ちる
 		if rock_rain:
 			var pool: Array = game.enemies_cache.filter(func(e: Node2D) -> bool: return is_instance_valid(e) and not e.dead)
 			pool.shuffle()
 			for e in pool.slice(0, 2):
-				game.spawn_blast(e.global_position, 1.0, 75.0, catapult_attack_power * 2.4 * 3.0 * 2.0, game.sp_src(last_s.src if last_s else {}, "sp_rock_rain"), Color(0.75, 0.65, 0.5), "rock")
+				game.spawn_blast(e.global_position, 1.0, 75.0, catapult_attack_power * 14.4, game.sp_src(last_s.src if last_s else {}, "sp_rock_rain"), Color(0.75, 0.65, 0.5), "rock")
 		_catapult_cds[i] = catapult_interval
 		_catapult_swings[i] = 0.4
 
@@ -663,12 +663,12 @@ func _update_ballista(delta: float) -> void:
 			b.position = from + offset
 			if blast_bolt:
 				b.first_blast_radius = 140.0
-				b.first_blast_damage = ballista_attack_power * 0.7 * 0.5
+				b.first_blast_damage = ballista_attack_power * 0.35
 				b.first_blast_src = game.sp_src(b.src, "sp_blast_bolt")
 			if bolt_blast_level > 0:
-				b.explode_radius = 40.0 + 15.0 * bolt_blast_level
-				# 矢の威力（1.3倍）に対する割合。爆発のダメージは前の80%になるように 0.8/1.3 をかける
-				b.explode_ratio = (0.15 + 0.15 * bolt_blast_level) * 0.5 * 0.5 * 0.8 / 1.3
+				b.explode_radius = 70.0
+				# 爆発は矢の威力の6.9%
+				b.explode_ratio = 0.069
 				b.explode_src = game.sp_src(b.src, "sp_ballista_blast")
 			game.world.add_child(b)
 		_ballista_cds[i] = ballista_interval
@@ -811,7 +811,7 @@ func _update_fifth_specials(delta: float) -> void:
 					m.target = game.nearest_enemy(from, tower_range * 1.5)
 					# 爆裂追尾火矢：当たった敵の所で、矢倉の爆裂矢と同じ約23.3%ダメージの爆発
 					if homing_blast and tower_blast:
-						m.blast_ratio = 0.7 / 3.0 * 0.7
+						m.blast_ratio = 0.163
 						m.blast_src = game.sp_src(_equip_record("tower", "矢倉", i), "sp_tower_blast")
 	if lightning and ballista_level > 0:
 		_lightning_cd -= delta

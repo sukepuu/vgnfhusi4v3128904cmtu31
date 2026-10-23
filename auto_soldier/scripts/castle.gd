@@ -589,12 +589,12 @@ func _update_rapid(delta: float) -> void:
 			var count: int = game.enemies_cache.size()
 			mult *= 1.0 + 0.5 * clampf(float(count) / 300.0, 0.0, 1.0)
 		if rapid_level_scale:
-			mult *= 1.0 + 0.6 * clampf(float(game.level) / 150.0, 0.0, 1.0)
+			mult *= 1.0 + 1.0 * clampf(float(game.level) / 160.0, 0.0, 1.0)
 		if rapid_ult and _rapid_ult_active > 0.0:
 			mult *= 3.0
-		# 装填：いつも与ダメージ+80%。50回撃つたびに3秒撃てなくなる
+		# 装填：いつも与ダメージ+100%。50回撃つたびに3秒撃てなくなる
 		if rapid_reload:
-			mult *= 1.8
+			mult *= 2.0
 			_rapid_shot_count[i] += 1
 			if _rapid_shot_count[i] >= 50:
 				_rapid_shot_count[i] = 0
